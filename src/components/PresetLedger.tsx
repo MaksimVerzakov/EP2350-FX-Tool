@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { AnyEffect, EffectType, PresetConfig, LfoShape } from '../types/config';
 import { EFFECTS_REGISTRY } from '../constants/effectsRegistry';
 import { Knob } from './Knob';
@@ -37,9 +37,16 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
   // Auto-scroll target when an effect is newly added or moved
   const [lastAddedEffectId, setLastAddedEffectId] = useState<string | null>(null);
 
-  // Popover state for effect addition
-  const [addMenuTarget, setAddMenuTarget] = useState<null | { insertIndex?: number }>(null);
+  // Popover state for effect addition with dynamic anchor positioning
+  const [addMenuTarget, setAddMenuTarget] = useState<null | {
+    triggerId: string;
+    insertIndex?: number;
+    top: number;
+    left: number;
+    placement: 'top' | 'bottom';
+  }>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to newly added or transferred effect
   useEffect(() => {
@@ -55,10 +62,14 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
     }
   }, [preset.list, lastAddedEffectId]);
 
-  // Close popover when clicking outside
+  // Close popover when clicking outside or switching buses
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+      if (
+        popoverRef.current &&
+        !popoverRef.current.contains(e.target as Node) &&
+        !(e.target as HTMLElement).closest('[data-add-effect-trigger]')
+      ) {
         setAddMenuTarget(null);
       }
     };
@@ -67,6 +78,86 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [addMenuTarget]);
+
+  useEffect(() => {
+    setAddMenuTarget(null);
+  }, [activeBus]);
+
+  // Fine-tune popover top position if opening above the button
+  useLayoutEffect(() => {
+    if (addMenuTarget && popoverRef.current && addMenuTarget.placement === 'top') {
+      const actualHeight = popoverRef.current.offsetHeight;
+      if (actualHeight && Math.abs(actualHeight - 280) > 4) {
+        const correctedTop = Math.max(8, addMenuTarget.top + (280 - actualHeight));
+        popoverRef.current.style.top = `${correctedTop}px`;
+      }
+    }
+  }, [addMenuTarget]);
+
+  // Scroll popover into view if partially obscured
+  useEffect(() => {
+    if (addMenuTarget && popoverRef.current) {
+      popoverRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [addMenuTarget]);
+
+  const openAddMenu = (
+    e: React.MouseEvent<HTMLButtonElement>,
+    insertIndex?: number,
+    triggerId: string = 'bottom'
+  ) => {
+    e.stopPropagation();
+
+    // Toggle closed if clicking the same trigger button
+    if (addMenuTarget && addMenuTarget.triggerId === triggerId) {
+      setAddMenuTarget(null);
+      return;
+    }
+
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      setAddMenuTarget({
+        triggerId,
+        insertIndex,
+        top: 56,
+        left: 100,
+        placement: 'bottom'
+      });
+      return;
+    }
+
+    const canvasRect = canvas.getBoundingClientRect();
+    const buttonRect = e.currentTarget.getBoundingClientRect();
+
+    const popoverWidth = 288; // w-72 (18rem)
+    const popoverHeight = 280;
+
+    // Position relative to canvas scroll container
+    const buttonCenterRelX = buttonRect.left - canvasRect.left + buttonRect.width / 2;
+    const buttonBottomRelY = buttonRect.bottom - canvasRect.top + canvas.scrollTop;
+    const buttonTopRelY = buttonRect.top - canvasRect.top + canvas.scrollTop;
+
+    // Horizontal centering clamped inside canvas
+    const canvasWidth = canvas.clientWidth;
+    const left = Math.max(12, Math.min(canvasWidth - popoverWidth - 12, buttonCenterRelX - popoverWidth / 2));
+
+    // Vertical placement: check available space below vs above inside visible canvas viewport
+    const spaceBelowInViewport = canvasRect.bottom - buttonRect.bottom;
+    const spaceAboveInViewport = buttonRect.top - canvasRect.top;
+
+    let top: number;
+    let placement: 'top' | 'bottom';
+
+    if (spaceBelowInViewport >= popoverHeight || spaceBelowInViewport >= spaceAboveInViewport) {
+      placement = 'bottom';
+      top = buttonBottomRelY + 8;
+    } else {
+      placement = 'top';
+      top = Math.max(8, buttonTopRelY - popoverHeight - 8);
+    }
+
+    setAddMenuTarget({ triggerId, insertIndex, top, left, placement });
+  };
 
   // Track existing effect types across BOTH buses for single-instance constraints
   const existingEffectsMap = new Map<EffectType, 1 | 2>();
@@ -744,7 +835,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
       </div>
 
       {/* 3. FOCUSED EFFECT CHAIN CANVAS (INTERNAL SCROLL & FULL HEIGHT) */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-3 bg-[#ffffff] flex flex-col items-center relative">
+      <div ref={canvasRef} className="flex-1 min-h-0 overflow-y-auto p-3 bg-[#ffffff] flex flex-col items-center relative">
         {currentBusItems.length === 0 ? (
           <div className="w-full h-full flex-1 flex flex-col items-center justify-center gap-3 border border-dashed border-[#d2d5d2] bg-[#fbfcfb] rounded-[2px] p-6 text-center">
             <GitBranch className={`w-8 h-8 ${activeBus === 1 ? 'text-[#00a69c]/40' : 'text-[#d99b26]/40'}`} />
@@ -759,7 +850,8 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
               </span>
             </div>
             <button
-              onClick={() => setAddMenuTarget({})}
+              data-add-effect-trigger="true"
+              onClick={(e) => openAddMenu(e, undefined, 'empty')}
               className="px-4 py-1.5 text-[10px] font-mono font-bold text-white bg-[#141617] hover:bg-[#f15a22] rounded-[1px] flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -780,7 +872,8 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                       }`}
                     />
                     <button
-                      onClick={() => setAddMenuTarget({ insertIndex: bIdx + 1 })}
+                      data-add-effect-trigger="true"
+                      onClick={(e) => openAddMenu(e, bIdx + 1, `mid-${bIdx + 1}`)}
                       className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white border-2 flex items-center justify-center shadow-xs cursor-pointer text-[9px] font-bold transition-transform hover:scale-125 z-10 ${
                         activeBus === 1
                           ? 'border-[#00a69c] text-[#00a69c] hover:bg-[#00a69c] hover:text-white'
@@ -803,7 +896,8 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                 }`}
               />
               <button
-                onClick={() => setAddMenuTarget({})}
+                data-add-effect-trigger="true"
+                onClick={(e) => openAddMenu(e, undefined, 'bottom')}
                 className="px-4 py-1.5 text-[10px] font-mono font-bold rounded-[0px] border border-[#141617] bg-[#f8f9f8] hover:bg-[#141617] hover:text-white text-[#141617] flex items-center gap-1.5 cursor-pointer transition-colors shadow-[2px_2px_0px_#141617] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -817,12 +911,23 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
         {addMenuTarget && (
           <div
             ref={popoverRef}
-            className="absolute left-1/2 -translate-x-1/2 top-14 bg-white border border-[#141617] shadow-[4px_4px_0px_#141617] p-2.5 z-50 w-72 flex flex-col gap-1 rounded-[0px]"
+            style={{
+              top: `${addMenuTarget.top}px`,
+              left: `${addMenuTarget.left}px`
+            }}
+            className="absolute bg-white border border-[#141617] shadow-[4px_4px_0px_#141617] p-2.5 z-50 w-72 flex flex-col gap-1 rounded-[0px]"
           >
             <div className="flex items-center justify-between border-b border-[#e2e4e2] pb-1 mb-1">
-              <span className="text-[9.5px] font-mono font-bold uppercase tracking-wider text-[#f15a22]">
-                ADD EFFECT (BUS {activeBus})
-              </span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-[9.5px] font-mono font-bold uppercase tracking-wider text-[#f15a22]">
+                  ADD EFFECT (BUS {activeBus})
+                </span>
+                <span className="text-[8px] font-mono text-[#73787a]">
+                  {typeof addMenuTarget.insertIndex === 'number'
+                    ? `INSERT @ #${addMenuTarget.insertIndex + 1}`
+                    : 'APPEND'}
+                </span>
+              </div>
               <button
                 onClick={() => setAddMenuTarget(null)}
                 className="text-xs text-[#73787a] hover:text-[#141617] cursor-pointer"
