@@ -45,8 +45,18 @@ export class DspAudioEngine {
       this.gainMaster.connect(this.analyserNode);
       this.analyserNode.connect(this.ctx.destination);
 
-      // Default sample: beat
-      this.currentBuffer = createSyntheticAudioBuffer(this.ctx, 'beat');
+      // Default sample: Clean spoken speech sample ("The quick brown fox jumps over the lazy dog")
+      try {
+        const res = await fetch('/assets/speech.mp3');
+        if (res.ok) {
+          const arrayBuffer = await res.arrayBuffer();
+          this.currentBuffer = await this.ctx.decodeAudioData(arrayBuffer);
+        } else {
+          this.currentBuffer = createSyntheticAudioBuffer(this.ctx, 'voice');
+        }
+      } catch {
+        this.currentBuffer = createSyntheticAudioBuffer(this.ctx, 'voice');
+      }
     }
     if (this.ctx.state === 'suspended') {
       await this.ctx.resume();

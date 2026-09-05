@@ -86,7 +86,7 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
   const leverAngle = handlePos * 7.5;
 
   return (
-    <div className="flex flex-col items-center select-none relative my-2">
+    <div className="flex flex-col items-center select-none relative">
       {/* Container matching Teenage Engineering EP-2350 silhouette */}
       <div 
         className={`relative transition-transform duration-100 ${
@@ -386,23 +386,6 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
             />
           ))}
         </svg>
-      </div>
-
-      {/* Hardware Status Strip Underneath Mic */}
-      <div className="flex items-center gap-3 mt-1 text-[9px] font-mono text-[#73787a]">
-        <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#f15a22]" />
-          <span>LEVER: {Math.round(handlePos * 100)}%</span>
-        </div>
-        <span>•</span>
-        <button
-          onClick={triggerShakeWithFlash}
-          className="hover:text-[#141617] underline cursor-pointer"
-        >
-          TRIGGER SHAKE
-        </button>
-        <span>•</span>
-        <span>PRESET {activeSlot + 1}/4</span>
       </div>
     </div>
   );

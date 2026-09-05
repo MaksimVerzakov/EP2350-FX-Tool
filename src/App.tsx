@@ -109,29 +109,31 @@ export const App: React.FC = () => {
         {/* 2. MAIN TWO-COLUMN WORKBENCH DESK */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          {/* LEFT COLUMN: Hardware Mic Device + Compact Audition Player (Fixed Height with Internal Scroll) */}
-          <div className="lg:col-span-5 w-full lg:h-[660px] lg:overflow-y-auto lg:overflow-x-hidden flex flex-col items-center gap-2 pr-1 pb-4">
-            <MicDevice
-              activeSlot={activeSlot}
-              onSelectSlot={setActiveSlot}
-              handlePos={handlePos}
-              onHandleChange={handleHandleChange}
-              onShakeTrigger={handleShakeTrigger}
-            />
+          {/* LEFT COLUMN: Hardware Mic Device + Compact Audition Player */}
+          <div className="lg:col-span-5 flex flex-col items-center">
+            <div className="flex flex-col items-center gap-2">
+              <MicDevice
+                activeSlot={activeSlot}
+                onSelectSlot={setActiveSlot}
+                handlePos={handlePos}
+                onHandleChange={handleHandleChange}
+                onShakeTrigger={handleShakeTrigger}
+              />
 
-            <AudioPlayerCompact onShakeTrigger={handleShakeTrigger} />
+              <AudioPlayerCompact />
+            </div>
 
             {/* Minimalist [ HELP ] button (matching ep-sample-tool bottom button) */}
             <button
               onClick={() => setShowHelpModal(true)}
-              className="mt-3 bg-[#ffffff] border border-[#141617] text-[10px] font-bold px-4 py-1 hover:bg-[#f5f5f5] shadow-2xs flex items-center gap-1.5 transition-colors"
+              className="mt-3 bg-[#ffffff] border border-[#141617] text-[10px] font-bold px-4 py-1 hover:bg-[#f5f5f5] shadow-2xs flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <HelpCircle className="w-3 h-3 text-[#73787a]" /> HELP
             </button>
           </div>
 
           {/* RIGHT COLUMN: Preset Details Ledger Sheet */}
-          <div className="lg:col-span-7 flex flex-col items-center">
+          <div className="lg:col-span-7 flex flex-col items-center w-full">
             <PresetLedger
               preset={activePreset}
               totalPresets={pack.presets.length}

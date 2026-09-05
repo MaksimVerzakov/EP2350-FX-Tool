@@ -513,9 +513,9 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
   };
 
   return (
-    <div className="te-ledger-card w-full flex flex-col select-none overflow-hidden min-h-[580px]">
+    <div className="te-ledger-card w-full flex flex-col select-none overflow-hidden h-[540px]">
       {/* 1. TOP ORANGE HEADER TAB */}
-      <div className="bg-[#f15a22] text-white px-4 py-2 border-b border-[#141617] flex items-center justify-between gap-3">
+      <div className="bg-[#f15a22] text-white px-4 py-2 border-b border-[#141617] flex items-center justify-between gap-3 shrink-0">
         <div className="flex items-center gap-2.5">
           {/* Preset Badge with Up/Down Controls */}
           <div className="flex items-center bg-black/40 border border-white/30 rounded-[1px] font-mono shadow-2xs">
@@ -553,7 +553,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
       </div>
 
       {/* 2. DUAL PARALLEL BUS PHYSICAL SWITCH BAR */}
-      <div className="bg-[#eceeed] border-b border-[#141617] flex items-center justify-center px-4 py-2">
+      <div className="bg-[#eceeed] border-b border-[#141617] flex items-center justify-center px-4 py-1.5 shrink-0">
         {/* PHYSICAL TE MECHANICAL SLIDER SWITCH */}
         <div className="flex items-center gap-3 bg-[#f8f9f8] px-3 py-1.5 rounded-[2px] border border-[#d2d5d2] shadow-2xs">
           {/* Left Label: BUS 1 */}
@@ -619,10 +619,10 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
         </div>
       </div>
 
-      {/* 3. FOCUSED EFFECT CHAIN CANVAS (NO ROW NUMBERS) */}
-      <div className="p-4 bg-[#ffffff] flex flex-col items-center gap-0 relative border-b border-[#141617] min-h-[260px]">
+      {/* 3. FOCUSED EFFECT CHAIN CANVAS (INTERNAL SCROLL & FULL HEIGHT) */}
+      <div className="flex-1 min-h-0 overflow-y-auto p-3 bg-[#ffffff] flex flex-col items-center relative">
         {currentBusItems.length === 0 ? (
-          <div className="w-full py-12 flex flex-col items-center justify-center gap-3 border border-dashed border-[#d2d5d2] bg-[#fbfcfb] rounded-[2px] my-4">
+          <div className="w-full h-full flex-1 flex flex-col items-center justify-center gap-3 border border-dashed border-[#d2d5d2] bg-[#fbfcfb] rounded-[2px] p-6 text-center">
             <GitBranch className={`w-8 h-8 ${activeBus === 1 ? 'text-[#00a69c]/40' : 'text-[#d99b26]/40'}`} />
             <div className="text-center">
               <span className="block font-mono text-[11px] font-bold text-[#141617]">
@@ -761,7 +761,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
       </div>
 
       {/* 5. ADVANCED MODULATION: CHAPTER 7.9 LFO CYCLER */}
-      <div className="mt-auto border-t border-[#141617] bg-[#f8f9f8] p-3 border-x-0 flex flex-col gap-2">
+      <div className="shrink-0 border-t border-[#141617] bg-[#f8f9f8] p-3 border-x-0 flex flex-col gap-2">
         <div className="flex items-center justify-between border-b border-[#e2e4e2] pb-1">
           <span className="text-[9px] font-bold text-[#141617] uppercase tracking-wider flex items-center gap-1.5">
             <Sparkles className="w-3 h-3 text-[#00a69c]" />
