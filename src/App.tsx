@@ -168,10 +168,10 @@ export const App: React.FC = () => {
 
               <div>
                 <strong className="block text-[11px] uppercase tracking-wide text-[#73787a] mb-1">
-                  2. Preset Selection
+                  2. Slot Selection
                 </strong>
                 <p className="text-[#333]">
-                  Click the physical orange button or the 4 vertical LEDs on the mic grille to switch between presets 1 through 4.
+                  Click the physical orange button or the 4 vertical LEDs on the mic grille to switch between slots 1 through 4.
                 </p>
               </div>
 

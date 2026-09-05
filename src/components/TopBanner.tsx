@@ -60,13 +60,7 @@ export const TopBanner: React.FC<TopBannerProps> = ({
         </span>
       </div>
 
-      {/* 2. Connection Status Indicator */}
-      <div className="hidden lg:flex items-center gap-2 bg-[#ffffff] border border-[#d2d5d2] px-3 py-1 text-[10px] font-mono shadow-2xs">
-        <span className="w-2 h-2 rounded-full bg-[#00a69c] shadow-[0_0_5px_#00a69c]" />
-        <span className="text-[#141617] font-semibold">USB: FX-MIC DISK READY</span>
-      </div>
-
-      {/* 3. Pack Name Input & Actions */}
+      {/* 2. Pack Name Input & Actions */}
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-1.5 bg-[#ffffff] px-2 py-1 border border-[#141617] shadow-2xs">
           <span className="text-[9px] font-mono font-bold text-[#73787a]">PACK:</span>

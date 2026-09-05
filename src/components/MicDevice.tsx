@@ -234,6 +234,7 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
                 onClick={() => onSelectSlot(slot)}
                 className="cursor-pointer group"
               >
+                <title>{`Slot ${slot + 1}`}</title>
                 {/* Hit area */}
                 <circle cx={521.08} cy={cy} r={9} fill="transparent" />
 

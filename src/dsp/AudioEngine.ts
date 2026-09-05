@@ -164,14 +164,51 @@ export class DspAudioEngine {
     this.sourceNode.buffer = this.currentBuffer;
     this.sourceNode.loop = this.loopSource;
 
-    let currentInput: AudioNode = this.sourceNode;
+    const serialEffects: Array<{ fx: AnyEffect; idx: number }> = [];
+    const bus1Effects: Array<{ fx: AnyEffect; idx: number }> = [];
+    const bus2Effects: Array<{ fx: AnyEffect; idx: number }> = [];
 
     if (this.preset && this.preset.list.length > 0) {
       this.preset.list.forEach((fx, rowIdx) => {
-        const built = this.buildEffectNodes(fx, rowIdx);
+        if (fx.BUS === 1) {
+          bus1Effects.push({ fx, idx: rowIdx });
+        } else if (fx.BUS === 2) {
+          bus2Effects.push({ fx, idx: rowIdx });
+        } else {
+          serialEffects.push({ fx, idx: rowIdx });
+        }
+      });
+    }
+
+    // Master summing node before master gain
+    const busSummer = this.ctx.createGain();
+    busSummer.gain.value = 1.0;
+
+    // 1. Process serial chain
+    let serialHead: AudioNode = this.sourceNode;
+    serialEffects.forEach(({ fx, idx }) => {
+      const built = this.buildEffectNodes(fx, idx);
+      if (built) {
+        serialHead.connect(built.input);
+        serialHead = built.output;
+        this.activeNodes.push({
+          effectType: fx.effect,
+          params: { ...fx },
+          nodeRefs: built.nodeRefs
+        });
+      }
+    });
+
+    serialHead.connect(busSummer);
+
+    // 2. Process Bus 1 parallel branch
+    if (bus1Effects.length > 0) {
+      let bus1Head: AudioNode = serialHead;
+      bus1Effects.forEach(({ fx, idx }) => {
+        const built = this.buildEffectNodes(fx, idx);
         if (built) {
-          currentInput.connect(built.input);
-          currentInput = built.output;
+          bus1Head.connect(built.input);
+          bus1Head = built.output;
           this.activeNodes.push({
             effectType: fx.effect,
             params: { ...fx },
@@ -179,9 +216,28 @@ export class DspAudioEngine {
           });
         }
       });
+      bus1Head.connect(busSummer);
     }
 
-    currentInput.connect(this.gainMaster);
+    // 3. Process Bus 2 parallel branch
+    if (bus2Effects.length > 0) {
+      let bus2Head: AudioNode = serialHead;
+      bus2Effects.forEach(({ fx, idx }) => {
+        const built = this.buildEffectNodes(fx, idx);
+        if (built) {
+          bus2Head.connect(built.input);
+          bus2Head = built.output;
+          this.activeNodes.push({
+            effectType: fx.effect,
+            params: { ...fx },
+            nodeRefs: built.nodeRefs
+          });
+        }
+      });
+      bus2Head.connect(busSummer);
+    }
+
+    busSummer.connect(this.gainMaster);
     this.applyLiveModulation();
     this.sourceNode.start(0);
   }

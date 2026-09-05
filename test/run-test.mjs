@@ -173,4 +173,32 @@ assert.strictEqual(roundTrip.pack.name, 'EP2350 PACK');
 assert.strictEqual(roundTrip.pack.presets[0].name, 'BAD RECEPTION');
 console.log('✓ Round-trip serialization & parsing passed!');
 
+// Test 4: Chapter 7.10 Parallel Bus routing test
+const busRoutingPack = {
+  name: 'BUS TEST',
+  useBuiltInSamples: true,
+  presets: [
+    {
+      pos: 0,
+      name: 'PARALLEL DUB',
+      list: [
+        { effect: 'SAMPLE' },
+        { effect: 'DIST', amount: 15, mix: 0.8, BUS: 1 },
+        { effect: 'REVERB', time: 0.8, BUS: 2 }
+      ]
+    }
+  ]
+};
+const busSerialized = serializeToConfigJson(busRoutingPack);
+const busParsed = JSON.parse(busSerialized);
+assert.strictEqual(busParsed.presets[0].list[0].BUS, undefined, 'Serial effect must omit BUS');
+assert.strictEqual(busParsed.presets[0].list[1].BUS, 1, 'Bus 1 effect must serialize BUS: 1');
+assert.strictEqual(busParsed.presets[0].list[2].BUS, 2, 'Bus 2 effect must serialize BUS: 2');
+
+const busRoundTrip = parseConfigJson(busSerialized);
+assert.strictEqual(busRoundTrip.pack.presets[0].list[1].BUS, 1, 'Round-trip must preserve BUS: 1');
+assert.strictEqual(busRoundTrip.pack.presets[0].list[2].BUS, 2, 'Round-trip must preserve BUS: 2');
+console.log('✓ Chapter 7.10 Parallel Bus routing test passed!');
+
 console.log('=== ALL AUTOMATED COMPLIANCE TESTS PASSED (100%) ===');
+
