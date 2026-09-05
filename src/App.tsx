@@ -111,7 +111,7 @@ export const App: React.FC = () => {
           
           {/* LEFT COLUMN: Hardware Mic Device + Compact Audition Player */}
           <div className="lg:col-span-5 flex flex-col items-center">
-            <div className="flex flex-col items-center gap-2">
+            <div className="flex flex-col items-center gap-3.5">
               <MicDevice
                 activeSlot={activeSlot}
                 onSelectSlot={setActiveSlot}
@@ -126,7 +126,7 @@ export const App: React.FC = () => {
             {/* Minimalist [ HELP ] button (matching ep-sample-tool bottom button) */}
             <button
               onClick={() => setShowHelpModal(true)}
-              className="mt-3 bg-[#ffffff] border border-[#141617] text-[10px] font-bold px-4 py-1 hover:bg-[#f5f5f5] shadow-2xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="mt-3 bg-[#ffffff] border border-[#141617] text-[10px] font-mono font-bold px-4 py-1 hover:bg-[#f5f5f5] shadow-[0_1px_2px_rgba(0,0,0,0.15)] flex items-center gap-1.5 transition-colors cursor-pointer rounded-[1px]"
             >
               <HelpCircle className="w-3 h-3 text-[#73787a]" /> HELP
             </button>

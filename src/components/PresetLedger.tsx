@@ -513,12 +513,12 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
   };
 
   return (
-    <div className="te-ledger-card w-full flex flex-col select-none overflow-hidden h-[540px]">
+    <div className="te-ledger-card w-full flex flex-col select-none overflow-hidden h-[624px]">
       {/* 1. TOP ORANGE HEADER TAB */}
-      <div className="bg-[#f15a22] text-white px-4 py-2 border-b border-[#141617] flex items-center justify-between gap-3 shrink-0">
+      <div className="bg-[#f15a22] text-white px-4 py-2 border-b border-[#141617] border-t border-white/25 flex items-center justify-between gap-3 shrink-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]">
         <div className="flex items-center gap-2.5">
           {/* Preset Badge with Up/Down Controls */}
-          <div className="flex items-center bg-black/40 border border-white/30 rounded-[1px] font-mono shadow-2xs">
+          <div className="flex items-center bg-black/40 border border-white/30 rounded-[1px] font-mono shadow-[0_1px_2px_rgba(0,0,0,0.3)]">
             <span className="px-2.5 py-1 font-bold text-xs tracking-wider uppercase text-white">
               PRESET {preset.pos + 1}
             </span>

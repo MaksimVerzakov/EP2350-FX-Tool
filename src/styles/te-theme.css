@@ -167,21 +167,37 @@ body {
   background-color: #eaeaea;
 }
 
-/* Authentic Paper Notebook Binder (Right Column) */
+/* Authentic Paper Notebook Stack / Ledger Sheet (Right Column) */
 .te-notebook-card,
 .te-ledger-card {
   background-color: #ffffff;
-  border: 1px solid #231f20;
+  border: 1px solid #141617;
+  border-radius: 2px;
   box-shadow: 
-    3px 3px 0px rgba(0, 0, 0, 0.1),
-    6px 6px 0px rgba(0, 0, 0, 0.05),
-    10px 14px 20px rgba(0, 0, 0, 0.12);
+    3px 3px 0px #141617,
+    6px 6px 0px rgba(20, 22, 23, 0.35),
+    9px 9px 0px rgba(20, 22, 23, 0.15),
+    16px 22px 30px rgba(0, 0, 0, 0.16);
   position: relative;
 }
 
-/* Hardware Device Unit (Left Column) */
+/* Teenage Engineering Hardware Device Unit Pseudo-3D Depth (Left Column) */
 .te-device-shadow {
-  filter: drop-shadow(4px 6px 16px rgba(0, 0, 0, 0.22)) drop-shadow(1px 2px 4px rgba(0, 0, 0, 0.18));
+  filter: 
+    drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35))
+    drop-shadow(6px 14px 22px rgba(0, 0, 0, 0.24))
+    drop-shadow(12px 28px 40px rgba(0, 0, 0, 0.16));
+}
+
+/* Chunky 2.5D Hardware Edge for Modular Units */
+.te-hardware-chassis {
+  border: 1px solid #141617;
+  border-bottom: 4px solid #141617;
+  border-right: 2px solid #141617;
+  border-radius: 2px;
+  box-shadow: 
+    3px 5px 0px rgba(0, 0, 0, 0.18),
+    6px 12px 20px rgba(0, 0, 0, 0.12);
 }
 
 /* LED Glow Styles */
