@@ -8,7 +8,8 @@ export type EffectType =
   | 'SAMPLE'
   | 'REVERB'
   | 'RING'
-  | 'SSB';
+  | 'SSB'
+  | 'BALANCE';
 
 export type PlayMode = 'oneshot' | 'hold' | 'startstop';
 
@@ -87,6 +88,11 @@ export interface SsbEffect extends BaseEffect {
   frequency?: number; // -20000.0 - 20000.0
 }
 
+export interface BalanceEffect extends BaseEffect {
+  effect: 'BALANCE';
+  balance?: number; // 0.0 - 1.0
+}
+
 export type AnyEffect =
   | DelayEffect
   | DistEffect
@@ -96,7 +102,8 @@ export type AnyEffect =
   | SampleEffect
   | ReverbEffect
   | RingEffect
-  | SsbEffect;
+  | SsbEffect
+  | BalanceEffect;
 
 export interface ModulationHandle {
   row?: number;

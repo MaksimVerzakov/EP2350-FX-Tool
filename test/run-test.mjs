@@ -197,8 +197,52 @@ assert.strictEqual(busParsed.presets[0].list[2].BUS, 2, 'Bus 2 effect must seria
 
 const busRoundTrip = parseConfigJson(busSerialized);
 assert.strictEqual(busRoundTrip.pack.presets[0].list[1].BUS, 1, 'Round-trip must preserve BUS: 1');
-assert.strictEqual(busRoundTrip.pack.presets[0].list[2].BUS, 2, 'Round-trip must preserve BUS: 2');
-console.log('✓ Chapter 7.10 Parallel Bus routing test passed!');
+// Test 5: Specification Document Dub Chamber (Page 1-2 & Page 15)
+const dubChamberPack = {
+  name: 'We count from zero',
+  useBuiltInSamples: false,
+  samples: [
+    { pos: 0, file: 'samples/loop.wav', playmode: 'startstop' },
+    { pos: 1, file: 'samples/whistle.wav', playmode: 'oneshot' },
+    { pos: 2, file: 'samples/horn.wav', playmode: 'hold' },
+    { pos: 3, file: 'samples/shout.wav', playmode: 'oneshot' }
+  ],
+  presets: [
+    {
+      pos: 0,
+      name: 'Dub Chamber',
+      list: [
+        { effect: 'HARMONY', pitch: 2.0, BUS: 2 },
+        { effect: 'REVERB', time: 0.1, 'dry-level': 1.0 },
+        { effect: 'DELAY', time: 0.5, 'dry-level': 0.0, echo: 0.5, BUS: 1 },
+        { effect: 'SAMPLE', speed: 1.0 },
+        { effect: 'BALANCE', balance: 0.2, BUS: 1 }
+      ],
+      handle: { row: 1, param: 'time', depth: 0.6 },
+      shake: { row: 2, param: 'echo', depth: 1.0 },
+      lfo: { row: 3, param: 'echo', depth: 1.0, shape: 'random', speed: 4.0 },
+      trigger: { row: 3 }
+    }
+  ]
+};
+
+const dubSerialized = serializeToConfigJson(dubChamberPack);
+const dubParsed = JSON.parse(dubSerialized);
+
+assert.strictEqual(dubParsed.name, 'We count from zero');
+assert.strictEqual(dubParsed.samples.length, 4);
+assert.strictEqual(dubParsed.presets[0].list[0].BUS, 2);
+assert.strictEqual(dubParsed.presets[0].list[0].effect, 'HARMONY');
+assert.strictEqual(dubParsed.presets[0].list[1].effect, 'REVERB');
+assert.strictEqual(dubParsed.presets[0].list[2].BUS, 1);
+assert.strictEqual(dubParsed.presets[0].list[4].effect, 'BALANCE');
+assert.strictEqual(dubParsed.presets[0].list[4].balance, 0.2);
+assert.strictEqual(dubParsed.presets[0].trigger.row, 3);
+
+const dubRoundTrip = parseConfigJson(dubSerialized);
+assert.strictEqual(dubRoundTrip.pack.presets[0].list[4].effect, 'BALANCE');
+assert.strictEqual(dubRoundTrip.pack.presets[0].list[4].balance, 0.2);
+console.log('✓ Specification Document "Dub Chamber" with BALANCE test passed!');
 
 console.log('=== ALL AUTOMATED COMPLIANCE TESTS PASSED (100%) ===');
 

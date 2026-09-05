@@ -164,18 +164,15 @@ export class DspAudioEngine {
     this.sourceNode.buffer = this.currentBuffer;
     this.sourceNode.loop = this.loopSource;
 
-    const serialEffects: Array<{ fx: AnyEffect; idx: number }> = [];
     const bus1Effects: Array<{ fx: AnyEffect; idx: number }> = [];
     const bus2Effects: Array<{ fx: AnyEffect; idx: number }> = [];
 
     if (this.preset && this.preset.list.length > 0) {
       this.preset.list.forEach((fx, rowIdx) => {
-        if (fx.BUS === 1) {
-          bus1Effects.push({ fx, idx: rowIdx });
-        } else if (fx.BUS === 2) {
+        if (fx.BUS === 2) {
           bus2Effects.push({ fx, idx: rowIdx });
         } else {
-          serialEffects.push({ fx, idx: rowIdx });
+          bus1Effects.push({ fx, idx: rowIdx });
         }
       });
     }
@@ -184,13 +181,13 @@ export class DspAudioEngine {
     const busSummer = this.ctx.createGain();
     busSummer.gain.value = 1.0;
 
-    // 1. Process serial chain
-    let serialHead: AudioNode = this.sourceNode;
-    serialEffects.forEach(({ fx, idx }) => {
+    // 1. Process Bus 1 (Primary parallel branch)
+    let bus1Head: AudioNode = this.sourceNode;
+    bus1Effects.forEach(({ fx, idx }) => {
       const built = this.buildEffectNodes(fx, idx);
       if (built) {
-        serialHead.connect(built.input);
-        serialHead = built.output;
+        bus1Head.connect(built.input);
+        bus1Head = built.output;
         this.activeNodes.push({
           effectType: fx.effect,
           params: { ...fx },
@@ -198,30 +195,11 @@ export class DspAudioEngine {
         });
       }
     });
+    bus1Head.connect(busSummer);
 
-    serialHead.connect(busSummer);
-
-    // 2. Process Bus 1 parallel branch
-    if (bus1Effects.length > 0) {
-      let bus1Head: AudioNode = serialHead;
-      bus1Effects.forEach(({ fx, idx }) => {
-        const built = this.buildEffectNodes(fx, idx);
-        if (built) {
-          bus1Head.connect(built.input);
-          bus1Head = built.output;
-          this.activeNodes.push({
-            effectType: fx.effect,
-            params: { ...fx },
-            nodeRefs: built.nodeRefs
-          });
-        }
-      });
-      bus1Head.connect(busSummer);
-    }
-
-    // 3. Process Bus 2 parallel branch
+    // 2. Process Bus 2 (Secondary parallel branch)
     if (bus2Effects.length > 0) {
-      let bus2Head: AudioNode = serialHead;
+      let bus2Head: AudioNode = this.sourceNode;
       bus2Effects.forEach(({ fx, idx }) => {
         const built = this.buildEffectNodes(fx, idx);
         if (built) {
@@ -485,6 +463,15 @@ export class DspAudioEngine {
         // Single Sideband frequency shift approximation via high-frequency ring mod
         const gain = ctx.createGain();
         return { input: gain, output: gain, nodeRefs: { gain, rowIdx } };
+      }
+
+      case 'BALANCE': {
+        const panner = ctx.createStereoPanner ? ctx.createStereoPanner() : ctx.createGain();
+        const bal = typeof fx.balance === 'number' ? fx.balance : 0.5;
+        if ('pan' in panner) {
+          panner.pan.value = (bal - 0.5) * 2; // Map 0..1 to -1..1
+        }
+        return { input: panner, output: panner, nodeRefs: { panner, rowIdx } };
       }
 
       default: {

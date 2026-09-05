@@ -402,5 +402,29 @@ export const EFFECTS_REGISTRY: Record<EffectType, EffectMeta> = {
         displayScale: (v) => `${v > 0 ? '+' : ''}${Math.round(v)}Hz`
       }
     ]
+  },
+
+  BALANCE: {
+    type: 'BALANCE',
+    displayName: 'BALANCE (PAN)',
+    description: 'Stereo balance positioning and output bus leveling.',
+    singleInstance: false,
+    params: [
+      {
+        name: 'balance',
+        label: 'STEREO PAN',
+        min: 0.0,
+        max: 1.0,
+        step: 0.01,
+        defaultVal: 0.5,
+        unit: '',
+        displayScale: (v) =>
+          v === 0.5
+            ? 'CTR'
+            : v < 0.5
+            ? `L ${((0.5 - v) * 2).toFixed(2)}`
+            : `R ${((v - 0.5) * 2).toFixed(2)}`
+      }
+    ]
   }
 };
