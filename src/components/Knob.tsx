@@ -12,6 +12,7 @@ interface KnobProps {
   onReset?: () => void;
   accentColor?: string;
   size?: number;
+  isModulated?: boolean;
 }
 
 export const Knob: React.FC<KnobProps> = ({
@@ -25,7 +26,8 @@ export const Knob: React.FC<KnobProps> = ({
   onChange,
   onReset,
   accentColor = '#f15a22',
-  size = 46
+  size = 40,
+  isModulated = false
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [inputValue, setInputValue] = useState(value.toString());
@@ -53,7 +55,7 @@ export const Knob: React.FC<KnobProps> = ({
       if (!isDragging) return;
       const dy = dragStartY.current - e.clientY; // drag up = increase
       const range = max - min;
-      const sensitivity = 150;
+      const sensitivity = 160;
       const delta = (dy / sensitivity) * range;
       let newVal = dragStartVal.current + delta;
       newVal = Math.max(min, Math.min(max, newVal));
@@ -111,15 +113,29 @@ export const Knob: React.FC<KnobProps> = ({
     }
   };
 
+  // SVG Arc calculation for clean continuous gauge
+  const radius = 16;
+  const strokeWidth = 2.5;
+  const circumference = 2 * Math.PI * radius;
+  // 270 degrees out of 360 degrees = 0.75 arc
+  const arcLength = circumference * 0.75;
+  const strokeDashoffset = arcLength * (1 - normalized);
+
   return (
     <div
-      className="flex flex-col items-center select-none"
+      className="flex flex-col items-center select-none group"
       style={{ minWidth: size + 16 }}
-      title={`${label}: ${displayValue || value + unit} (Double click dial to reset)`}
+      title={`${label}: ${displayValue || value + unit} (Double-click to reset)`}
     >
-      <span className="text-[9px] font-bold tracking-tight text-[#656d73] uppercase mb-1 text-center truncate max-w-[76px]">
-        {label}
-      </span>
+      {/* Parameter Label (Swiss micro-grotesque) */}
+      <div className="flex items-center gap-1 mb-1 max-w-[80px]">
+        {isModulated && (
+          <span className="w-1.5 h-1.5 rounded-full bg-[#f15a22] animate-pulse" title="Modulated parameter" />
+        )}
+        <span className="text-[9px] font-bold tracking-wider text-[#6a6f73] uppercase text-center truncate">
+          {label}
+        </span>
+      </div>
 
       {/* Rotary Dial */}
       <div
@@ -129,66 +145,64 @@ export const Knob: React.FC<KnobProps> = ({
         onWheel={handleWheel}
         onDoubleClick={onReset}
       >
-        <svg width={size} height={size} viewBox="0 0 100 100">
-          {/* Tick marks around bezel */}
-          {Array.from({ length: 9 }).map((_, i) => {
-            const tickAngle = -135 + i * (270 / 8);
-            const rad = (tickAngle * Math.PI) / 180;
-            const x1 = 50 + 44 * Math.cos(rad);
-            const y1 = 50 + 44 * Math.sin(rad);
-            const x2 = 50 + 38 * Math.cos(rad);
-            const y2 = 50 + 38 * Math.sin(rad);
-            const isLit = tickAngle <= angle;
-            return (
-              <line
-                key={i}
-                x1={x1}
-                y1={y1}
-                x2={x2}
-                y2={y2}
-                stroke={isLit ? accentColor : '#818e95'}
-                strokeWidth={i % 4 === 0 ? '3' : '1.5'}
-                strokeLinecap="round"
-                opacity={isLit ? 0.9 : 0.35}
-              />
-            );
-          })}
+        <svg width={size} height={size} viewBox="0 0 40 40">
+          {/* Background Track Arc */}
+          <circle
+            cx="20"
+            cy="20"
+            r={radius}
+            fill="none"
+            stroke="#d8dbd8"
+            strokeWidth={strokeWidth}
+            strokeDasharray={`${arcLength} ${circumference}`}
+            strokeLinecap="round"
+            transform="rotate(135 20 20)"
+          />
 
-          {/* Dial Base */}
-          <circle cx="50" cy="50" r="32" fill="#232424" stroke="#121212" strokeWidth="2" />
-          <circle cx="50" cy="50" r="28" fill="#323535" />
+          {/* Active Value Arc */}
+          <circle
+            cx="20"
+            cy="20"
+            r={radius}
+            fill="none"
+            stroke={accentColor}
+            strokeWidth={strokeWidth}
+            strokeDasharray={`${arcLength} ${circumference}`}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            transform="rotate(135 20 20)"
+          />
 
-          {/* Center Cap */}
-          <circle cx="50" cy="50" r="16" fill="#222426" stroke="#18191a" strokeWidth="1.5" />
-          <circle cx="50" cy="50" r="5" fill={accentColor} />
+          {/* Dial Center */}
+          <circle cx="20" cy="20" r="11" fill="#222324" stroke="#141617" strokeWidth="1" />
 
-          {/* Needle Indicator */}
-          <g transform={`rotate(${angle} 50 50)`}>
-            <rect x="47.5" y="24" width="5" height="11" rx="2.5" fill="#f5f5f5" />
+          {/* Minimalist Needle Indicator */}
+          <g transform={`rotate(${angle} 20 20)`}>
+            <line x1="20" y1="11" x2="20" y2="15" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" />
           </g>
         </svg>
       </div>
 
-      {/* Editable Numeric Input Box */}
-      <div className="mt-1 flex items-center bg-[#ffffff] border border-[#18191a] shadow-inner px-1 py-0.5 max-w-[66px]">
+      {/* Direct Numeric Input Box */}
+      <div className="mt-1 flex items-center justify-center bg-[#ffffff] border border-[#d2d5d2] hover:border-[#141617] focus-within:border-[#f15a22] transition-colors px-1 py-0.5 max-w-[62px]">
         <input
           type="text"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onBlur={handleCommitInput}
           onKeyDown={handleKeyDown}
-          className="w-full text-[10px] font-mono font-bold text-[#18191a] text-center bg-transparent focus:outline-none focus:bg-[#f15a22]/10"
+          className="w-full text-[10px] font-mono font-medium text-[#141617] text-center bg-transparent focus:outline-none"
         />
         {unit && (
-          <span className="text-[8px] font-mono text-[#818e95] font-semibold select-none">
+          <span className="text-[8px] font-mono text-[#73787a] select-none pl-0.5">
             {unit}
           </span>
         )}
       </div>
 
-      {/* Scaled display readout if different from raw float */}
+      {/* Formatted display scale label (e.g. 500Hz, +2st) */}
       {displayValue && (
-        <span className="text-[8px] font-mono text-[#818e95] mt-0.5 truncate max-w-[70px]">
+        <span className="text-[8px] font-mono text-[#73787a] mt-0.5 truncate max-w-[70px]">
           {displayValue}
         </span>
       )}

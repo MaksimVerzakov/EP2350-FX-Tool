@@ -16,7 +16,7 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
   onShakeTrigger
 }) => {
   const [isSqueezing, setIsSqueezing] = useState(false);
-  const [isShakingAnim, setIsShakingAnim] = useState(false);
+  const [isShakingFlash, setIsShakingFlash] = useState(false);
   const dragStartY = useRef(0);
   const dragStartVal = useRef(handlePos);
 
@@ -24,27 +24,27 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
     onSelectSlot((activeSlot + 1) % 4);
   };
 
-  const triggerShakeWithAnim = () => {
-    setIsShakingAnim(true);
+  const triggerShakeWithFlash = () => {
+    setIsShakingFlash(true);
     onShakeTrigger();
-    setTimeout(() => setIsShakingAnim(false), 350);
+    setTimeout(() => setIsShakingFlash(false), 250);
   };
 
-  // Handle Drag / Squeeze
+  // Handle Drag: Intuitive vertical drag (drag up/down) or squeeze
   const handleHandleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     setIsSqueezing(true);
-    dragStartY.current = e.clientX;
+    dragStartY.current = e.clientY;
     dragStartVal.current = handlePos;
   };
 
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
       if (!isSqueezing) return;
-      // Moving right = squeezing handle in toward body
-      const dx = e.clientX - dragStartY.current;
-      const sensitivity = 60; // 60px to fully squeeze
-      const delta = dx / sensitivity;
+      // Moving down = squeezing handle lever in
+      const dy = e.clientY - dragStartY.current;
+      const sensitivity = 80;
+      const delta = dy / sensitivity;
       const newVal = Math.max(0.0, Math.min(1.0, dragStartVal.current + delta));
       onHandleChange(Math.round(newVal * 100) / 100);
     },
@@ -54,11 +54,11 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
   const handleMouseUp = useCallback(() => {
     if (!isSqueezing) return;
     setIsSqueezing(false);
-    // Spring back to rest (0.0)
+    // Smooth spring-return to 0.0
     let current = handlePos;
     const startT = performance.now();
     const anim = () => {
-      const elapsed = (performance.now() - startT) / 120;
+      const elapsed = (performance.now() - startT) / 140;
       if (elapsed < 1.0) {
         onHandleChange(current * (1.0 - elapsed));
         requestAnimationFrame(anim);
@@ -80,78 +80,76 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
     }
   }, [isSqueezing, handleMouseMove, handleMouseUp]);
 
-  // Visual deflection angle of orange handle (0deg to -14deg inward)
-  const handleDeflection = handlePos * 14;
+  // Lever squeeze angle (0deg at rest, rotates inward by 8 degrees)
+  const leverAngle = handlePos * 8;
+  const leverTranslateX = handlePos * 7;
 
   return (
     <div className="flex flex-col items-center select-none relative">
-      {/* Device Body Container */}
-      <div
-        className={`relative flex items-center transition-transform duration-100 ${
-          isShakingAnim ? 'animate-bounce' : ''
-        }`}
-        style={{ width: 280, height: 360 }}
-      >
-        {/* 1. SQUEEZE LEVER (Orange Handle on Left) */}
+      {/* Elongated Handheld Baton Silhouette (~200px × 430px) */}
+      <div className="relative flex items-center" style={{ width: 250, height: 430 }}>
+        
+        {/* 1. SQUEEZE LEVER (Integrated Ergonomic Left Lever) */}
         <div
           onMouseDown={handleHandleMouseDown}
-          className="absolute left-[-24px] top-[90px] w-[58px] h-[170px] cursor-grab active:cursor-grabbing z-10"
+          className="absolute left-[3px] top-[115px] w-[34px] h-[210px] cursor-ns-resize active:cursor-grabbing z-20"
           style={{
             transformOrigin: 'bottom right',
-            transform: `rotate(${handleDeflection}deg)`,
-            transition: isSqueezing ? 'none' : 'transform 0.12s ease-out'
+            transform: `translateX(${leverTranslateX}px) rotate(${leverAngle}deg)`,
+            transition: isSqueezing ? 'none' : 'transform 0.15s cubic-bezier(0.2, 0.9, 0.3, 1)'
           }}
-          title="Squeeze Handle (Drag right to squeeze, spring-loaded return)"
+          title="Squeeze Handle: Drag up/down to modulate, spring-loaded return"
         >
-          <svg width="58" height="170" viewBox="0 0 58 170" fill="none">
-            {/* Ergonomic curved handle lever */}
+          <svg width="34" height="210" viewBox="0 0 34 210" fill="none">
+            {/* Squeeze Lever profile */}
             <path
-              d="M 50 165 C 20 150 6 110 8 30 C 9 12 25 5 44 2 L 54 2 L 54 165 Z"
+              d="M 32 205 C 14 185 4 140 5 45 C 5 20 18 8 32 4 L 32 205 Z"
               fill="#f15a22"
-              stroke="#18191a"
-              strokeWidth="2.5"
+              stroke="#141617"
+              strokeWidth="1.5"
             />
             {/* Grip ridges */}
-            <line x1="20" y1="45" x2="48" y2="45" stroke="#18191a" strokeWidth="2" />
-            <line x1="17" y1="65" x2="48" y2="65" stroke="#18191a" strokeWidth="2" />
-            <line x1="16" y1="85" x2="48" y2="85" stroke="#18191a" strokeWidth="2" />
-            <line x1="18" y1="105" x2="48" y2="105" stroke="#18191a" strokeWidth="2" />
-            <line x1="23" y1="125" x2="48" y2="125" stroke="#18191a" strokeWidth="2" />
+            <line x1="12" y1="65" x2="28" y2="65" stroke="#ba3807" strokeWidth="1.5" />
+            <line x1="10" y1="90" x2="28" y2="90" stroke="#ba3807" strokeWidth="1.5" />
+            <line x1="9" y1="115" x2="28" y2="115" stroke="#ba3807" strokeWidth="1.5" />
+            <line x1="10" y1="140" x2="28" y2="140" stroke="#ba3807" strokeWidth="1.5" />
+            <line x1="14" y1="165" x2="28" y2="165" stroke="#ba3807" strokeWidth="1.5" />
           </svg>
         </div>
 
-        {/* 2. PHYSICAL ORANGE PRESET BUTTON (Top Right Edge) */}
+        {/* 2. RECESSED HARDWARE PRESET BUTTON (Top Right Edge) */}
         <button
           onClick={cyclePreset}
-          className="absolute right-[-10px] top-[100px] w-4 h-11 bg-[#f15a22] border-2 border-[#18191a] rounded-r-sm hover:brightness-110 active:translate-x-[-2px] transition-all z-20 shadow-sm flex items-center justify-center cursor-pointer"
+          className="absolute right-[20px] top-[125px] w-3 h-10 bg-[#f15a22] border border-[#141617] rounded-r-xs hover:brightness-110 active:translate-x-[-1px] transition-all z-20 shadow-xs flex items-center justify-center cursor-pointer"
           title="Orange Button: Cycle Preset (0, 1, 2, 3)"
         >
-          <span className="w-1 h-6 bg-[#d14612] rounded-full" />
+          <span className="w-0.5 h-6 bg-[#ba3807] rounded-full" />
         </button>
 
-        {/* White/Grey Sample Buttons (Right edge below orange button) */}
-        <div className="absolute right-[-7px] top-[170px] w-3 h-10 bg-[#dbdddb] border-2 border-[#18191a] rounded-r-xs z-10" />
-        <div className="absolute right-[-7px] top-[245px] w-3 h-12 bg-[#818e95] border-2 border-[#18191a] rounded-r-xs z-10" />
+        {/* Flush White/Grey Sample Buttons (Right edge below orange button) */}
+        <div className="absolute right-[22px] top-[185px] w-2.5 h-8 bg-[#ffffff] border border-[#141617] rounded-r-2xs z-10" />
+        <div className="absolute right-[22px] top-[245px] w-2.5 h-10 bg-[#818e95] border border-[#141617] rounded-r-2xs z-10" />
 
-        {/* 3. MAIN CHASSIS HOUSING */}
-        <div className="w-[240px] h-[330px] bg-[#d5d7d5] border-2 border-[#18191a] shadow-[8px_8px_0px_rgba(0,0,0,0.18)] flex flex-col mx-auto relative overflow-hidden">
+        {/* 3. MAIN MIC CHASSIS (Precision Handheld Proportions 200px × 410px) */}
+        <div className="w-[200px] h-[410px] bg-[#e2e4e2] border border-[#141617] shadow-[0_4px_16px_rgba(0,0,0,0.12)] flex flex-col mx-auto relative overflow-hidden">
           
-          {/* TOP HALF: Perforated Microphone Grille */}
-          <div className="h-[185px] bg-[#4d5158] border-b-2 border-[#18191a] p-3 relative flex flex-col justify-between">
-            {/* Background perforation grid of circular dots */}
-            <div className="absolute inset-0 p-2.5 grid grid-cols-11 gap-1.5 opacity-90 pointer-events-none">
-              {Array.from({ length: 110 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="w-2.5 h-2.5 rounded-full bg-[#202224] border border-[#3b3e44]"
-                />
-              ))}
-            </div>
+          {/* TOP SECTION: Laser Micro-Perforated Microphone Grille */}
+          <div className="h-[235px] bg-[#3a3e42] border-b border-[#141617] relative flex flex-col justify-between overflow-hidden">
+            
+            {/* Acoustic Laser Perforation Pattern */}
+            <div 
+              className="absolute inset-0 opacity-85 pointer-events-none"
+              style={{
+                backgroundImage: 'radial-gradient(#181a1c 1.2px, transparent 1.2px), radial-gradient(#181a1c 1.2px, #3a3e42 1.2px)',
+                backgroundSize: '8px 8px',
+                backgroundPosition: '0 0, 4px 4px'
+              }}
+            />
 
-            {/* Top right pill: 4 VERTICAL PRESET INDICATOR LEDS (Interactive!) */}
+            {/* Flush-Drilled Aperture LEDs for Presets (Right Side of Grille) */}
             <div
-              className="absolute right-3.5 top-3.5 bg-[#2b2e32] border border-[#18191a] rounded-full px-1.5 py-2 flex flex-col gap-2.5 z-20 shadow-inner"
-              title="Preset Indicator LEDs: Click any LED to switch preset"
+              className="absolute right-3.5 top-5 bg-[#25282b]/95 border border-[#141617] rounded-full px-1.5 py-3 flex flex-col gap-3 z-30 shadow-inner"
+              title="Preset Status LEDs (Click to switch)"
             >
               {[0, 1, 2, 3].map((slot) => {
                 const isActive = activeSlot === slot;
@@ -160,87 +158,96 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
                     key={slot}
                     onClick={() => onSelectSlot(slot)}
                     className="group relative flex items-center justify-center cursor-pointer"
-                    title={`Slot ${slot + 1} (Preset ${slot})`}
+                    title={`Select Preset ${slot + 1} (${slot})`}
                   >
                     <div
-                      className={`w-3.5 h-3.5 rounded-full border border-[#18191a] transition-all ${
-                        isActive
-                          ? 'bg-[#e52817] shadow-[0_0_8px_#e52817,0_0_2px_#ffffff]'
-                          : 'bg-[#181a1c] group-hover:bg-[#444]'
+                      className={`w-2.5 h-2.5 rounded-full border border-[#141617] transition-all duration-100 ${
+                        isActive ? 'te-led-active' : 'te-led-inactive'
                       }`}
                     />
-                    {/* Small slot number indicator on hover */}
-                    <span className="absolute right-5 text-[8px] font-mono font-bold text-white bg-black px-1 opacity-0 group-hover:opacity-100 pointer-events-none">
-                      P{slot}
+                    {/* Laser-etched numeral label on hover */}
+                    <span className="absolute right-4 text-[8px] font-mono text-[#ffffff] opacity-0 group-hover:opacity-100 pointer-events-none bg-black px-1">
+                      {slot + 1}
                     </span>
                   </button>
                 );
               })}
             </div>
 
-            {/* Lower right pill: 4 Sample dots */}
-            <div className="absolute right-3.5 bottom-3.5 bg-[#2b2e32] border border-[#18191a] rounded-full px-1.5 py-2 flex flex-col gap-2 z-20 opacity-70">
+            {/* Sample Indicator Dots (Lower right) */}
+            <div className="absolute right-3.5 bottom-4 bg-[#25282b]/80 border border-[#141617] rounded-full px-1.5 py-2 flex flex-col gap-2 z-20 opacity-60">
               {[0, 1, 2, 3].map((s) => (
-                <div key={s} className="w-2.5 h-2.5 rounded-full bg-[#181a1c] border border-[#18191a]" />
+                <div key={s} className="w-2 h-2 rounded-full bg-[#181a1c] border border-[#141617]" />
               ))}
             </div>
+
+            {/* Subtle internal acoustic capsule shadow */}
+            <div className="absolute left-6 top-10 w-24 h-24 rounded-full bg-black/20 blur-md pointer-events-none" />
           </div>
 
-          {/* BOTTOM HALF: Lower Faceplate (`MIC FX`) */}
+          {/* BOTTOM SECTION: Off-White Lower Faceplate (`MIC FX`) */}
           <div
-            onClick={triggerShakeWithAnim}
-            className="h-[145px] bg-[#e4e3df] p-4 flex flex-col justify-between relative cursor-pointer hover:bg-[#eae9e6] transition-colors"
-            title="Click microphone faceplate to trigger Shake gesture"
+            onClick={triggerShakeWithFlash}
+            className={`h-[175px] bg-[#e2e4e2] p-4 flex flex-col justify-between relative cursor-pointer transition-colors ${
+              isShakingFlash ? 'bg-[#ffeedd]' : 'hover:bg-[#ebedeb]'
+            }`}
+            title="Click faceplate to trigger physical accelerometer Shake sensor"
           >
-            {/* 4 Faceplate Screws */}
-            <div className="absolute top-2.5 left-2.5 w-3 h-3 rounded-full border border-[#18191a] bg-[#dbdddb] flex items-center justify-center">
-              <span className="w-2 h-[1px] bg-[#18191a] rotate-45" />
+            {/* 4 Precision Milled Corner Screws */}
+            <div className="absolute top-2.5 left-2.5 w-2.5 h-2.5 rounded-full border border-[#141617] bg-[#d5d7d5] flex items-center justify-center">
+              <span className="w-1.5 h-[1px] bg-[#141617] rotate-45" />
             </div>
-            <div className="absolute top-2.5 right-2.5 w-3 h-3 rounded-full border border-[#18191a] bg-[#dbdddb] flex items-center justify-center">
-              <span className="w-2 h-[1px] bg-[#18191a] rotate-45" />
+            <div className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full border border-[#141617] bg-[#d5d7d5] flex items-center justify-center">
+              <span className="w-1.5 h-[1px] bg-[#141617] rotate-45" />
             </div>
-            <div className="absolute bottom-2.5 left-2.5 w-3 h-3 rounded-full border border-[#18191a] bg-[#dbdddb] flex items-center justify-center">
-              <span className="w-2 h-[1px] bg-[#18191a] rotate-45" />
+            <div className="absolute bottom-2.5 left-2.5 w-2.5 h-2.5 rounded-full border border-[#141617] bg-[#d5d7d5] flex items-center justify-center">
+              <span className="w-1.5 h-[1px] bg-[#141617] rotate-45" />
             </div>
-            <div className="absolute bottom-2.5 right-2.5 w-3 h-3 rounded-full border border-[#18191a] bg-[#dbdddb] flex items-center justify-center">
-              <span className="w-2 h-[1px] bg-[#18191a] rotate-45" />
+            <div className="absolute bottom-2.5 right-2.5 w-2.5 h-2.5 rounded-full border border-[#141617] bg-[#d5d7d5] flex items-center justify-center">
+              <span className="w-1.5 h-[1px] bg-[#141617] rotate-45" />
             </div>
 
-            {/* The Printed TE Logo: MIC FX */}
-            <div className="flex items-baseline gap-1 mt-4 ml-2">
-              <span className="text-3xl font-mono font-bold tracking-tight text-[#18191a]">
+            {/* Authentic TE Typography: MIC FX */}
+            <div className="flex items-baseline gap-1 mt-3 ml-1">
+              <span className="text-2xl font-bold tracking-tight text-[#141617] font-mono">
                 MIC
               </span>
-              <span className="text-sm font-mono font-bold tracking-wider text-[#f15a22] -mt-3">
+              <span className="text-xs font-bold tracking-wider text-[#f15a22] font-mono -mt-2">
                 FX
               </span>
             </div>
 
-            {/* Status Footer */}
-            <div className="flex items-center justify-between ml-2 mr-2 text-[8px] font-mono text-[#656d73]">
-              <span>EP–2350</span>
-              <span className="text-[#18191a] font-bold">PRESET {activeSlot} ACTIVE</span>
+            {/* Unit Specifications & Accelerometer Status */}
+            <div className="flex flex-col gap-1 ml-1 mr-1 text-[9px] font-mono text-[#73787a] border-t border-[#d2d5d2] pt-2">
+              <div className="flex justify-between items-center">
+                <span>EP–2350</span>
+                <span className="text-[#141617] font-semibold">SLOT {activeSlot + 1}</span>
+              </div>
+              <div className="flex justify-between items-center text-[8px]">
+                <span>SENSOR:</span>
+                <span className={isShakingFlash ? 'text-[#f15a22] font-bold animate-pulse' : 'text-[#73787a]'}>
+                  {isShakingFlash ? 'SHAKE IMPULSE' : 'READY'}
+                </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Cable Strain Relief at Bottom */}
-      <div className="w-7 h-10 flex flex-col items-center -mt-6 z-0">
-        <div className="w-6 h-2 bg-[#18191a]" />
-        <div className="w-5 h-2 bg-[#2b2e32] border-x border-[#18191a]" />
-        <div className="w-4 h-2 bg-[#2b2e32] border-x border-[#18191a]" />
-        <div className="w-3 h-8 bg-[#121212]" />
+      {/* Tapered Silicone Cable Relief at Bottom */}
+      <div className="w-6 h-12 flex flex-col items-center -mt-6 z-0">
+        <div className="w-5 h-2 bg-[#141617]" />
+        <div className="w-4 h-2 bg-[#2a2d30] border-x border-[#141617]" />
+        <div className="w-3.5 h-2 bg-[#2a2d30] border-x border-[#141617]" />
+        <div className="w-3 h-2 bg-[#2a2d30] border-x border-[#141617]" />
+        <div className="w-2.5 h-10 bg-[#141617]" />
       </div>
 
-      {/* Interactive Helper Legend */}
-      <div className="mt-2 text-center text-[9px] font-mono text-[#4e5559] flex items-center gap-2">
-        <span className="bg-[#dbdddb] px-1.5 py-0.5 border border-[#18191a] font-bold">
-          ORANGE LEVER: {Math.round(handlePos * 100)}%
-        </span>
-        <span className="bg-[#dbdddb] px-1.5 py-0.5 border border-[#18191a] font-bold">
-          LED: PRESET {activeSlot}
-        </span>
+      {/* Minimalist Micro-Readout */}
+      <div className="mt-1 flex items-center gap-2 text-[9px] font-mono text-[#73787a]">
+        <span>LEVER: <strong className="text-[#141617]">{(handlePos * 100).toFixed(0)}%</strong></span>
+        <span>•</span>
+        <span>PRESET: <strong className="text-[#f15a22]">{activeSlot + 1} / 4</strong></span>
       </div>
     </div>
   );

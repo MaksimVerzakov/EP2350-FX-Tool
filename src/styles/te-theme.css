@@ -3,30 +3,26 @@
 @tailwind utilities;
 
 :root {
-  /* TE Drafting Canvas & Faceplate Palette */
-  --te-desk-bg: #abb5ba;
-  --te-grid-line: #9aa5ab;
-  --te-faceplate: #dbdddb;
-  --te-faceplate-dark: #c8cbc8;
-  --te-paper-bg: #f5f5f5;
-  --te-chassis: #221f1f;
-  --te-btn-bg: #232424;
-  --te-btn-active: #151515;
-  --te-btn-contrast: #8a959a;
-  --te-lcd-bg: #000005;
-  --te-lcd-text: #00a69c;
-  --te-lcd-dim: rgba(0, 166, 156, 0.25);
-  --te-lcd-amber: #ff9d00;
+  /* Teenage Engineering Authentic Alabaster Desk Palette */
+  --te-desk-bg: #eceeed;
+  --te-desk-line: #dfe2e0;
+  --te-faceplate: #e2e4e2;
+  --te-faceplate-dark: #c9ccc9;
+  --te-paper-bg: #ffffff;
+  --te-chassis: #1a1b1c;
+  --te-btn-bg: #222324;
+  --te-btn-hover: #303233;
+  --te-btn-active: #141516;
   --te-accent-orange: #f15a22;
   --te-accent-hover: #ff6d38;
+  --te-accent-ochre: #d99b26;
+  --te-accent-cyan: #00a69c;
   --te-led-red: #e52817;
-  --te-teal: #00a69c;
-  --te-white: #ffffff;
-  --te-text-main: #18191a;
-  --te-text-muted: #656d73;
-  --te-border: #121212;
-  --te-knob-base: #818e95;
-  --te-knob-border: #221f1f;
+  --te-led-off: #2e2424;
+  --te-text-main: #141617;
+  --te-text-muted: #73787a;
+  --te-border: #141617;
+  --te-hairline: #d2d5d2;
 }
 
 * {
@@ -37,29 +33,36 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Blueprint / Drafting Graph-Paper Desk Background */
+/* Alabaster Desk Canvas with Hairline Architectural Grid */
 body {
   background-color: var(--te-desk-bg);
   background-image: 
-    linear-gradient(var(--te-grid-line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--te-grid-line) 1px, transparent 1px);
+    linear-gradient(var(--te-desk-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--te-desk-line) 1px, transparent 1px);
   background-size: 24px 24px;
   color: var(--te-text-main);
-  font-family: 'IBM Plex Mono', monospace, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
   user-select: none;
   min-height: 100vh;
 }
 
-/* Custom Industrial Scrollbar */
+/* Tabular Numerals and Code */
+.font-mono, .te-tabular {
+  font-family: 'IBM Plex Mono', monospace, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Custom Minimal Scrollbar */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 4px;
+  height: 4px;
 }
 ::-webkit-scrollbar-track {
-  background: #dbdddb;
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #818e95;
+  background: #b5b9b6;
+  border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--te-accent-orange);
@@ -69,114 +72,81 @@ body {
 .te-btn {
   background-color: var(--te-btn-bg);
   color: #ffffff;
-  border: 1.5px solid var(--te-border);
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  border: 1px solid var(--te-border);
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  padding: 5px 10px;
+  padding: 6px 12px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 6px;
   transition: all 0.08s ease;
-  box-shadow: 2px 2px 0px var(--te-border);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .te-btn:hover {
-  background-color: #323535;
+  background-color: var(--te-btn-hover);
 }
 
 .te-btn:active, .te-btn.active {
-  transform: translate(2px, 2px);
-  box-shadow: 0px 0px 0px var(--te-border);
+  transform: translateY(1px);
+  background-color: var(--te-btn-active);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
 .te-btn-orange {
   background-color: var(--te-accent-orange);
-  color: #000000;
-  box-shadow: 2px 2px 0px var(--te-border);
+  color: #ffffff;
+  border-color: #ba3807;
+  box-shadow: 0 1px 2px rgba(241, 90, 34, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .te-btn-orange:hover {
   background-color: var(--te-accent-hover);
 }
 
-.te-btn-orange:active, .te-btn-orange.active {
-  transform: translate(2px, 2px);
-  box-shadow: 0px 0px 0px var(--te-border);
+.te-btn-orange:active {
+  background-color: #d14612;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .te-btn-secondary {
-  background-color: #dbdddb;
-  color: #18191a;
-  box-shadow: 2px 2px 0px var(--te-border);
+  background-color: #ffffff;
+  color: var(--te-text-main);
+  border: 1px solid #141617;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 .te-btn-secondary:hover {
-  background-color: #e5e6e5;
+  background-color: #f5f5f5;
 }
 
-/* TE Modular Badge Style (Top Left EP Block) */
-.te-badge-orange {
-  background-color: var(--te-accent-orange);
-  border: 2px solid var(--te-border);
-  box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.2);
-}
-
-.te-badge-dark {
-  background-color: #dbdddb;
-  border: 2px solid var(--te-border);
-  box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.2);
-}
-
-/* TE Screws */
-.te-screw-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #dbdddb;
-  border: 1px solid #18191a;
-  display: inline-block;
-}
-
-.te-screw-dot-dark {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #232424;
-  border: 1px solid #18191a;
-  display: inline-block;
-}
-
-/* Physical Paper Binder / Ledger Sheet (Right Column) */
+/* Paper Ledger Card (Right Column) */
 .te-ledger-card {
-  background-color: var(--te-paper-bg);
-  border: 2px solid var(--te-border);
-  box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.18);
+  background-color: #ffffff;
+  border: 1px solid #141617;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 10px 24px -4px rgba(0, 0, 0, 0.08);
   position: relative;
 }
 
-/* TE Hardware Unit (Left Column) */
+/* Hardware Device Unit (Left Column) */
 .te-device-container {
-  box-shadow: 10px 10px 0px rgba(0, 0, 0, 0.2);
-  border: 2px solid var(--te-border);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08), 0 16px 32px -6px rgba(0, 0, 0, 0.12);
+  border: 1px solid #141617;
   background-color: var(--te-faceplate);
 }
 
-/* LED Indicator Glowing */
+/* LED Glow Styles */
 .te-led-active {
   background-color: var(--te-led-red);
-  box-shadow: 0 0 6px #e52817, 0 0 10px rgba(229, 40, 23, 0.8);
-}
-.te-led-inactive {
-  background-color: #372424;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.6);
+  box-shadow: 0 0 8px rgba(229, 40, 23, 0.9), 0 0 2px #ffffff;
 }
 
-/* LCD Glow */
-.te-lcd-glow {
-  text-shadow: 0 0 8px rgba(0, 166, 156, 0.6), 0 0 2px rgba(0, 166, 156, 0.9);
+.te-led-inactive {
+  background-color: var(--te-led-off);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.8);
 }

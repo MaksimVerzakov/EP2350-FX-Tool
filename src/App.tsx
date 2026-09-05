@@ -95,10 +95,10 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center px-4 py-4 md:px-8 md:py-6 font-mono select-none">
+    <div className="min-h-screen flex flex-col items-center px-4 py-4 md:px-8 md:py-6 select-none font-sans">
       <div className="max-w-[1240px] w-full flex flex-col gap-6">
         
-        {/* 1. TOP BANNER (Modular Badge & Cable) */}
+        {/* 1. TOP BANNER (Modular Badge & Action Buttons) */}
         <TopBanner
           packName={pack.name}
           onUpdatePackName={(name) => setPack({ ...pack, name })}
@@ -124,9 +124,9 @@ export const App: React.FC = () => {
             {/* Minimalist [ HELP ] button (matching ep-sample-tool bottom button) */}
             <button
               onClick={() => setShowHelpModal(true)}
-              className="mt-4 bg-[#dbdddb] border border-[#18191a] text-[10px] font-mono font-bold px-4 py-1 hover:bg-[#fff] shadow-sm flex items-center gap-1.5"
+              className="mt-3 bg-[#ffffff] border border-[#141617] text-[10px] font-bold px-4 py-1 hover:bg-[#f5f5f5] shadow-2xs flex items-center gap-1.5 transition-colors"
             >
-              <HelpCircle className="w-3 h-3" /> HELP
+              <HelpCircle className="w-3 h-3 text-[#73787a]" /> HELP
             </button>
           </div>
 
@@ -142,52 +142,55 @@ export const App: React.FC = () => {
 
       {/* HELP & HARDWARE INSTRUCTIONS MODAL */}
       {showHelpModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="te-ledger-card max-w-lg w-full bg-[#f8f9f8] p-5 flex flex-col gap-3">
-            <div className="flex items-center justify-between border-b-2 border-[#18191a] pb-2">
-              <span className="font-mono font-bold text-xs uppercase tracking-wider text-[#f15a22]">
-                EP–2350 HARDWARE GUIDE & INSTALLATION
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-2xs flex items-center justify-center p-4 z-50">
+          <div className="te-ledger-card max-w-lg w-full bg-[#ffffff] p-6 flex flex-col gap-3 shadow-xl">
+            <div className="flex items-center justify-between border-b border-[#e2e4e2] pb-2.5">
+              <span className="font-bold text-xs uppercase tracking-wider text-[#f15a22]">
+                EP–2350 HARDWARE SETUP & GUIDE
               </span>
               <button
                 onClick={() => setShowHelpModal(false)}
-                className="p-1 text-[#18191a] hover:text-[#f15a22]"
+                className="p-1 text-[#141617] hover:text-[#f15a22]"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="text-[11px] font-mono leading-relaxed text-[#232424] flex flex-col gap-2.5">
-              <p>
-                <strong>HOW TO INSTALL YOUR CONFIG ON THE MIC:</strong>
-                <br />
-                1. Connect your EP–2350 fx mic via USB-C to your computer.
-                <br />
-                2. Power on by pressing the handle. A disk called <code>fx-mic disk</code> will appear.
-                <br />
-                3. Click <strong>EXPORT CONFIG.JSON</strong> and save the file into the root folder of <code>fx-mic disk</code>.
-                <br />
-                4. Eject <code>fx-mic disk</code>. The mic will restart and load your presets.
-              </p>
+            <div className="text-[12px] leading-relaxed text-[#141617] flex flex-col gap-3">
+              <div>
+                <strong className="block text-[11px] uppercase tracking-wide text-[#73787a] mb-1">
+                  1. Installing Configuration to Mic
+                </strong>
+                <p className="text-[#333]">
+                  Connect EP–2350 via USB-C to your computer and push the handle to power on. A disk called <code className="bg-[#f0f2f0] px-1 py-0.5 border border-[#d2d5d2] font-mono text-[11px]">fx-mic disk</code> will mount. Click <strong>EXPORT CONFIG.JSON</strong> and drop the file directly into the root folder. Eject the disk to reboot with the new effects.
+                </p>
+              </div>
 
-              <p>
-                <strong>PRESET SWITCHING:</strong>
-                <br />
-                Click the orange button or the 4 vertical LEDs on the mic grille to switch between the 4 presets.
-              </p>
+              <div>
+                <strong className="block text-[11px] uppercase tracking-wide text-[#73787a] mb-1">
+                  2. Preset Selection
+                </strong>
+                <p className="text-[#333]">
+                  Click the physical orange button or the 4 vertical LEDs on the mic grille to switch between presets 1 through 4.
+                </p>
+              </div>
 
-              <p>
-                <strong>RECOVERY MODE:</strong>
-                <br />
-                If the device freezes due to any broken file, connect to computer and hold the <strong>WHITE + GREY</strong> buttons during startup.
-              </p>
+              <div>
+                <strong className="block text-[11px] uppercase tracking-wide text-[#73787a] mb-1">
+                  3. Emergency Recovery
+                </strong>
+                <p className="text-[#333]">
+                  If the device freezes due to a broken file, hold the <strong>WHITE + GREY</strong> buttons during startup to boot into recovery.
+                </p>
+              </div>
             </div>
 
-            <div className="pt-2 border-t border-[#18191a] flex justify-end">
+            <div className="pt-3 border-t border-[#e2e4e2] flex justify-end">
               <button
                 onClick={() => setShowHelpModal(false)}
-                className="te-btn te-btn-orange text-xs py-1 px-4"
+                className="te-btn te-btn-orange text-xs py-1.5 px-4"
               >
-                CLOSE
+                GOT IT
               </button>
             </div>
           </div>

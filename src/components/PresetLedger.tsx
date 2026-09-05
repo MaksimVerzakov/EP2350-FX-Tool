@@ -9,6 +9,9 @@ interface PresetLedgerProps {
   onUpdatePreset: (updated: PresetConfig) => void;
 }
 
+// Iconic Teenage Engineering 4-Color Encoder Discipline
+const ENCODER_COLORS = ['#f15a22', '#00a69c', '#d99b26', '#4a4e52'];
+
 export const PresetLedger: React.FC<PresetLedgerProps> = ({
   preset,
   onUpdatePreset
@@ -97,47 +100,47 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
   return (
     <div className="te-ledger-card w-full flex flex-col select-none overflow-hidden">
       {/* 1. TOP ORANGE HEADER TAB (styled after SAMPLE LIBRARY in ep-sample-tool) */}
-      <div className="bg-[#f15a22] text-black px-4 py-2.5 border-b-2 border-[#121212] flex flex-wrap items-center justify-between gap-2">
+      <div className="bg-[#f15a22] text-white px-4 py-2.5 border-b border-[#141617] flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <span className="font-mono font-bold text-xs tracking-wider uppercase">
-            PRESET {preset.pos + 1} DETAILS
+          <span className="font-mono font-bold text-xs tracking-wider uppercase text-white">
+            PRESET {preset.pos + 1}
           </span>
-          <span className="text-[10px] font-mono text-[#000] font-semibold opacity-75">
-            [SLOT {preset.pos}]
+          <span className="text-[10px] font-mono text-white/70 font-medium">
+            // SLOT {preset.pos}
           </span>
         </div>
 
-        {/* Preset Name & Note */}
+        {/* Harmonious Header Inputs (Balanced dark translucent inputs) */}
         <div className="flex items-center gap-2">
           <input
             type="text"
             value={preset.name || ''}
             onChange={(e) => onUpdatePreset({ ...preset, name: e.target.value.toUpperCase() })}
             placeholder="PRESET NAME"
-            className="bg-[#000005] text-[#ffffff] px-2 py-0.5 font-mono text-[11px] font-bold tracking-wider uppercase border border-[#18191a] focus:outline-none focus:ring-1 focus:ring-white max-w-[160px]"
+            className="bg-black/25 text-white placeholder:text-white/50 px-2 py-1 font-mono text-[11px] font-bold tracking-wider uppercase border border-black/30 focus:outline-none focus:bg-black/40 focus:border-white max-w-[160px]"
             maxLength={20}
           />
           <input
             type="text"
             value={preset.comment || ''}
             onChange={(e) => onUpdatePreset({ ...preset, comment: e.target.value })}
-            placeholder="Preset notes / description..."
-            className="bg-[#fff] text-[#18191a] px-2 py-0.5 font-mono text-[10px] border border-[#18191a] focus:outline-none hidden md:block max-w-[220px]"
+            placeholder="Usage note..."
+            className="bg-black/15 text-white placeholder:text-white/50 px-2 py-1 font-mono text-[10px] border border-black/25 focus:outline-none focus:bg-black/30 hidden md:block max-w-[220px]"
           />
         </div>
       </div>
 
       {/* 2. LEDGER CONTENT (White Paper Ledger Sheet) */}
-      <div className="p-4 bg-[#f8f9f8] flex flex-col gap-4">
+      <div className="p-4 bg-[#ffffff] flex flex-col gap-4">
         {/* Signal Chain Row Header */}
-        <div className="flex items-center justify-between border-b border-[#18191a] pb-1.5 text-[9px] font-mono font-bold text-[#656d73] uppercase tracking-wider">
-          <span>SIGNAL CHAIN (ORDER DETERMINES DSP FLOW)</span>
-          <span>{preset.list.length} EFFECTS</span>
+        <div className="flex items-center justify-between border-b border-[#e2e4e2] pb-1.5 text-[9px] font-mono font-semibold text-[#73787a] uppercase tracking-wider">
+          <span>DSP SIGNAL FLOW (ROW 01 &rarr; ROW {preset.list.length.toString().padStart(2, '0')})</span>
+          <span>{preset.list.length} EFFECT{preset.list.length !== 1 ? 'S' : ''}</span>
         </div>
 
         {/* Effects Ledger Rows */}
         {preset.list.length === 0 ? (
-          <div className="py-8 text-center text-[#818e95] font-mono text-xs border-2 border-dashed border-[#ccc]">
+          <div className="py-8 text-center text-[#73787a] font-mono text-xs border border-dashed border-[#d2d5d2]">
             NO EFFECTS IN PRESET. INSERT AN EFFECT BELOW.
           </div>
         ) : (
@@ -153,67 +156,71 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
               return (
                 <div
                   key={effect.id}
-                  className={`border-2 border-[#18191a] p-3 shadow-sm ${
-                    isSample ? 'bg-[#edf3ed]' : 'bg-[#ffffff]'
+                  className={`border p-3 transition-colors ${
+                    isSample 
+                      ? 'bg-[#f4f7f4] border-[#00a69c]/60 shadow-2xs' 
+                      : 'bg-[#ffffff] border-[#d2d5d2] hover:border-[#141617] shadow-2xs'
                   }`}
                 >
                   {/* Row Header */}
-                  <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-1.5 mb-2">
+                  <div className="flex items-center justify-between border-b border-[#eceeed] pb-1.5 mb-2">
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-[10px] font-bold text-[#f15a22]">
                         {(idx + 1).toString().padStart(2, '0')}.
                       </span>
-                      <span className="font-mono text-xs font-bold uppercase text-[#18191a]">
+                      <span className="font-bold text-xs uppercase tracking-tight text-[#141617]">
                         {meta.displayName}
                       </span>
                       {meta.singleInstance && (
-                        <span className="text-[8px] font-mono text-[#818e95]">
+                        <span className="text-[8px] font-mono text-[#73787a]">
                           *1x
                         </span>
                       )}
 
-                      {/* Active Mod Badges */}
-                      {isHandleTarget && (
-                        <span className="bg-[#f15a22] text-black text-[8px] font-mono font-bold px-1">
-                          HANDLE
-                        </span>
-                      )}
-                      {isShakeTarget && (
-                        <span className="bg-[#232424] text-white text-[8px] font-mono font-bold px-1">
-                          SHAKE
-                        </span>
-                      )}
-                      {isLfoTarget && (
-                        <span className="bg-[#00a69c] text-black text-[8px] font-mono font-bold px-1">
-                          LFO
-                        </span>
-                      )}
+                      {/* In-situ Mod Badges */}
+                      <div className="flex items-center gap-1">
+                        {isHandleTarget && (
+                          <span className="bg-[#f15a22] text-white text-[7px] font-mono font-bold px-1 py-0.2">
+                            HANDLE &rarr; {preset.handle?.param?.toUpperCase()}
+                          </span>
+                        )}
+                        {isShakeTarget && (
+                          <span className="bg-[#141617] text-white text-[7px] font-mono font-bold px-1 py-0.2">
+                            SHAKE &rarr; {preset.shake?.param?.toUpperCase()}
+                          </span>
+                        )}
+                        {isLfoTarget && (
+                          <span className="bg-[#00a69c] text-white text-[7px] font-mono font-bold px-1 py-0.2">
+                            LFO &rarr; {preset.lfo?.param?.toUpperCase()}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Controls: Reorder & Delete */}
                     <div className="flex items-center gap-1.5">
-                      <div className="flex items-center border border-[#18191a] bg-[#f5f5f5]">
+                      <div className="flex items-center border border-[#d2d5d2] bg-[#f8f9f8]">
                         <button
                           disabled={idx === 0}
                           onClick={() => handleMove(idx, idx - 1)}
-                          className="p-1 hover:bg-[#e0e0e0] disabled:opacity-30 disabled:pointer-events-none"
+                          className="p-1 hover:bg-[#e8eae8] disabled:opacity-30 disabled:pointer-events-none"
                           title="Move Up"
                         >
-                          <ArrowUp className="w-3 h-3 text-[#18191a]" />
+                          <ArrowUp className="w-2.5 h-2.5 text-[#141617]" />
                         </button>
                         <button
                           disabled={idx === preset.list.length - 1}
                           onClick={() => handleMove(idx, idx + 1)}
-                          className="p-1 hover:bg-[#e0e0e0] disabled:opacity-30 disabled:pointer-events-none border-l border-[#18191a]"
+                          className="p-1 hover:bg-[#e8eae8] disabled:opacity-30 disabled:pointer-events-none border-l border-[#d2d5d2]"
                           title="Move Down"
                         >
-                          <ArrowDown className="w-3 h-3 text-[#18191a]" />
+                          <ArrowDown className="w-2.5 h-2.5 text-[#141617]" />
                         </button>
                       </div>
 
                       <button
                         onClick={() => handleDeleteEffect(idx)}
-                        className="p-1 text-[#818e95] hover:text-[#e52817]"
+                        className="p-1 text-[#73787a] hover:text-[#e52817]"
                         title="Remove effect"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -221,13 +228,20 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                     </div>
                   </div>
 
-                  {/* Knobs strip with direct numeric input */}
+                  {/* Knobs strip with TE 4-color encoder discipline */}
                   <div className="flex flex-wrap items-center gap-4 py-1">
-                    {meta.params.map((param) => {
+                    {meta.params.map((param, pIdx) => {
                       const currentVal =
                         typeof effect[param.name] === 'number'
                           ? effect[param.name]
                           : param.defaultVal;
+
+                      const isParamModulated =
+                        (isHandleTarget && preset.handle?.param === param.name) ||
+                        (isShakeTarget && preset.shake?.param === param.name) ||
+                        (isLfoTarget && preset.lfo?.param === param.name);
+
+                      const encoderColor = isSample ? '#00a69c' : ENCODER_COLORS[pIdx % ENCODER_COLORS.length];
 
                       return (
                         <Knob
@@ -243,7 +257,8 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                           }
                           onChange={(v) => handleUpdateEffect(idx, { ...effect, [param.name]: v })}
                           onReset={() => handleUpdateEffect(idx, { ...effect, [param.name]: param.defaultVal })}
-                          accentColor={isSample ? '#00a69c' : '#f15a22'}
+                          accentColor={encoderColor}
+                          isModulated={isParamModulated}
                         />
                       );
                     })}
@@ -255,21 +270,21 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
         )}
 
         {/* Insert Effect Bar */}
-        <div className="flex items-center gap-2 pt-2 border-t border-[#18191a]">
-          <span className="text-[10px] font-mono font-bold text-[#18191a] uppercase">
+        <div className="flex items-center gap-2 pt-2 border-t border-[#e2e4e2]">
+          <span className="text-[10px] font-bold text-[#141617] uppercase">
             INSERT EFFECT:
           </span>
           <select
             value={selectedEffectToAdd}
             onChange={(e) => setSelectedEffectToAdd(e.target.value as EffectType)}
-            className="bg-[#ffffff] text-[#18191a] text-xs font-mono font-bold px-2 py-1 border border-[#18191a] focus:outline-none"
+            className="bg-[#ffffff] text-[#141617] text-xs font-mono font-medium px-2 py-1 border border-[#d2d5d2] focus:outline-none focus:border-[#141617]"
           >
             {Object.keys(EFFECTS_REGISTRY).map((key) => {
               const meta = EFFECTS_REGISTRY[key as EffectType];
               const isSingleUsed = meta.singleInstance && existingTypes.has(key as EffectType);
               return (
                 <option key={key} value={key} disabled={isSingleUsed}>
-                  {meta.displayName} {isSingleUsed ? '(1x limit)' : ''}
+                  {meta.displayName} {isSingleUsed ? '(1x max)' : ''}
                 </option>
               );
             })}
@@ -283,13 +298,13 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
         </div>
 
         {/* 3. COMPACT MODULATION STRIP (Section 7.8 & 7.9) */}
-        <div className="mt-2 pt-3 border-t-2 border-[#18191a] flex flex-col gap-2 bg-[#f0f2f0] p-3 border border-[#18191a]">
-          <span className="text-[9px] font-mono font-bold text-[#18191a] uppercase tracking-wider">
-            MODULATION ROUTING:
+        <div className="mt-1 pt-3 border-t border-[#141617] flex flex-col gap-2 bg-[#f8f9f8] p-3 border border-[#d2d5d2]">
+          <span className="text-[9px] font-bold text-[#141617] uppercase tracking-wider">
+            MODULATION ROUTING MATRIX:
           </span>
 
           {/* Handle row */}
-          <div className="flex flex-wrap items-center justify-between text-[10px] font-mono gap-2 border-b border-[#ddd] pb-1.5">
+          <div className="flex flex-wrap items-center justify-between text-[10px] font-mono gap-2 border-b border-[#e2e4e2] pb-1.5">
             <span className="text-[#f15a22] font-bold">1. HANDLE LEVER:</span>
             <div className="flex items-center gap-2">
               <span>TARGET:</span>
@@ -311,7 +326,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                     });
                   }
                 }}
-                className="bg-[#fff] border border-[#18191a] px-1 py-0.5 text-[9px] font-mono"
+                className="bg-[#fff] border border-[#d2d5d2] px-1 py-0.5 text-[9px] font-mono"
               >
                 {preset.list.map((fx, i) => (
                   <option key={fx.id} value={i}>
@@ -335,14 +350,14 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                     }
                   })
                 }
-                className="w-14 bg-[#fff] border border-[#18191a] px-1 py-0.5 text-[9px] font-mono text-center"
+                className="w-14 bg-[#fff] border border-[#d2d5d2] px-1 py-0.5 text-[9px] font-mono text-center"
               />
             </div>
           </div>
 
           {/* Shake row */}
-          <div className="flex flex-wrap items-center justify-between text-[10px] font-mono gap-2 border-b border-[#ddd] pb-1.5">
-            <span className="text-[#18191a] font-bold">2. SHAKE IMPULSE:</span>
+          <div className="flex flex-wrap items-center justify-between text-[10px] font-mono gap-2 border-b border-[#e2e4e2] pb-1.5">
+            <span className="text-[#141617] font-bold">2. SHAKE SENSOR:</span>
             <div className="flex items-center gap-2">
               <span>TARGET:</span>
               <select
@@ -356,7 +371,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                     shake: { row: r, param: m?.params[0]?.name || 'mix', depth: 0.5 }
                   });
                 }}
-                className="bg-[#fff] border border-[#18191a] px-1 py-0.5 text-[9px] font-mono"
+                className="bg-[#fff] border border-[#d2d5d2] px-1 py-0.5 text-[9px] font-mono"
               >
                 {preset.list.map((fx, i) => (
                   <option key={fx.id} value={i}>
@@ -379,14 +394,14 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                     }
                   })
                 }
-                className="w-14 bg-[#fff] border border-[#18191a] px-1 py-0.5 text-[9px] font-mono text-center"
+                className="w-14 bg-[#fff] border border-[#d2d5d2] px-1 py-0.5 text-[9px] font-mono text-center"
               />
             </div>
           </div>
 
           {/* LFO row */}
           <div className="flex flex-wrap items-center justify-between text-[10px] font-mono gap-2">
-            <span className="text-[#00a69c] font-bold">3. LFO OSCILLATOR:</span>
+            <span className="text-[#00a69c] font-bold">3. LFO CYCLER:</span>
             <div className="flex items-center gap-2">
               <span>SHAPE:</span>
               <select
@@ -400,7 +415,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                     }
                   })
                 }
-                className="bg-[#fff] border border-[#18191a] px-1 py-0.5 text-[9px] font-mono"
+                className="bg-[#fff] border border-[#d2d5d2] px-1 py-0.5 text-[9px] font-mono"
               >
                 <option value="sine">SINE</option>
                 <option value="square">SQUARE</option>
@@ -422,9 +437,9 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                     }
                   })
                 }
-                className="w-12 bg-[#fff] border border-[#18191a] px-1 py-0.5 text-[9px] font-mono text-center"
+                className="w-12 bg-[#fff] border border-[#d2d5d2] px-1 py-0.5 text-[9px] font-mono text-center"
               />
-              <span className="text-[8px] text-[#818e95]">Hz</span>
+              <span className="text-[8px] text-[#73787a]">Hz</span>
             </div>
           </div>
         </div>
