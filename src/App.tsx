@@ -109,8 +109,8 @@ export const App: React.FC = () => {
         {/* 2. MAIN TWO-COLUMN WORKBENCH DESK */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          {/* LEFT COLUMN: Hardware Mic Device + Compact Audition Player */}
-          <div className="lg:col-span-5 flex flex-col items-center gap-2">
+          {/* LEFT COLUMN: Hardware Mic Device + Compact Audition Player (Fixed Height with Internal Scroll) */}
+          <div className="lg:col-span-5 w-full lg:h-[660px] lg:overflow-y-auto lg:overflow-x-hidden flex flex-col items-center gap-2 pr-1 pb-4">
             <MicDevice
               activeSlot={activeSlot}
               onSelectSlot={setActiveSlot}
@@ -134,7 +134,9 @@ export const App: React.FC = () => {
           <div className="lg:col-span-7 flex flex-col items-center">
             <PresetLedger
               preset={activePreset}
+              totalPresets={pack.presets.length}
               onUpdatePreset={handleUpdateActivePreset}
+              onSelectPreset={setActiveSlot}
             />
           </div>
         </div>
@@ -168,10 +170,10 @@ export const App: React.FC = () => {
 
               <div>
                 <strong className="block text-[11px] uppercase tracking-wide text-[#73787a] mb-1">
-                  2. Slot Selection
+                  2. Preset Selection
                 </strong>
                 <p className="text-[#333]">
-                  Click the physical orange button or the 4 vertical LEDs on the mic grille to switch between slots 1 through 4.
+                  Click the physical orange button or the 4 vertical LEDs on the mic grille, or use the Preset up/down controls on the editor to switch between presets 1 through 4.
                 </p>
               </div>
 

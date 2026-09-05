@@ -15,7 +15,9 @@ import {
 
 interface PresetLedgerProps {
   preset: PresetConfig;
+  totalPresets?: number;
   onUpdatePreset: (updated: PresetConfig) => void;
+  onSelectPreset?: (index: number) => void;
 }
 
 // Iconic Teenage Engineering 4-Color Encoder Discipline
@@ -23,7 +25,9 @@ const ENCODER_COLORS = ['#f15a22', '#00a69c', '#d99b26', '#4a4e52'];
 
 export const PresetLedger: React.FC<PresetLedgerProps> = ({
   preset,
-  onUpdatePreset
+  totalPresets = 4,
+  onUpdatePreset,
+  onSelectPreset
 }) => {
   // Dual-Bus Active Tab: Bus 1 (Primary) or Bus 2 (Parallel)
   const [activeBus, setActiveBus] = useState<1 | 2>(1);
@@ -511,46 +515,45 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
   return (
     <div className="te-ledger-card w-full flex flex-col select-none overflow-hidden min-h-[580px]">
       {/* 1. TOP ORANGE HEADER TAB */}
-      <div className="bg-[#f15a22] text-white px-4 py-2.5 border-b border-[#141617] flex flex-col gap-2">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="font-mono font-bold text-sm tracking-wider uppercase text-white bg-black/30 px-2 py-0.5 rounded-[1px]">
-              SLOT {preset.pos + 1}
+      <div className="bg-[#f15a22] text-white px-4 py-2 border-b border-[#141617] flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          {/* Preset Badge with Up/Down Controls */}
+          <div className="flex items-center bg-black/40 border border-white/30 rounded-[1px] font-mono shadow-2xs">
+            <span className="px-2.5 py-1 font-bold text-xs tracking-wider uppercase text-white">
+              PRESET {preset.pos + 1}
             </span>
-            <span className="text-[10px] font-mono text-white/80 font-medium">
-              (OF 4 HARDWARE SLOTS)
-            </span>
+            <div className="flex items-center border-l border-white/20 divide-x divide-white/20">
+              <button
+                onClick={() => onSelectPreset?.((preset.pos - 1 + totalPresets) % totalPresets)}
+                className="p-1 hover:bg-white hover:text-black text-white/90 transition-colors cursor-pointer"
+                title={`Previous Preset (Preset ${((preset.pos - 1 + totalPresets) % totalPresets) + 1})`}
+              >
+                <ArrowUp className="w-3 h-3" />
+              </button>
+              <button
+                onClick={() => onSelectPreset?.((preset.pos + 1) % totalPresets)}
+                className="p-1 hover:bg-white hover:text-black text-white/90 transition-colors cursor-pointer"
+                title={`Next Preset (Preset ${((preset.pos + 1) % totalPresets) + 1})`}
+              >
+                <ArrowDown className="w-3 h-3" />
+              </button>
+            </div>
           </div>
 
-          {/* High-Contrast Slot Name Field */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-[9px] font-mono font-bold text-white/80">NAME:</span>
-            <input
-              type="text"
-              value={preset.name || ''}
-              onChange={(e) => onUpdatePreset({ ...preset, name: e.target.value.toUpperCase() })}
-              placeholder="SLOT NAME"
-              className="bg-black text-white placeholder:text-white/40 px-2.5 py-1 font-mono text-xs font-bold tracking-wider uppercase border border-white/30 focus:outline-none focus:border-white w-[180px]"
-              maxLength={20}
-            />
-          </div>
-        </div>
-
-        {/* Clear, High-Contrast Usage Comment / Description Field */}
-        <div className="flex items-center gap-2 pt-1 border-t border-white/20">
-          <span className="text-[8.5px] font-mono font-bold text-white/80 shrink-0">NOTE:</span>
+          {/* Name Field Directly Beside Preset Number (No "NAME:" Label) */}
           <input
             type="text"
-            value={preset.comment || ''}
-            onChange={(e) => onUpdatePreset({ ...preset, comment: e.target.value })}
-            placeholder="Add preset notes / usage hints (e.g., push handle to open filter)..."
-            className="w-full bg-black/30 text-white placeholder:text-white/60 px-2 py-0.5 font-mono text-[10.5px] border border-white/25 focus:outline-none focus:bg-black/50 focus:border-white"
+            value={preset.name || ''}
+            onChange={(e) => onUpdatePreset({ ...preset, name: e.target.value.toUpperCase() })}
+            placeholder="PRESET NAME"
+            className="bg-black text-white placeholder:text-white/40 px-2.5 py-1 font-mono text-xs font-bold tracking-wider uppercase border border-white/30 focus:outline-none focus:border-white w-[200px]"
+            maxLength={20}
           />
         </div>
       </div>
 
       {/* 2. DUAL PARALLEL BUS PHYSICAL SWITCH BAR */}
-      <div className="bg-[#eceeed] border-b border-[#141617] flex flex-wrap items-center justify-between px-4 py-2 gap-3">
+      <div className="bg-[#eceeed] border-b border-[#141617] flex items-center justify-center px-4 py-2">
         {/* PHYSICAL TE MECHANICAL SLIDER SWITCH */}
         <div className="flex items-center gap-3 bg-[#f8f9f8] px-3 py-1.5 rounded-[2px] border border-[#d2d5d2] shadow-2xs">
           {/* Left Label: BUS 1 */}
@@ -614,13 +617,6 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
             <span className={activeBus === 2 ? 'text-[#d99b26]' : ''}>BUS 2</span>
           </button>
         </div>
-
-        {/* Global Bus Overview Badge */}
-        <div className="hidden sm:flex items-center gap-2 text-[9px] font-mono text-[#73787a]">
-          <span>PARALLEL MIXING CORE</span>
-          <span className="w-1 h-1 rounded-full bg-[#73787a]" />
-          <span>{preset.list.length} TOTAL FX</span>
-        </div>
       </div>
 
       {/* 3. FOCUSED EFFECT CHAIN CANVAS (NO ROW NUMBERS) */}
@@ -651,14 +647,25 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
             {currentBusItems.map((item, bIdx) => (
               <React.Fragment key={item.fx.id}>
                 {renderEffectCard(item, bIdx)}
-                {/* Vertical Connector Line between effects */}
+                {/* Vertical Connector Line & Mid-Chain Insert Plus Button */}
                 {bIdx < currentBusItems.length - 1 && (
-                  <div className="flex flex-col items-center my-1">
+                  <div className="flex flex-col items-center relative my-1.5">
                     <div
-                      className={`w-[2px] h-5 ${
+                      className={`w-[2px] h-7 ${
                         activeBus === 1 ? 'bg-[#00a69c]' : 'bg-[#d99b26]'
                       }`}
                     />
+                    <button
+                      onClick={() => setAddMenuTarget({ insertIndex: bIdx + 1 })}
+                      className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white border-2 flex items-center justify-center shadow-xs cursor-pointer text-[9px] font-bold transition-transform hover:scale-125 z-10 ${
+                        activeBus === 1
+                          ? 'border-[#00a69c] text-[#00a69c] hover:bg-[#00a69c] hover:text-white'
+                          : 'border-[#d99b26] text-[#d99b26] hover:bg-[#d99b26] hover:text-white'
+                      }`}
+                      title={`Insert effect here in Bus ${activeBus}`}
+                    >
+                      +
+                    </button>
                   </div>
                 )}
               </React.Fragment>

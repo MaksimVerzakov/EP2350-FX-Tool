@@ -104,7 +104,7 @@ export function parseConfigJson(rawJson: string): { pack?: PackConfig; error?: s
         slotMap.set(slot, {
           id: `preset-fill-${slot}-${Date.now()}`,
           pos: slot,
-          name: `SLOT ${slot + 1}`,
+          name: `PRESET ${slot + 1}`,
           comment: '',
           list: [{ id: `fx-${slot}-s`, effect: 'SAMPLE' }]
         });

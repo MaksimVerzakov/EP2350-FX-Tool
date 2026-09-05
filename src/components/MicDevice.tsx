@@ -234,7 +234,7 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
                 onClick={() => onSelectSlot(slot)}
                 className="cursor-pointer group"
               >
-                <title>{`Slot ${slot + 1}`}</title>
+                <title>{`Preset ${slot + 1}`}</title>
                 {/* Hit area */}
                 <circle cx={521.08} cy={cy} r={9} fill="transparent" />
 
@@ -402,7 +402,7 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
           TRIGGER SHAKE
         </button>
         <span>•</span>
-        <span>SLOT {activeSlot + 1}/4</span>
+        <span>PRESET {activeSlot + 1}/4</span>
       </div>
     </div>
   );
