@@ -112,7 +112,7 @@ export const AudioPlayerCompact: React.FC<AudioPlayerCompactProps> = ({ onShakeT
   }, [isPlaying]);
 
   return (
-    <div className="w-[200px] bg-[#ffffff] border border-[#141617] shadow-xs p-3 flex flex-col gap-2.5 select-none mt-2">
+    <div className="w-[240px] bg-[#ffffff] border border-[#141617] shadow-xs p-3 flex flex-col gap-2.5 select-none mt-2">
       {/* Header bar */}
       <div className="flex items-center justify-between border-b border-[#e2e4e2] pb-1.5">
         <span className="text-[9px] font-bold text-[#141617] tracking-wider uppercase flex items-center gap-1.5">
@@ -121,7 +121,7 @@ export const AudioPlayerCompact: React.FC<AudioPlayerCompactProps> = ({ onShakeT
         </span>
         <button
           onClick={onShakeTrigger}
-          className="text-[8px] font-mono font-semibold bg-[#f0f2f0] hover:bg-[#e2e4e2] px-1.5 py-0.5 border border-[#d2d5d2] text-[#141617] tracking-tight transition-colors"
+          className="text-[8px] font-mono font-semibold bg-[#f0f2f0] hover:bg-[#e2e4e2] px-1.5 py-0.5 border border-[#d2d5d2] text-[#141617] tracking-tight transition-colors cursor-pointer"
           title="Trigger physical accelerometer shake impulse"
         >
           SHAKE SENSOR
@@ -130,7 +130,7 @@ export const AudioPlayerCompact: React.FC<AudioPlayerCompactProps> = ({ onShakeT
 
       {/* Real-time Oscilloscope Display */}
       <div className="w-full h-[36px] bg-[#141617] border border-[#141617] overflow-hidden">
-        <canvas ref={canvasRef} width={200} height={36} className="w-full h-full block" />
+        <canvas ref={canvasRef} width={240} height={36} className="w-full h-full block" />
       </div>
 
       {/* Main Play / Stop Button */}

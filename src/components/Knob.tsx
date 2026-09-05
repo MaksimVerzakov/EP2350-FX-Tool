@@ -13,6 +13,7 @@ interface KnobProps {
   accentColor?: string;
   size?: number;
   isModulated?: boolean;
+  modulationSource?: string;
 }
 
 export const Knob: React.FC<KnobProps> = ({
@@ -26,20 +27,24 @@ export const Knob: React.FC<KnobProps> = ({
   onChange,
   onReset,
   accentColor = '#f15a22',
-  size = 40,
-  isModulated = false
+  size = 28,
+  isModulated = false,
+  modulationSource
 }) => {
   const [isDragging, setIsDragging] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [inputValue, setInputValue] = useState(value.toString());
   const dragStartY = useRef(0);
   const dragStartVal = useRef(value);
 
-  // Sync internal input string when external value changes
+  // Keep internal string in sync when not editing
   useEffect(() => {
-    setInputValue(value.toString());
-  }, [value]);
+    if (!isEditing) {
+      setInputValue(value.toString());
+    }
+  }, [value, isEditing]);
 
-  // Map value to rotation angle: -135deg to +135deg (total 270 degrees)
+  // Map value to angle: -135deg to +135deg (270deg total travel)
   const normalized = Math.max(0, Math.min(1, (value - min) / (max - min || 1)));
   const angle = -135 + normalized * 270;
 
@@ -53,9 +58,9 @@ export const Knob: React.FC<KnobProps> = ({
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
       if (!isDragging) return;
-      const dy = dragStartY.current - e.clientY; // drag up = increase
+      const dy = dragStartY.current - e.clientY; // up = increase
       const range = max - min;
-      const sensitivity = 160;
+      const sensitivity = 140; // 140px for full travel
       const delta = (dy / sensitivity) * range;
       let newVal = dragStartVal.current + delta;
       newVal = Math.max(min, Math.min(max, newVal));
@@ -101,43 +106,51 @@ export const Knob: React.FC<KnobProps> = ({
     } else {
       setInputValue(value.toString());
     }
+    setIsEditing(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       handleCommitInput();
-      (e.target as HTMLInputElement).blur();
     } else if (e.key === 'Escape') {
       setInputValue(value.toString());
-      (e.target as HTMLInputElement).blur();
+      setIsEditing(false);
     }
   };
 
-  // SVG Arc calculation for clean continuous gauge
-  const radius = 16;
-  const strokeWidth = 2.5;
-  const circumference = 2 * Math.PI * radius;
-  // 270 degrees out of 360 degrees = 0.75 arc
-  const arcLength = circumference * 0.75;
-  const strokeDashoffset = arcLength * (1 - normalized);
+  // Format compact value display
+  const renderValueText = () => {
+    if (displayValue) return displayValue;
+    if (Number.isInteger(value)) return `${value}${unit}`;
+    return `${value.toFixed(2)}${unit}`;
+  };
+
+  // Radius values
+  const rOuter = size / 2;
+  const rInner = rOuter * 0.72;
+  const rCenter = rOuter * 0.28;
 
   return (
     <div
-      className="flex flex-col items-center select-none group"
-      style={{ minWidth: size + 16 }}
-      title={`${label}: ${displayValue || value + unit} (Double-click to reset)`}
+      className="flex flex-col items-center select-none group min-w-[56px] px-1 py-0.5"
+      title={`${label}: ${displayValue || value + unit} (Drag dial or click value to type)`}
     >
-      {/* Parameter Label (Swiss micro-grotesque) */}
-      <div className="flex items-center gap-1 mb-1 max-w-[80px]">
-        {isModulated && (
-          <span className="w-1.5 h-1.5 rounded-full bg-[#f15a22] animate-pulse" title="Modulated parameter" />
-        )}
-        <span className="text-[9px] font-bold tracking-wider text-[#6a6f73] uppercase text-center truncate">
+      {/* Parameter Label + Mod Indicator */}
+      <div className="flex items-center gap-1 mb-1 max-w-[70px]">
+        <span className="text-[8.5px] font-te-bold tracking-wider text-[#5b6670] uppercase truncate leading-none">
           {label}
         </span>
+        {isModulated && (
+          <span
+            className="text-[7px] font-te-bold px-0.5 py-[0.5px] bg-[#f15a22] text-white rounded-[1px] leading-none uppercase"
+            title={`Modulated by ${modulationSource || 'source'}`}
+          >
+            {modulationSource ? modulationSource.slice(0, 3) : 'MOD'}
+          </span>
+        )}
       </div>
 
-      {/* Rotary Dial */}
+      {/* TE Orthographic Encoder Cap */}
       <div
         className="relative cursor-ns-resize"
         style={{ width: size, height: size }}
@@ -145,67 +158,78 @@ export const Knob: React.FC<KnobProps> = ({
         onWheel={handleWheel}
         onDoubleClick={onReset}
       >
-        <svg width={size} height={size} viewBox="0 0 40 40">
-          {/* Background Track Arc */}
+        <svg
+          width={size}
+          height={size}
+          viewBox={`0 0 ${size} ${size}`}
+          className="transition-transform duration-75 active:scale-95"
+        >
+          {/* Subtle Outer Drop Ring */}
           <circle
-            cx="20"
-            cy="20"
-            r={radius}
-            fill="none"
-            stroke="#d8dbd8"
-            strokeWidth={strokeWidth}
-            strokeDasharray={`${arcLength} ${circumference}`}
-            strokeLinecap="round"
-            transform="rotate(135 20 20)"
+            cx={rOuter}
+            cy={rOuter}
+            r={rOuter - 0.5}
+            fill="#e2e4e2"
+            stroke="#231f20"
+            strokeWidth="0.8"
           />
 
-          {/* Active Value Arc */}
+          {/* Color-Coded Bevel Ring */}
           <circle
-            cx="20"
-            cy="20"
-            r={radius}
-            fill="none"
-            stroke={accentColor}
-            strokeWidth={strokeWidth}
-            strokeDasharray={`${arcLength} ${circumference}`}
-            strokeDashoffset={strokeDashoffset}
-            strokeLinecap="round"
-            transform="rotate(135 20 20)"
+            cx={rOuter}
+            cy={rOuter}
+            r={rInner}
+            fill={accentColor}
+            stroke="#231f20"
+            strokeWidth="0.75"
           />
 
-          {/* Dial Center */}
-          <circle cx="20" cy="20" r="11" fill="#222324" stroke="#141617" strokeWidth="1" />
+          {/* Center Cap Dimple */}
+          <circle
+            cx={rOuter}
+            cy={rOuter}
+            r={rCenter}
+            fill="#231f20"
+          />
 
-          {/* Minimalist Needle Indicator */}
-          <g transform={`rotate(${angle} 20 20)`}>
-            <line x1="20" y1="11" x2="20" y2="15" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" />
+          {/* Precision Indicator Pointer Line */}
+          <g transform={`rotate(${angle} ${rOuter} ${rOuter})`}>
+            <line
+              x1={rOuter}
+              y1={rCenter}
+              x2={rOuter}
+              y2={rOuter - 1.5}
+              stroke="#231f20"
+              strokeWidth="1.2"
+              strokeLinecap="round"
+            />
           </g>
         </svg>
       </div>
 
-      {/* Direct Numeric Input Box */}
-      <div className="mt-1 flex items-center justify-center bg-[#ffffff] border border-[#d2d5d2] hover:border-[#141617] focus-within:border-[#f15a22] transition-colors px-1 py-0.5 max-w-[62px]">
-        <input
-          type="text"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onBlur={handleCommitInput}
-          onKeyDown={handleKeyDown}
-          className="w-full text-[10px] font-mono font-medium text-[#141617] text-center bg-transparent focus:outline-none"
-        />
-        {unit && (
-          <span className="text-[8px] font-mono text-[#73787a] select-none pl-0.5">
-            {unit}
-          </span>
+      {/* Direct Numeric Input / Click-to-Type Scrubber */}
+      <div className="mt-1 h-4 flex items-center justify-center">
+        {isEditing ? (
+          <input
+            autoFocus
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onBlur={handleCommitInput}
+            onKeyDown={handleKeyDown}
+            className="w-12 text-[9.5px] font-mono font-bold text-[#192a3c] text-center bg-white border border-[#f15a22] rounded-[1px] outline-none px-0.5 py-0 leading-none"
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setIsEditing(true)}
+            className="text-[9.5px] font-mono font-medium text-[#192a3c] hover:text-[#f15a22] hover:bg-[#eaeaea] px-1 py-[1px] rounded-[1px] transition-colors leading-none cursor-text truncate max-w-[62px]"
+          >
+            {renderValueText()}
+          </button>
         )}
       </div>
-
-      {/* Formatted display scale label (e.g. 500Hz, +2st) */}
-      {displayValue && (
-        <span className="text-[8px] font-mono text-[#73787a] mt-0.5 truncate max-w-[70px]">
-          {displayValue}
-        </span>
-      )}
     </div>
   );
 };
+

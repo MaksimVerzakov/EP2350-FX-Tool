@@ -2,27 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'TechnoType-bold';
+  src: url('/assets/Technotype-Bold.woff2') format('woff2');
+  font-weight: bold;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'TechnoType-medium';
+  src: url('/assets/Technotype-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'TechnoType-regular';
+  src: url('/assets/Technotype-Regular.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+}
+
 :root {
-  /* Teenage Engineering Authentic Alabaster Desk Palette */
-  --te-desk-bg: #eceeed;
-  --te-desk-line: #dfe2e0;
-  --te-faceplate: #e2e4e2;
-  --te-faceplate-dark: #c9ccc9;
-  --te-paper-bg: #ffffff;
-  --te-chassis: #1a1b1c;
-  --te-btn-bg: #222324;
-  --te-btn-hover: #303233;
-  --te-btn-active: #141516;
-  --te-accent-orange: #f15a22;
-  --te-accent-hover: #ff6d38;
-  --te-accent-ochre: #d99b26;
-  --te-accent-cyan: #00a69c;
-  --te-led-red: #e52817;
-  --te-led-off: #2e2424;
-  --te-text-main: #141617;
-  --te-text-muted: #73787a;
-  --te-border: #141617;
-  --te-hairline: #d2d5d2;
+  /* Teenage Engineering Authentic Palette from EP Sample Tool */
+  --base-txt: #e5e6e6;
+  --primary: #abb5ba;
+  --dark: #d2d3d4;
+  --accent: #f15a22;
+  --field-blue: #192a3c;
+  --field-white: #f5f5f5;
+  --field-black: #231f20;
+  --ep-display-teal: #00a69c;
+  --ep-faceplate: #dbdddb;
+  --ep-chassis-dark: #41464a;
+  --ep-led-red: #e52817;
+  --ep-led-off: #202222;
+  --unit: 23.52px;
 }
 
 * {
@@ -33,120 +48,142 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Alabaster Desk Canvas with Hairline Architectural Grid */
-body {
-  background-color: var(--te-desk-bg);
-  background-image: 
-    linear-gradient(var(--te-desk-line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--te-desk-line) 1px, transparent 1px);
-  background-size: 24px 24px;
-  color: var(--te-text-main);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+html, body {
+  background-image: url('/assets/bg.png');
+  background-repeat: repeat;
+  background-position: center center;
+  background-size: contain;
+  color: var(--field-blue);
+  font-family: 'TechnoType-bold', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
   user-select: none;
   min-height: 100vh;
 }
 
-/* Tabular Numerals and Code */
+@media (min-width: 700px) {
+  html, body {
+    background-image: url('/assets/bg_x2.png');
+  }
+}
+
+@media (min-width: 1400px) and (min-height: 1089px) {
+  html, body {
+    background-size: 1400px;
+  }
+}
+
+.font-te-bold {
+  font-family: 'TechnoType-bold', sans-serif;
+}
+
+.font-te-medium {
+  font-family: 'TechnoType-medium', sans-serif;
+}
+
+.font-te-regular {
+  font-family: 'TechnoType-regular', sans-serif;
+}
+
 .font-mono, .te-tabular {
-  font-family: 'IBM Plex Mono', monospace, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'IBM Plex Mono', monospace;
   font-variant-numeric: tabular-nums;
 }
 
 /* Custom Minimal Scrollbar */
 ::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #b5b9b6;
+  background: #9aa5ab;
   border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--te-accent-orange);
+  background: var(--accent);
 }
 
 /* TE Tactile Mechanical Button */
 .te-btn {
-  background-color: var(--te-btn-bg);
+  background-color: #232424;
   color: #ffffff;
-  border: 1px solid var(--te-border);
-  font-family: 'Inter', sans-serif;
+  border: 1px solid #000000;
+  font-family: 'TechnoType-bold', sans-serif;
   font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  padding: 6px 12px;
+  padding: 5px 12px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
   transition: all 0.08s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .te-btn:hover {
-  background-color: var(--te-btn-hover);
+  background-color: #353839;
 }
 
 .te-btn:active, .te-btn.active {
   transform: translateY(1px);
-  background-color: var(--te-btn-active);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+  background-color: #121212;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .te-btn-orange {
-  background-color: var(--te-accent-orange);
+  background-color: var(--accent);
   color: #ffffff;
-  border-color: #ba3807;
-  box-shadow: 0 1px 2px rgba(241, 90, 34, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  border-color: #000000;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 
 .te-btn-orange:hover {
-  background-color: var(--te-accent-hover);
+  background-color: #ff6d38;
 }
 
 .te-btn-orange:active {
   background-color: #d14612;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
 .te-btn-secondary {
-  background-color: #ffffff;
-  color: var(--te-text-main);
-  border: 1px solid #141617;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  background-color: #dbdddb;
+  color: #192a3c;
+  border: 1px solid #000000;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
 }
 
 .te-btn-secondary:hover {
-  background-color: #f5f5f5;
+  background-color: #eaeaea;
 }
 
-/* Paper Ledger Card (Right Column) */
+/* Authentic Paper Notebook Binder (Right Column) */
+.te-notebook-card,
 .te-ledger-card {
   background-color: #ffffff;
-  border: 1px solid #141617;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 10px 24px -4px rgba(0, 0, 0, 0.08);
+  border: 1px solid #231f20;
+  box-shadow: 
+    3px 3px 0px rgba(0, 0, 0, 0.1),
+    6px 6px 0px rgba(0, 0, 0, 0.05),
+    10px 14px 20px rgba(0, 0, 0, 0.12);
   position: relative;
 }
 
 /* Hardware Device Unit (Left Column) */
-.te-device-container {
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08), 0 16px 32px -6px rgba(0, 0, 0, 0.12);
-  border: 1px solid #141617;
-  background-color: var(--te-faceplate);
+.te-device-shadow {
+  filter: drop-shadow(4px 6px 16px rgba(0, 0, 0, 0.22)) drop-shadow(1px 2px 4px rgba(0, 0, 0, 0.18));
 }
 
 /* LED Glow Styles */
 .te-led-active {
-  background-color: var(--te-led-red);
-  box-shadow: 0 0 8px rgba(229, 40, 23, 0.9), 0 0 2px #ffffff;
+  background-color: var(--ep-led-red);
+  box-shadow: 0 0 6px #e52817, 0 0 2px #ffffff;
 }
 
 .te-led-inactive {
-  background-color: var(--te-led-off);
-  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.8);
+  background-color: var(--ep-led-off);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.9);
 }
