@@ -147,12 +147,12 @@ export const Knob: React.FC<KnobProps> = ({
 
   return (
     <div
-      className="flex flex-col items-center select-none group w-14 min-w-[56px] px-0.5 py-0.5"
+      className="flex flex-col items-center select-none group w-[68px] min-w-[68px] px-0.5 py-0.5"
       title={`${label}: ${displayValue || value + unit} (Drag dial or type in box)`}
     >
       {/* Parameter Label + Mod Indicator */}
       <div className="flex items-center justify-between w-full mb-0.5 px-0.5">
-        <span className="text-[8px] font-te-bold tracking-wider text-[#5b6670] uppercase truncate leading-none">
+        <span className="text-[8px] font-te-bold tracking-wider text-[#5b6670] uppercase truncate leading-none text-center w-full">
           {label}
         </span>
         {isModulated && (
@@ -233,7 +233,7 @@ export const Knob: React.FC<KnobProps> = ({
           onBlur={() => commitValue(inputText)}
           onKeyDown={handleKeyDown}
           onDoubleClick={onReset}
-          className="w-full h-[17px] text-[9px] font-mono font-bold text-[#192a3c] text-center bg-white border border-[#d2d5d2] hover:border-[#141617] focus:border-[#f15a22] rounded-[1px] outline-none px-0.5 py-0 leading-none transition-colors"
+          className="w-[52px] h-[17px] text-[9px] font-mono font-bold text-[#192a3c] text-center bg-white border border-[#d2d5d2] hover:border-[#141617] focus:border-[#f15a22] rounded-[1px] outline-none px-0.5 py-0 leading-none transition-colors"
         />
       </div>
     </div>

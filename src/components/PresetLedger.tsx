@@ -488,7 +488,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
 
         {/* Knobs Strip: 2 lines for DELAY (8 knobs), inline for <= 5 knobs */}
         {meta.params.length > 5 ? (
-          <div className="grid grid-cols-4 gap-x-2 gap-y-2.5 pt-1.5 w-full justify-items-center">
+          <div className="grid grid-cols-4 gap-x-6 gap-y-3.5 pt-1.5 w-fit">
             {meta.params.map((param, pIdx) => {
               const currentVal =
                 typeof effect[param.name] === 'number'
@@ -506,10 +506,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                   ? 'SHK'
                   : undefined;
 
-              // 4 EP Sidekick colors, repeating for row 2 (or 5th knob)
-              const encoderColor = isSample
-                ? '#f15a22'
-                : EP_SIDEKICK_KNOB_COLORS[pIdx % 4];
+              const encoderColor = EP_SIDEKICK_KNOB_COLORS[pIdx % 4];
 
               return (
                 <Knob
@@ -534,7 +531,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
             })}
           </div>
         ) : (
-          <div className="flex flex-wrap items-center justify-start gap-2.5 pt-1.5">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3.5 pt-1.5">
             {meta.params.map((param, pIdx) => {
               const currentVal =
                 typeof effect[param.name] === 'number'
@@ -552,10 +549,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                   ? 'SHK'
                   : undefined;
 
-              // 4 EP Sidekick colors, knob 5 repeats color 1 (#f15a22)
-              const encoderColor = isSample
-                ? '#f15a22'
-                : EP_SIDEKICK_KNOB_COLORS[pIdx % 4];
+              const encoderColor = EP_SIDEKICK_KNOB_COLORS[pIdx % 4];
 
               return (
                 <Knob
