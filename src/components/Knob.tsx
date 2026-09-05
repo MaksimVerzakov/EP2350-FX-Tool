@@ -27,7 +27,7 @@ export const Knob: React.FC<KnobProps> = ({
   onChange,
   onReset,
   accentColor = '#f15a22',
-  size = 28,
+  size = 36,
   isModulated = false,
   modulationSource
 }) => {
@@ -138,14 +138,21 @@ export const Knob: React.FC<KnobProps> = ({
   const rInner = rOuter * 0.72;
   const rCenter = rOuter * 0.28;
 
+  // Dark accent detection for high-contrast pointer and dimple
+  const isDarkAccent =
+    accentColor === '#231f20' ||
+    accentColor === '#000000' ||
+    accentColor === '#141617' ||
+    accentColor === '#181a1b';
+
   return (
     <div
-      className="flex flex-col items-center select-none group w-12 px-0.5 py-0.5"
+      className="flex flex-col items-center select-none group w-14 min-w-[56px] px-0.5 py-0.5"
       title={`${label}: ${displayValue || value + unit} (Drag dial or type in box)`}
     >
       {/* Parameter Label + Mod Indicator */}
       <div className="flex items-center justify-between w-full mb-0.5 px-0.5">
-        <span className="text-[7.5px] font-te-bold tracking-wider text-[#5b6670] uppercase truncate leading-none">
+        <span className="text-[8px] font-te-bold tracking-wider text-[#5b6670] uppercase truncate leading-none">
           {label}
         </span>
         {isModulated && (
@@ -197,18 +204,20 @@ export const Knob: React.FC<KnobProps> = ({
             cx={rOuter}
             cy={rOuter}
             r={rCenter}
-            fill="#231f20"
+            fill={isDarkAccent ? '#141617' : '#231f20'}
+            stroke={isDarkAccent ? '#424548' : undefined}
+            strokeWidth={isDarkAccent ? '0.5' : undefined}
           />
 
-          {/* Precision Indicator Pointer Line */}
+          {/* Precision Indicator Pointer Line: White on dark knobs, dark on light knobs */}
           <g transform={`rotate(${angle} ${rOuter} ${rOuter})`}>
             <line
               x1={rOuter}
               y1={rCenter}
               x2={rOuter}
               y2={rOuter - 1.5}
-              stroke="#231f20"
-              strokeWidth="1.2"
+              stroke={isDarkAccent ? '#ffffff' : '#231f20'}
+              strokeWidth={isDarkAccent ? '1.4' : '1.2'}
               strokeLinecap="round"
             />
           </g>
@@ -224,7 +233,7 @@ export const Knob: React.FC<KnobProps> = ({
           onBlur={() => commitValue(inputText)}
           onKeyDown={handleKeyDown}
           onDoubleClick={onReset}
-          className="w-full h-[15px] text-[8.5px] font-mono font-bold text-[#192a3c] text-center bg-white border border-[#d2d5d2] hover:border-[#141617] focus:border-[#f15a22] rounded-[1px] outline-none px-0.5 py-0 leading-none transition-colors"
+          className="w-full h-[17px] text-[9px] font-mono font-bold text-[#192a3c] text-center bg-white border border-[#d2d5d2] hover:border-[#141617] focus:border-[#f15a22] rounded-[1px] outline-none px-0.5 py-0 leading-none transition-colors"
         />
       </div>
     </div>

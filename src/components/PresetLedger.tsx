@@ -20,8 +20,10 @@ interface PresetLedgerProps {
   onSelectPreset?: (index: number) => void;
 }
 
-// Iconic Teenage Engineering 4-Color Encoder Discipline
-const ENCODER_COLORS = ['#f15a22', '#00a69c', '#d99b26', '#4a4e52'];
+// Teenage Engineering EP Sidekick 4-Knob Discipline (Orange, Cream, Slate Gray, Black)
+// From EP-136 hardware overview: GAIN (Orange), HIGH (Cream), MID (Slate Gray), LOW (Black)
+// For effects with 5 knobs (like REVERB), knob 5 repeats color 1 (#f15a22).
+const EP_SIDEKICK_KNOB_COLORS = ['#f15a22', '#e4e3df', '#989fa5', '#231f20'];
 
 export const PresetLedger: React.FC<PresetLedgerProps> = ({
   preset,
@@ -32,9 +34,26 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
   // Dual-Bus Active Tab: Bus 1 (Primary) or Bus 2 (Parallel)
   const [activeBus, setActiveBus] = useState<1 | 2>(1);
 
+  // Auto-scroll target when an effect is newly added or moved
+  const [lastAddedEffectId, setLastAddedEffectId] = useState<string | null>(null);
+
   // Popover state for effect addition
   const [addMenuTarget, setAddMenuTarget] = useState<null | { insertIndex?: number }>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to newly added or transferred effect
+  useEffect(() => {
+    if (lastAddedEffectId) {
+      const timer = setTimeout(() => {
+        const el = document.getElementById(`effect-card-${lastAddedEffectId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        setLastAddedEffectId(null);
+      }, 60);
+      return () => clearTimeout(timer);
+    }
+  }, [preset.list, lastAddedEffectId]);
 
   // Close popover when clicking outside
   useEffect(() => {
@@ -115,6 +134,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
       }
     }
 
+    setLastAddedEffectId(newEffect.id);
     onUpdatePreset(updatedPreset);
     setAddMenuTarget(null);
   };
@@ -210,6 +230,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
     }
 
     handleUpdateEffect(globalIdx, updated);
+    setLastAddedEffectId(fx.id);
     setActiveBus(destinationBus); // Auto-switch tab to see immediate impact
   };
 
@@ -264,6 +285,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
 
     return (
       <div
+        id={`effect-card-${effect.id}`}
         key={effect.id}
         className={`w-full border p-3 flex flex-col gap-2 transition-all duration-75 relative rounded-[0px] shadow-[2px_2px_0px_#141617] ${
           isBus2
@@ -464,50 +486,100 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
           )}
         </div>
 
-        {/* Compact Knobs Strip: 28px dials with always-visible numeric input */}
-        <div className="flex flex-wrap items-center gap-2.5 pt-1">
-          {meta.params.map((param, pIdx) => {
-            const currentVal =
-              typeof effect[param.name] === 'number'
-                ? effect[param.name]
-                : param.defaultVal;
+        {/* Knobs Strip: 2 lines for DELAY (8 knobs), inline for <= 5 knobs */}
+        {meta.params.length > 5 ? (
+          <div className="grid grid-cols-4 gap-x-2 gap-y-2.5 pt-1.5 w-full justify-items-center">
+            {meta.params.map((param, pIdx) => {
+              const currentVal =
+                typeof effect[param.name] === 'number'
+                  ? effect[param.name]
+                  : param.defaultVal;
 
-            const isParamModulated =
-              (isHandleTarget && preset.handle?.param === param.name) ||
-              (isShakeTarget && preset.shake?.param === param.name);
+              const isParamModulated =
+                (isHandleTarget && preset.handle?.param === param.name) ||
+                (isShakeTarget && preset.shake?.param === param.name);
 
-            const modSrc =
-              isHandleTarget && preset.handle?.param === param.name
-                ? 'HNDL'
-                : isShakeTarget && preset.shake?.param === param.name
-                ? 'SHK'
-                : undefined;
+              const modSrc =
+                isHandleTarget && preset.handle?.param === param.name
+                  ? 'HNDL'
+                  : isShakeTarget && preset.shake?.param === param.name
+                  ? 'SHK'
+                  : undefined;
 
-            const encoderColor = isSample
-              ? '#f15a22'
-              : ENCODER_COLORS[pIdx % ENCODER_COLORS.length];
+              // 4 EP Sidekick colors, repeating for row 2 (or 5th knob)
+              const encoderColor = isSample
+                ? '#f15a22'
+                : EP_SIDEKICK_KNOB_COLORS[pIdx % 4];
 
-            return (
-              <Knob
-                key={param.name}
-                label={param.label}
-                value={currentVal}
-                min={param.min}
-                max={param.max}
-                step={param.step}
-                unit={param.unit}
-                displayValue={
-                  param.displayScale ? param.displayScale(currentVal) : undefined
-                }
-                onChange={(v) => handleUpdateEffect(globalIdx, { ...effect, [param.name]: v })}
-                onReset={() => handleUpdateEffect(globalIdx, { ...effect, [param.name]: param.defaultVal })}
-                accentColor={encoderColor}
-                isModulated={isParamModulated}
-                modulationSource={modSrc}
-              />
-            );
-          })}
-        </div>
+              return (
+                <Knob
+                  key={param.name}
+                  label={param.label}
+                  value={currentVal}
+                  min={param.min}
+                  max={param.max}
+                  step={param.step}
+                  unit={param.unit}
+                  displayValue={
+                    param.displayScale ? param.displayScale(currentVal) : undefined
+                  }
+                  onChange={(v) => handleUpdateEffect(globalIdx, { ...effect, [param.name]: v })}
+                  onReset={() => handleUpdateEffect(globalIdx, { ...effect, [param.name]: param.defaultVal })}
+                  accentColor={encoderColor}
+                  size={36}
+                  isModulated={isParamModulated}
+                  modulationSource={modSrc}
+                />
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center justify-start gap-2.5 pt-1.5">
+            {meta.params.map((param, pIdx) => {
+              const currentVal =
+                typeof effect[param.name] === 'number'
+                  ? effect[param.name]
+                  : param.defaultVal;
+
+              const isParamModulated =
+                (isHandleTarget && preset.handle?.param === param.name) ||
+                (isShakeTarget && preset.shake?.param === param.name);
+
+              const modSrc =
+                isHandleTarget && preset.handle?.param === param.name
+                  ? 'HNDL'
+                  : isShakeTarget && preset.shake?.param === param.name
+                  ? 'SHK'
+                  : undefined;
+
+              // 4 EP Sidekick colors, knob 5 repeats color 1 (#f15a22)
+              const encoderColor = isSample
+                ? '#f15a22'
+                : EP_SIDEKICK_KNOB_COLORS[pIdx % 4];
+
+              return (
+                <Knob
+                  key={param.name}
+                  label={param.label}
+                  value={currentVal}
+                  min={param.min}
+                  max={param.max}
+                  step={param.step}
+                  unit={param.unit}
+                  displayValue={
+                    param.displayScale ? param.displayScale(currentVal) : undefined
+                  }
+                  onChange={(v) => handleUpdateEffect(globalIdx, { ...effect, [param.name]: v })}
+                  onReset={() => handleUpdateEffect(globalIdx, { ...effect, [param.name]: param.defaultVal })}
+                  accentColor={encoderColor}
+                  size={36}
+                  isModulated={isParamModulated}
+                  modulationSource={modSrc}
+                />
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   };
@@ -560,68 +632,119 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
       </div>
 
       {/* 2. DUAL PARALLEL BUS PHYSICAL SWITCH BAR */}
-      <div className="bg-[#eceeed] border-b border-[#141617] flex items-center justify-center px-4 py-1.5 shrink-0">
-        {/* PHYSICAL TE MECHANICAL SLIDER SWITCH */}
-        <div className="flex items-center gap-3 bg-[#f8f9f8] px-3 py-1.5 rounded-[0px] border border-[#141617] shadow-[1px_1px_0px_#141617]">
-          {/* Left Label: BUS 1 */}
+      <div className="bg-[#eceeed] border-b border-[#141617] flex items-center justify-center px-4 py-2 shrink-0 select-none">
+        {/* PHYSICAL TE MECHANICAL DUAL BUS CONSOLE */}
+        <div className="flex items-center justify-between bg-[#f8f9f8] px-3 py-1.5 rounded-[0px] border border-[#141617] shadow-[1px_1px_0px_#141617] w-full max-w-[460px]">
+          {/* Left Station: BUS 1 */}
           <button
+            type="button"
             onClick={() => setActiveBus(1)}
-            className={`flex items-center gap-1.5 font-mono text-[11px] font-bold tracking-wider uppercase transition-colors cursor-pointer ${
-              activeBus === 1 ? 'text-[#141617]' : 'text-[#8a9092] hover:text-[#141617]'
-            }`}
+            className="flex items-center gap-2.5 flex-1 justify-start group cursor-pointer focus:outline-none"
+            title="Switch to Bus 1 (Primary signal path)"
           >
-            <span className={activeBus === 1 ? 'text-[#00a69c]' : ''}>BUS 1</span>
-            <span
-              className={`text-[8.5px] px-1.5 py-0.5 rounded-[0px] font-mono transition-colors ${
-                activeBus === 1
-                  ? 'bg-[#00a69c] text-white font-bold'
-                  : 'bg-black/10 text-[#73787a]'
-              }`}
-            >
-              {bus1Items.length} FX
-            </span>
-          </button>
+            <div className="flex items-center gap-1.5">
+              {/* Status LED Indicator */}
+              <span
+                className={`w-2.5 h-2.5 rounded-full border border-black/40 transition-all ${
+                  activeBus === 1
+                    ? 'bg-[#00a69c] shadow-[0_0_8px_#00a69c]'
+                    : 'bg-black/15'
+                }`}
+              />
+              <div className="flex flex-col items-start leading-tight">
+                <span
+                  className={`font-mono text-[11px] font-bold tracking-wider uppercase transition-colors ${
+                    activeBus === 1 ? 'text-[#141617]' : 'text-[#8a9092] group-hover:text-[#141617]'
+                  }`}
+                >
+                  BUS 1
+                </span>
+                <span className="font-mono text-[8px] text-[#73787a] tracking-tight uppercase">
+                  PRIMARY
+                </span>
+              </div>
+            </div>
 
-          {/* Physical Orange Slider Switch */}
-          <button
-            onClick={() => setActiveBus(activeBus === 1 ? 2 : 1)}
-            className="relative w-14 h-6 bg-[#181a1b] rounded-[0px] border border-[#000000] shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)] p-0.5 cursor-pointer flex items-center focus:outline-none"
-            title={`Switch to Bus ${activeBus === 1 ? 2 : 1}`}
-            aria-label={`Toggle between Bus 1 and Bus 2, currently Bus ${activeBus}`}
-          >
-            {/* Recessed slider channel */}
-            <div className="absolute inset-x-2 h-[2px] bg-black/90 top-1/2 -translate-y-1/2 rounded-full" />
-
-            {/* Teenage Engineering Orange Switch Cap with 45° Tactile Facet */}
+            {/* Symmetrical TE LCD-Style Tally Counter */}
             <div
-              className={`w-6 h-5 bg-[#f15a22] rounded-[1px] border border-[#000000] shadow-[2px_2px_0px_#000000,inset_0_1px_0_rgba(255,255,255,0.4)] flex items-center justify-center gap-[2px] transition-transform duration-200 ease-out z-10 ${
-                activeBus === 1 ? 'translate-x-0' : 'translate-x-[26px]'
+              className={`flex items-center gap-1 px-2 py-0.5 font-mono text-[10px] font-bold rounded-[1px] border border-[#141617] shadow-[1px_1px_0px_#141617] transition-all ${
+                activeBus === 1
+                  ? 'bg-[#00a69c] text-white'
+                  : 'bg-[#e4e7e5] text-[#73787a]'
               }`}
             >
-              {/* 3 tactile physical grip micro-ribs */}
-              <span className="w-[1.5px] h-3 bg-black/30 rounded-full" />
-              <span className="w-[1.5px] h-3 bg-black/30 rounded-full" />
-              <span className="w-[1.5px] h-3 bg-black/30 rounded-full" />
+              <span>{String(bus1Items.length).padStart(2, '0')}</span>
+              <span className="text-[8px] opacity-75 font-normal">FX</span>
             </div>
           </button>
 
-          {/* Right Label: BUS 2 */}
+          {/* Center Physical Slider Toggle Switch */}
+          <div className="px-3 shrink-0 flex items-center justify-center">
+            <button
+              type="button"
+              onClick={() => setActiveBus(activeBus === 1 ? 2 : 1)}
+              className="relative w-14 h-6 bg-[#181a1b] rounded-[0px] border border-[#000000] shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)] p-0.5 cursor-pointer flex items-center focus:outline-none"
+              title={`Toggle to Bus ${activeBus === 1 ? 2 : 1}`}
+              aria-label={`Toggle between Bus 1 and Bus 2, currently Bus ${activeBus}`}
+            >
+              {/* Recessed slider channel */}
+              <div className="absolute inset-x-2 h-[2px] bg-black/90 top-1/2 -translate-y-1/2 rounded-full" />
+
+              {/* Teenage Engineering Orange Switch Cap with 45° Tactile Facet */}
+              <div
+                className={`w-6 h-5 bg-[#f15a22] rounded-[1px] border border-[#000000] shadow-[2px_2px_0px_#000000,inset_0_1px_0_rgba(255,255,255,0.4)] flex items-center justify-center gap-[2px] transition-transform duration-200 ease-out z-10 ${
+                  activeBus === 1 ? 'translate-x-0' : 'translate-x-[26px]'
+                }`}
+              >
+                {/* 3 tactile physical grip micro-ribs */}
+                <span className="w-[1.5px] h-3 bg-black/30 rounded-full" />
+                <span className="w-[1.5px] h-3 bg-black/30 rounded-full" />
+                <span className="w-[1.5px] h-3 bg-black/30 rounded-full" />
+              </div>
+            </button>
+          </div>
+
+          {/* Right Station: BUS 2 */}
           <button
+            type="button"
             onClick={() => setActiveBus(2)}
-            className={`flex items-center gap-1.5 font-mono text-[11px] font-bold tracking-wider uppercase transition-colors cursor-pointer ${
-              activeBus === 2 ? 'text-[#141617]' : 'text-[#8a9092] hover:text-[#141617]'
-            }`}
+            className="flex items-center gap-2.5 flex-1 justify-end group cursor-pointer focus:outline-none"
+            title="Switch to Bus 2 (Parallel signal path)"
           >
-            <span
-              className={`text-[8.5px] px-1.5 py-0.5 rounded-[0px] font-mono transition-colors ${
+            {/* Symmetrical TE LCD-Style Tally Counter */}
+            <div
+              className={`flex items-center gap-1 px-2 py-0.5 font-mono text-[10px] font-bold rounded-[1px] border border-[#141617] shadow-[1px_1px_0px_#141617] transition-all ${
                 activeBus === 2
-                  ? 'bg-[#d99b26] text-white font-bold'
-                  : 'bg-black/10 text-[#73787a]'
+                  ? 'bg-[#d99b26] text-white'
+                  : 'bg-[#e4e7e5] text-[#73787a]'
               }`}
             >
-              {bus2Items.length} FX
-            </span>
-            <span className={activeBus === 2 ? 'text-[#d99b26]' : ''}>BUS 2</span>
+              <span>{String(bus2Items.length).padStart(2, '0')}</span>
+              <span className="text-[8px] opacity-75 font-normal">FX</span>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <div className="flex flex-col items-end leading-tight">
+                <span
+                  className={`font-mono text-[11px] font-bold tracking-wider uppercase transition-colors ${
+                    activeBus === 2 ? 'text-[#141617]' : 'text-[#8a9092] group-hover:text-[#141617]'
+                  }`}
+                >
+                  BUS 2
+                </span>
+                <span className="font-mono text-[8px] text-[#73787a] tracking-tight uppercase">
+                  PARALLEL
+                </span>
+              </div>
+              {/* Status LED Indicator */}
+              <span
+                className={`w-2.5 h-2.5 rounded-full border border-black/40 transition-all ${
+                  activeBus === 2
+                    ? 'bg-[#d99b26] shadow-[0_0_8px_#d99b26]'
+                    : 'bg-black/15'
+                }`}
+              />
+            </div>
           </button>
         </div>
       </div>

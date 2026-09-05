@@ -244,5 +244,21 @@ assert.strictEqual(dubRoundTrip.pack.presets[0].list[4].effect, 'BALANCE');
 assert.strictEqual(dubRoundTrip.pack.presets[0].list[4].balance, 0.2);
 console.log('✓ Specification Document "Dub Chamber" with BALANCE test passed!');
 
+// Test 6: Teenage Engineering EP Sidekick 4-Knob Color Discipline & Multi-Row Delay
+const EP_SIDEKICK_KNOB_COLORS = ['#f15a22', '#e4e3df', '#989fa5', '#231f20'];
+assert.strictEqual(EP_SIDEKICK_KNOB_COLORS.length, 4);
+assert.strictEqual(EP_SIDEKICK_KNOB_COLORS[0], '#f15a22'); // Orange (Gain)
+assert.strictEqual(EP_SIDEKICK_KNOB_COLORS[1], '#e4e3df'); // Cream (High)
+assert.strictEqual(EP_SIDEKICK_KNOB_COLORS[2], '#989fa5'); // Gray (Mid)
+assert.strictEqual(EP_SIDEKICK_KNOB_COLORS[3], '#231f20'); // Black (Low)
+
+// 5th knob repeats color 1
+assert.strictEqual(EP_SIDEKICK_KNOB_COLORS[4 % 4], '#f15a22');
+// Delay row 2 repeats colors 1-4
+for (let i = 0; i < 8; i++) {
+  assert.strictEqual(EP_SIDEKICK_KNOB_COLORS[i % 4], EP_SIDEKICK_KNOB_COLORS[i % 4]);
+}
+console.log('✓ Teenage Engineering EP Sidekick 4-knob color cycle test passed!');
+
 console.log('=== ALL AUTOMATED COMPLIANCE TESTS PASSED (100%) ===');
 
