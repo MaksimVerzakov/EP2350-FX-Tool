@@ -265,12 +265,12 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
     return (
       <div
         key={effect.id}
-        className={`w-full border p-3 flex flex-col gap-2 transition-all duration-100 shadow-xs relative rounded-[2px] ${
+        className={`w-full border p-3 flex flex-col gap-2 transition-all duration-75 relative rounded-[0px] shadow-[2px_2px_0px_#141617] ${
           isBus2
-            ? 'border-l-[4px] border-l-[#d99b26] border-[#d99b26]/50 bg-[#fffdfa]'
+            ? 'border-l-[4px] border-l-[#d99b26] border-[#141617] bg-[#fffdfa]'
             : isSample
-            ? 'border-l-[4px] border-l-[#f15a22] border-[#f15a22]/50 bg-[#fffcfb]'
-            : 'border-l-[4px] border-l-[#00a69c] border-[#00a69c]/50 bg-[#ffffff] hover:border-[#141617]'
+            ? 'border-l-[4px] border-l-[#f15a22] border-[#141617] bg-[#fffcfb]'
+            : 'border-l-[4px] border-l-[#00a69c] border-[#141617] bg-[#ffffff] hover:border-[#000000]'
         }`}
       >
         {/* Card Header Bar */}
@@ -288,12 +288,12 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
           {/* Action Controls: Positioned Directional Control Cluster & Delete */}
           <div className="flex items-center gap-1.5 shrink-0">
             {/* Unified Directional Cluster: [↑][↓][→] on Bus 1, [←][↑][↓] on Bus 2 */}
-            <div className="flex items-center border border-[#141617] bg-[#f8f9f8] rounded-[1px] shadow-2xs divide-x divide-[#d2d5d2]">
+            <div className="flex items-center border border-[#141617] bg-[#f8f9f8] rounded-[0px] shadow-[1px_1px_0px_#141617] divide-x divide-[#141617]">
               {/* Bus 2: [ ← ] to move to Bus 1 */}
               {activeBus === 2 && (
                 <button
                   onClick={() => handleTransferBus(globalIdx)}
-                  className="p-1 hover:bg-[#00a69c] hover:text-white text-[#00a69c] transition-colors cursor-pointer"
+                  className="p-1 hover:bg-[#00a69c] hover:text-white text-[#00a69c] active:translate-x-[1px] active:translate-y-[1px] transition-colors cursor-pointer"
                   title="Move effect to Bus 1"
                 >
                   <ArrowLeft className="w-3 h-3" />
@@ -304,7 +304,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
               <button
                 disabled={busPosition === 0}
                 onClick={() => handleMoveBusItem(busPosition, 'up')}
-                className="p-1 hover:bg-[#141617] hover:text-white text-[#141617] disabled:opacity-20 disabled:pointer-events-none transition-colors cursor-pointer"
+                className="p-1 hover:bg-[#141617] hover:text-white text-[#141617] disabled:opacity-20 disabled:pointer-events-none active:translate-x-[1px] active:translate-y-[1px] transition-colors cursor-pointer"
                 title="Move earlier in signal path"
               >
                 <ArrowUp className="w-3 h-3" />
@@ -314,7 +314,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
               <button
                 disabled={busPosition === currentBusItems.length - 1}
                 onClick={() => handleMoveBusItem(busPosition, 'down')}
-                className="p-1 hover:bg-[#141617] hover:text-white text-[#141617] disabled:opacity-20 disabled:pointer-events-none transition-colors cursor-pointer"
+                className="p-1 hover:bg-[#141617] hover:text-white text-[#141617] disabled:opacity-20 disabled:pointer-events-none active:translate-x-[1px] active:translate-y-[1px] transition-colors cursor-pointer"
                 title="Move later in signal path"
               >
                 <ArrowDown className="w-3 h-3" />
@@ -325,7 +325,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                 <button
                   disabled={isSample}
                   onClick={() => handleTransferBus(globalIdx)}
-                  className="p-1 hover:bg-[#d99b26] hover:text-white text-[#d99b26] disabled:opacity-20 disabled:pointer-events-none transition-colors cursor-pointer"
+                  className="p-1 hover:bg-[#d99b26] hover:text-white text-[#d99b26] disabled:opacity-20 disabled:pointer-events-none active:translate-x-[1px] active:translate-y-[1px] transition-colors cursor-pointer"
                   title={isSample ? 'SAMPLE is restricted to Bus 1' : 'Move effect to Bus 2'}
                 >
                   <ArrowRight className="w-3 h-3" />
@@ -336,7 +336,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
             {/* Delete button */}
             <button
               onClick={() => handleDeleteEffect(globalIdx)}
-              className="p-1 text-[#73787a] hover:text-[#e52817] transition-colors cursor-pointer ml-0.5"
+              className="p-1 text-[#73787a] hover:text-[#e52817] active:translate-x-[1px] active:translate-y-[1px] transition-colors cursor-pointer ml-0.5"
               title="Delete effect"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -514,25 +514,32 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
 
   return (
     <div className="te-ledger-card w-full flex flex-col select-none overflow-hidden h-[624px]">
-      {/* 1. TOP ORANGE HEADER TAB */}
-      <div className="bg-[#f15a22] text-white px-4 py-2 border-b border-[#141617] border-t border-white/25 flex items-center justify-between gap-3 shrink-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]">
+      {/* 1. TOP ORANGE HEADER TAB (With 45° Extruded Right Binder Facet) */}
+      <div className="relative bg-[#f15a22] text-white px-4 py-2 border-b border-[#141617] border-t border-white/25 flex items-center justify-between gap-3 shrink-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]">
+        {/* 45° Extruded Binder Tab Edge on the Right */}
+        <div className="absolute -right-[12px] top-0 bottom-0 w-[12px] overflow-hidden pointer-events-none hidden sm:block">
+          <svg className="w-full h-full" viewBox="0 0 12 40" preserveAspectRatio="none">
+            <polygon points="0,0 12,12 12,40 0,40" fill="#d14612" stroke="#141617" strokeWidth="1" />
+          </svg>
+        </div>
+
         <div className="flex items-center gap-2.5">
           {/* Preset Badge with Up/Down Controls */}
-          <div className="flex items-center bg-black/40 border border-white/30 rounded-[1px] font-mono shadow-[0_1px_2px_rgba(0,0,0,0.3)]">
+          <div className="flex items-center bg-black/40 border border-white/30 rounded-[0px] font-mono shadow-[1px_1px_0px_rgba(0,0,0,0.5)]">
             <span className="px-2.5 py-1 font-bold text-xs tracking-wider uppercase text-white">
               PRESET {preset.pos + 1}
             </span>
             <div className="flex items-center border-l border-white/20 divide-x divide-white/20">
               <button
                 onClick={() => onSelectPreset?.((preset.pos - 1 + totalPresets) % totalPresets)}
-                className="p-1 hover:bg-white hover:text-black text-white/90 transition-colors cursor-pointer"
+                className="p-1 hover:bg-white hover:text-black text-white/90 active:translate-x-[1px] active:translate-y-[1px] transition-colors cursor-pointer"
                 title={`Previous Preset (Preset ${((preset.pos - 1 + totalPresets) % totalPresets) + 1})`}
               >
                 <ArrowUp className="w-3 h-3" />
               </button>
               <button
                 onClick={() => onSelectPreset?.((preset.pos + 1) % totalPresets)}
-                className="p-1 hover:bg-white hover:text-black text-white/90 transition-colors cursor-pointer"
+                className="p-1 hover:bg-white hover:text-black text-white/90 active:translate-x-[1px] active:translate-y-[1px] transition-colors cursor-pointer"
                 title={`Next Preset (Preset ${((preset.pos + 1) % totalPresets) + 1})`}
               >
                 <ArrowDown className="w-3 h-3" />
@@ -555,7 +562,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
       {/* 2. DUAL PARALLEL BUS PHYSICAL SWITCH BAR */}
       <div className="bg-[#eceeed] border-b border-[#141617] flex items-center justify-center px-4 py-1.5 shrink-0">
         {/* PHYSICAL TE MECHANICAL SLIDER SWITCH */}
-        <div className="flex items-center gap-3 bg-[#f8f9f8] px-3 py-1.5 rounded-[2px] border border-[#d2d5d2] shadow-2xs">
+        <div className="flex items-center gap-3 bg-[#f8f9f8] px-3 py-1.5 rounded-[0px] border border-[#141617] shadow-[1px_1px_0px_#141617]">
           {/* Left Label: BUS 1 */}
           <button
             onClick={() => setActiveBus(1)}
@@ -565,7 +572,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
           >
             <span className={activeBus === 1 ? 'text-[#00a69c]' : ''}>BUS 1</span>
             <span
-              className={`text-[8.5px] px-1.5 py-0.5 rounded-[1px] font-mono transition-colors ${
+              className={`text-[8.5px] px-1.5 py-0.5 rounded-[0px] font-mono transition-colors ${
                 activeBus === 1
                   ? 'bg-[#00a69c] text-white font-bold'
                   : 'bg-black/10 text-[#73787a]'
@@ -578,23 +585,23 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
           {/* Physical Orange Slider Switch */}
           <button
             onClick={() => setActiveBus(activeBus === 1 ? 2 : 1)}
-            className="relative w-14 h-6 bg-[#181a1b] rounded-[3px] border border-[#141617] shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)] p-0.5 cursor-pointer flex items-center focus:outline-none"
+            className="relative w-14 h-6 bg-[#181a1b] rounded-[0px] border border-[#000000] shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)] p-0.5 cursor-pointer flex items-center focus:outline-none"
             title={`Switch to Bus ${activeBus === 1 ? 2 : 1}`}
             aria-label={`Toggle between Bus 1 and Bus 2, currently Bus ${activeBus}`}
           >
             {/* Recessed slider channel */}
             <div className="absolute inset-x-2 h-[2px] bg-black/90 top-1/2 -translate-y-1/2 rounded-full" />
 
-            {/* Teenage Engineering Orange Switch Cap */}
+            {/* Teenage Engineering Orange Switch Cap with 45° Tactile Facet */}
             <div
-              className={`w-6 h-5 bg-[#f15a22] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.4)] flex items-center justify-center gap-[2px] transition-transform duration-200 ease-out z-10 ${
+              className={`w-6 h-5 bg-[#f15a22] rounded-[1px] border border-[#000000] shadow-[2px_2px_0px_#000000,inset_0_1px_0_rgba(255,255,255,0.4)] flex items-center justify-center gap-[2px] transition-transform duration-200 ease-out z-10 ${
                 activeBus === 1 ? 'translate-x-0' : 'translate-x-[26px]'
               }`}
             >
               {/* 3 tactile physical grip micro-ribs */}
-              <span className="w-[1.5px] h-3 bg-black/25 rounded-full" />
-              <span className="w-[1.5px] h-3 bg-black/25 rounded-full" />
-              <span className="w-[1.5px] h-3 bg-black/25 rounded-full" />
+              <span className="w-[1.5px] h-3 bg-black/30 rounded-full" />
+              <span className="w-[1.5px] h-3 bg-black/30 rounded-full" />
+              <span className="w-[1.5px] h-3 bg-black/30 rounded-full" />
             </div>
           </button>
 
@@ -606,7 +613,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
             }`}
           >
             <span
-              className={`text-[8.5px] px-1.5 py-0.5 rounded-[1px] font-mono transition-colors ${
+              className={`text-[8.5px] px-1.5 py-0.5 rounded-[0px] font-mono transition-colors ${
                 activeBus === 2
                   ? 'bg-[#d99b26] text-white font-bold'
                   : 'bg-black/10 text-[#73787a]'
@@ -680,7 +687,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
               />
               <button
                 onClick={() => setAddMenuTarget({})}
-                className="px-4 py-1.5 text-[10px] font-mono font-bold rounded-[1px] border border-[#141617] bg-[#f8f9f8] hover:bg-[#141617] hover:text-white text-[#141617] flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
+                className="px-4 py-1.5 text-[10px] font-mono font-bold rounded-[0px] border border-[#141617] bg-[#f8f9f8] hover:bg-[#141617] hover:text-white text-[#141617] flex items-center gap-1.5 cursor-pointer transition-colors shadow-[2px_2px_0px_#141617] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>ADD EFFECT</span>
@@ -693,7 +700,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
         {addMenuTarget && (
           <div
             ref={popoverRef}
-            className="absolute left-1/2 -translate-x-1/2 top-14 bg-white border-2 border-[#141617] shadow-2xl p-2.5 z-50 w-72 flex flex-col gap-1 rounded-[2px]"
+            className="absolute left-1/2 -translate-x-1/2 top-14 bg-white border border-[#141617] shadow-[4px_4px_0px_#141617] p-2.5 z-50 w-72 flex flex-col gap-1 rounded-[0px]"
           >
             <div className="flex items-center justify-between border-b border-[#e2e4e2] pb-1 mb-1">
               <span className="text-[9.5px] font-mono font-bold uppercase tracking-wider text-[#f15a22]">

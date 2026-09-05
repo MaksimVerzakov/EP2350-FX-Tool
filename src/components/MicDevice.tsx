@@ -96,8 +96,8 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          viewBox="280 0 295 585"
-          className="w-full h-full te-device-shadow"
+          viewBox="275 0 305 590"
+          className="w-full h-full"
           fill="none"
         >
           <defs>
@@ -116,6 +116,89 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
             </radialGradient>
           </defs>
 
+          {/* ========================================================= */}
+          {/* TE AXONOMETRIC 3D CHASSIS: HARD SHADOW, BOTTOM PLATE & BEVELS */}
+          {/* Replicates exact 45° vector extrusion from EP Sample Tool  */}
+          {/* ========================================================= */}
+
+          {/* A. HARD BLACK DROP SHADOW FACET (dx = +11, dy = +11) */}
+          <polygon
+            points="338.805 334.555 349.805 345.555 562.475 345.555 562.475 15.283 551.475 4.283 551.475 334.555"
+            fill="#141617"
+          />
+
+          {/* B. DARK SUB-CHASSIS BOTTOM PLATE (Offset dx = +8.5, dy = +8.5) */}
+          <polygon
+            points="347.305 343.055 559.975 343.055 559.975 12.783 557.475 10.283 557.475 340.555 344.805 340.555"
+            fill="#424143"
+            stroke="#000000"
+            strokeWidth="0.8"
+            strokeMiterlimit="10"
+          />
+
+          {/* C. 45° EXTRUDED BEVEL PANELS (dx = +6.0, dy = +6.0) */}
+          {/* 1. Acoustic Grille Side Bevel (Upper Section) */}
+          <polygon
+            points="551.475 4.283 557.475 10.283 557.475 188.826 551.475 182.826"
+            fill="#727d84"
+            stroke="#000000"
+            strokeWidth="1.0"
+            strokeMiterlimit="10"
+          />
+
+          {/* 2. Lower Faceplate Side Bevel */}
+          <polygon
+            points="551.475 182.826 557.475 188.826 557.475 340.555 551.475 334.555"
+            fill="#dbdddb"
+            stroke="#000000"
+            strokeWidth="1.0"
+            strokeMiterlimit="10"
+          />
+
+          {/* 3. Bottom Chassis Bevel */}
+          <polygon
+            points="338.805 334.555 344.805 340.555 557.475 340.555 551.475 334.555"
+            fill="#dbdddb"
+            stroke="#000000"
+            strokeWidth="1.0"
+            strokeMiterlimit="10"
+          />
+
+          {/* D. AUTHENTIC 45° DIAGONAL HATCHING LINES (TE Blueprint Aesthetic) */}
+          {/* Bottom Bevel Hatching Lines */}
+          {Array.from({ length: 58 }).map((_, i) => {
+            const x = 340 + i * 3.65;
+            return (
+              <line
+                key={`hatch-b-${i}`}
+                x1={x}
+                y1={334.555}
+                x2={x + 6.0}
+                y2={340.555}
+                stroke="#000000"
+                strokeWidth="0.75"
+                strokeMiterlimit="10"
+              />
+            );
+          })}
+
+          {/* Right Side Bevel Hatching Lines */}
+          {Array.from({ length: 90 }).map((_, i) => {
+            const y = 5 + i * 3.65;
+            return (
+              <line
+                key={`hatch-r-${i}`}
+                x1={551.475}
+                y1={y}
+                x2={557.475}
+                y2={y + 6.0}
+                stroke="#000000"
+                strokeWidth="0.75"
+                strokeMiterlimit="10"
+              />
+            );
+          })}
+
           {/* 1. SQUEEZE HANDLE LEVER (Hinged at 338.805, 240.78) */}
           <g
             onMouseDown={handleHandleMouseDown}
@@ -126,6 +209,12 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
               transition: isSqueezing ? 'none' : 'transform 0.12s cubic-bezier(0.18, 0.89, 0.32, 1.28)'
             }}
           >
+            {/* Lever drop shadow facet */}
+            <path
+              fill="#141617"
+              opacity="0.5"
+              d="M338.805 242.78a3.466 3.466 0 0 1-3.465-3.465v-26.173a25.2 25.2 0 0 0-1.164-7.567L289.02 72.755c-1.212-3.85.572-8.034 4.219-9.761 22.007-10.42 46.614-16.249 72.582-16.249"
+            />
             {/* Squeeze lever body */}
             <path
               fill="#F15A22"
@@ -147,16 +236,30 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
           {/* Top circle detail */}
           <path stroke="#000" strokeWidth="1.2" strokeMiterlimit="10" d="M353.679 70.65a9.494 9.494 0 1 0 0-18.99 9.494 9.494 0 0 0 0 18.99Z" />
 
-          {/* 2. RECESSED HARDWARE PRESET BUTTON (Top Right Edge) */}
+          {/* ========================================================= */}
+          {/* 2. RECESSED HARDWARE BUTTONS WITH RECESSED CAVITY SOCKETS */}
+          {/* ========================================================= */}
+
+          {/* BUTTON 1: PRESET SELECTOR (Orange) */}
+          {/* Recessed Socket */}
+          <rect x="550" y="36.5" width="18" height="34" rx="2" fill="#141617" stroke="#000000" strokeWidth="0.8" />
           <g
             onClick={cyclePreset}
             className="cursor-pointer group"
             style={{
-              transform: isButtonPressed ? 'translateX(-2px)' : 'none',
-              transition: 'transform 0.08s ease'
+              transform: isButtonPressed ? 'translate(2px, 2px)' : 'none',
+              transition: 'transform 0.06s ease'
             }}
           >
             <title>Preset Selector Button</title>
+            {/* 45° Extruded Facets */}
+            {!isButtonPressed && (
+              <>
+                <polygon points="562.725 42.318 565.725 45.318 565.725 64.815 562.725 61.815" fill="#ba3807" stroke="#000" strokeWidth="0.8" />
+                <polygon points="551.476 64.815 554.476 67.815 565.725 67.815 562.725 64.815" fill="#8c2603" stroke="#000" strokeWidth="0.8" />
+              </>
+            )}
+            {/* Front Keycap */}
             <path
               fill="#F15A22"
               stroke="#000"
@@ -167,23 +270,39 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
             />
           </g>
 
-          {/* White button */}
-          <path
-            fill="#E4E3DF"
-            stroke="#000"
-            strokeWidth="1.2"
-            strokeMiterlimit="10"
-            d="M551.476 114.518h11.249a3.674 3.674 0 0 1 3.673 3.673v22.497a3.675 3.675 0 0 1-3.673 3.673h-11.249z"
-          />
+          {/* BUTTON 2: WHITE BUTTON */}
+          {/* Recessed Socket */}
+          <rect x="550" y="112.5" width="18" height="34" rx="2" fill="#141617" stroke="#000000" strokeWidth="0.8" />
+          <g>
+            {/* 45° Extruded Facets */}
+            <polygon points="562.725 118.191 565.725 121.191 565.725 140.688 562.725 137.688" fill="#bcbeb9" stroke="#000" strokeWidth="0.8" />
+            <polygon points="551.476 140.688 554.476 143.688 565.725 143.688 562.725 140.688" fill="#949692" stroke="#000" strokeWidth="0.8" />
+            {/* Front Keycap */}
+            <path
+              fill="#E4E3DF"
+              stroke="#000"
+              strokeWidth="1.2"
+              strokeMiterlimit="10"
+              d="M551.476 114.518h11.249a3.674 3.674 0 0 1 3.673 3.673v22.497a3.675 3.675 0 0 1-3.673 3.673h-11.249z"
+            />
+          </g>
 
-          {/* Grey button */}
-          <path
-            fill="#D1D3D4"
-            stroke="#000"
-            strokeWidth="1.2"
-            strokeMiterlimit="10"
-            d="M551.476 243.728h11.249a3.675 3.675 0 0 1 3.673 3.673v22.497a3.676 3.676 0 0 1-3.673 3.674h-11.249v-29.845z"
-          />
+          {/* BUTTON 3: GREY BUTTON */}
+          {/* Recessed Socket */}
+          <rect x="550" y="241.5" width="18" height="36" rx="2" fill="#141617" stroke="#000000" strokeWidth="0.8" />
+          <g>
+            {/* 45° Extruded Facets */}
+            <polygon points="562.725 247.401 565.725 250.401 565.725 273.573 562.725 270.573" fill="#a8aaac" stroke="#000" strokeWidth="0.8" />
+            <polygon points="551.476 273.573 554.476 276.573 565.725 276.573 562.725 273.573" fill="#7a7d80" stroke="#000" strokeWidth="0.8" />
+            {/* Front Keycap */}
+            <path
+              fill="#D1D3D4"
+              stroke="#000"
+              strokeWidth="1.2"
+              strokeMiterlimit="10"
+              d="M551.476 243.728h11.249a3.675 3.675 0 0 1 3.673 3.673v22.497a3.676 3.676 0 0 1-3.673 3.674h-11.249v-29.845z"
+            />
+          </g>
 
           {/* 3. MICROPHONE GRILLE (Acoustic Top Section) */}
           <path
@@ -327,7 +446,16 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
             />
           </g>
 
-          {/* 6. CORRUGATED STRAIN RELIEF & CONNECTOR (Bottom) */}
+          {/* 6. CORRUGATED STRAIN RELIEF & CONNECTOR (Bottom with 45° Extrusion) */}
+          {/* Connector Right Bevel Panel (dx = +4.5, dy = +4.5) */}
+          <polygon
+            points="414.743 334.555 419.243 339.055 419.243 407.872 414.743 403.372"
+            fill="#586166"
+            stroke="#000"
+            strokeWidth="1.0"
+            strokeMiterlimit="10"
+          />
+
           <path
             fill="#818E95"
             stroke="#000"
@@ -344,6 +472,15 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
           />
 
           {/* 7. REINFORCED RUBBER CABLE SEGMENT (Hanging Down) */}
+          {/* Cable 45° Drop Shadow Facet */}
+          <path
+            stroke="#141617"
+            strokeWidth="3.5"
+            strokeLinecap="round"
+            opacity="0.35"
+            transform="translate(4, 4)"
+            d="M420.295 510.223c5.516-.966 5.987-8.759.601-10.406-9.892-2.092-27.87-3.097-33.629-3.374-.836-.04-1.316-.944-.898-1.671 12.004-20.912 17.838-45.201 18.244-69.249-.006-.243.144-22.135.148-22.382h-10.874l.075 21.819v-.332c.304 17.825-3.899 36.651-10.996 52.973-2.72 7.395-8.888 14.338-9.232 22.35v.185c0 6.587 9.616 6.389 19.533 7.291 9.918.901 18.568 1.658 27.548 2.601"
+          />
           <path
             fill="#D1D3D4"
             d="M420.295 510.223c5.516-.966 5.987-8.759.601-10.406-9.892-2.092-27.87-3.097-33.629-3.374-.836-.04-1.316-.944-.898-1.671 12.004-20.912 17.838-45.201 18.244-69.249-.006-.243.144-22.135.148-22.382h-10.874l.075 21.819v-.332c.304 17.825-3.899 36.651-10.996 52.973-2.72 7.395-8.888 14.338-9.232 22.35v.185c0 6.587 9.616 6.389 19.533 7.291 9.918.901 18.568 1.658 27.548 2.601"

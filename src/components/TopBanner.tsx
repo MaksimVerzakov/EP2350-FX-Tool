@@ -32,7 +32,7 @@ export const TopBanner: React.FC<TopBannerProps> = ({
     <div className="w-full flex flex-col md:flex-row items-center justify-between gap-4 py-2 border-b border-[#dfe2e0] pb-3 select-none">
       {/* 1. Iconic TE Modular Badge */}
       <div className="flex items-center gap-3">
-        <div className="flex items-stretch border border-[#141617] shadow-xs">
+        <div className="flex items-stretch border border-[#141617] shadow-[2px_2px_0px_#141617]">
           {/* Orange EP Block */}
           <div className="w-12 h-10 bg-[#f15a22] flex items-center justify-center relative border-r border-[#141617]">
             <span className="w-1.5 h-1.5 rounded-full bg-[#141617] absolute top-1.5 left-1.5" />
@@ -62,7 +62,7 @@ export const TopBanner: React.FC<TopBannerProps> = ({
 
       {/* 2. Pack Name Input & Actions */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1.5 bg-[#ffffff] px-2 py-1 border border-[#141617] shadow-2xs">
+        <div className="flex items-center gap-1.5 bg-[#ffffff] px-2 py-1 border border-[#141617] shadow-[1px_1px_0px_#141617]">
           <span className="text-[9px] font-mono font-bold text-[#73787a]">PACK:</span>
           <input
             type="text"
