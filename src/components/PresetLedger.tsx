@@ -10,8 +10,7 @@ import {
   ArrowRight,
   Trash2,
   Sparkles,
-  GitBranch,
-  Volume2
+  GitBranch
 } from 'lucide-react';
 
 interface PresetLedgerProps {
@@ -199,6 +198,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
     }
 
     const updated: AnyEffect = { ...fx };
+    const destinationBus: 1 | 2 = fx.BUS === 2 ? 1 : 2;
     if (fx.BUS === 2) {
       delete updated.BUS; // Moves to Bus 1
     } else {
@@ -206,6 +206,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
     }
 
     handleUpdateEffect(globalIdx, updated);
+    setActiveBus(destinationBus); // Auto-switch tab to see immediate impact
   };
 
   // In-Situ Modulation Helpers for an effect by its global index
@@ -278,69 +279,60 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
             <span className="font-bold text-[12px] uppercase tracking-tight text-[#141617] truncate">
               {meta.displayName}
             </span>
-            <span
-              className={`text-[8px] font-mono font-bold px-1.5 py-0.2 rounded-[1px] uppercase shrink-0 ${
-                isBus2
-                  ? 'bg-[#d99b26]/15 text-[#d99b26]'
-                  : 'bg-[#00a69c]/15 text-[#00a69c]'
-              }`}
-            >
-              {isBus2 ? 'BUS 2' : 'BUS 1'}
-            </span>
-            {meta.singleInstance && (
-              <span className="text-[7.5px] font-mono text-[#73787a] bg-black/5 px-1 rounded-[1px] shrink-0 font-medium">
-                1x SINGLE
-              </span>
-            )}
           </div>
 
-          {/* Action Controls: Up, Down, Switch Bus, Delete */}
-          <div className="flex items-center gap-1 shrink-0">
-            {/* Reordering within this bus */}
-            <div className="flex items-center border border-[#141617] bg-[#f8f9f8] rounded-[1px] shadow-2xs">
+          {/* Action Controls: Positioned Directional Control Cluster & Delete */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* Unified Directional Cluster: [↑][↓][→] on Bus 1, [←][↑][↓] on Bus 2 */}
+            <div className="flex items-center border border-[#141617] bg-[#f8f9f8] rounded-[1px] shadow-2xs divide-x divide-[#d2d5d2]">
+              {/* Bus 2: [ ← ] to move to Bus 1 */}
+              {activeBus === 2 && (
+                <button
+                  onClick={() => handleTransferBus(globalIdx)}
+                  className="p-1 hover:bg-[#00a69c] hover:text-white text-[#00a69c] transition-colors cursor-pointer"
+                  title="Move effect to Bus 1"
+                >
+                  <ArrowLeft className="w-3 h-3" />
+                </button>
+              )}
+
+              {/* Move Up */}
               <button
                 disabled={busPosition === 0}
                 onClick={() => handleMoveBusItem(busPosition, 'up')}
                 className="p-1 hover:bg-[#141617] hover:text-white text-[#141617] disabled:opacity-20 disabled:pointer-events-none transition-colors cursor-pointer"
-                title="Move effect earlier in signal path"
+                title="Move earlier in signal path"
               >
                 <ArrowUp className="w-3 h-3" />
               </button>
+
+              {/* Move Down */}
               <button
                 disabled={busPosition === currentBusItems.length - 1}
                 onClick={() => handleMoveBusItem(busPosition, 'down')}
-                className="p-1 hover:bg-[#141617] hover:text-white text-[#141617] disabled:opacity-20 disabled:pointer-events-none border-l border-[#d2d5d2] transition-colors cursor-pointer"
-                title="Move effect later in signal path"
+                className="p-1 hover:bg-[#141617] hover:text-white text-[#141617] disabled:opacity-20 disabled:pointer-events-none transition-colors cursor-pointer"
+                title="Move later in signal path"
               >
                 <ArrowDown className="w-3 h-3" />
               </button>
-            </div>
 
-            {/* Quick Bus Transfer Button */}
-            {!isSample ? (
-              <button
-                onClick={() => handleTransferBus(globalIdx)}
-                className={`px-1.5 py-0.5 font-mono text-[8px] font-bold border rounded-[1px] transition-colors flex items-center gap-0.5 cursor-pointer ${
-                  isBus2
-                    ? 'border-[#00a69c] text-[#00a69c] hover:bg-[#00a69c] hover:text-white'
-                    : 'border-[#d99b26] text-[#d99b26] hover:bg-[#d99b26] hover:text-white'
-                }`}
-                title={isBus2 ? 'Move effect to Bus 1' : 'Move effect to Bus 2'}
-              >
-                {isBus2 ? <ArrowLeft className="w-2.5 h-2.5" /> : null}
-                <span>{isBus2 ? 'TO BUS 1' : 'TO BUS 2'}</span>
-                {!isBus2 ? <ArrowRight className="w-2.5 h-2.5" /> : null}
-              </button>
-            ) : (
-              <span className="text-[7.5px] font-mono text-[#73787a] px-1 bg-black/5 rounded-[1px]" title="SAMPLE block is restricted to Bus 1">
-                BUS 1 ONLY
-              </span>
-            )}
+              {/* Bus 1: [ → ] to move to Bus 2 */}
+              {activeBus === 1 && (
+                <button
+                  disabled={isSample}
+                  onClick={() => handleTransferBus(globalIdx)}
+                  className="p-1 hover:bg-[#d99b26] hover:text-white text-[#d99b26] disabled:opacity-20 disabled:pointer-events-none transition-colors cursor-pointer"
+                  title={isSample ? 'SAMPLE is restricted to Bus 1' : 'Move effect to Bus 2'}
+                >
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+              )}
+            </div>
 
             {/* Delete button */}
             <button
               onClick={() => handleDeleteEffect(globalIdx)}
-              className="p-1 text-[#73787a] hover:text-[#e52817] transition-colors cursor-pointer ml-1"
+              className="p-1 text-[#73787a] hover:text-[#e52817] transition-colors cursor-pointer ml-0.5"
               title="Delete effect"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -557,95 +549,81 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
         </div>
       </div>
 
-      {/* 2. DUAL PARALLEL BUS TABS (BUS 1 vs BUS 2) */}
-      <div className="bg-[#eceeed] border-b border-[#141617] flex items-center justify-between px-3 pt-2">
-        <div className="flex items-center gap-1.5">
-          {/* BUS 1 TAB */}
+      {/* 2. DUAL PARALLEL BUS PHYSICAL SWITCH BAR */}
+      <div className="bg-[#eceeed] border-b border-[#141617] flex flex-wrap items-center justify-between px-4 py-2 gap-3">
+        {/* PHYSICAL TE MECHANICAL SLIDER SWITCH */}
+        <div className="flex items-center gap-3 bg-[#f8f9f8] px-3 py-1.5 rounded-[2px] border border-[#d2d5d2] shadow-2xs">
+          {/* Left Label: BUS 1 */}
           <button
             onClick={() => setActiveBus(1)}
-            className={`px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider flex items-center gap-2 border-t-2 transition-all cursor-pointer ${
-              activeBus === 1
-                ? 'bg-white border-t-[#00a69c] text-[#141617] shadow-xs border-x border-[#d2d5d2] -mb-[1px]'
-                : 'bg-[#e2e4e2] border-t-transparent text-[#73787a] hover:text-[#141617] hover:bg-[#d8dbd8]'
+            className={`flex items-center gap-1.5 font-mono text-[11px] font-bold tracking-wider uppercase transition-colors cursor-pointer ${
+              activeBus === 1 ? 'text-[#141617]' : 'text-[#8a9092] hover:text-[#141617]'
             }`}
           >
-            <GitBranch className={`w-3.5 h-3.5 ${activeBus === 1 ? 'text-[#00a69c]' : 'text-[#73787a]'}`} />
-            <span>BUS 1 (PRIMARY)</span>
+            <span className={activeBus === 1 ? 'text-[#00a69c]' : ''}>BUS 1</span>
             <span
-              className={`text-[8.5px] px-1.5 py-0.2 rounded-full font-mono ${
+              className={`text-[8.5px] px-1.5 py-0.5 rounded-[1px] font-mono transition-colors ${
                 activeBus === 1
-                  ? 'bg-[#00a69c] text-white'
+                  ? 'bg-[#00a69c] text-white font-bold'
                   : 'bg-black/10 text-[#73787a]'
               }`}
             >
-              {bus1Items.length}
+              {bus1Items.length} FX
             </span>
           </button>
 
-          {/* BUS 2 TAB */}
+          {/* Physical Orange Slider Switch */}
+          <button
+            onClick={() => setActiveBus(activeBus === 1 ? 2 : 1)}
+            className="relative w-14 h-6 bg-[#181a1b] rounded-[3px] border border-[#141617] shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)] p-0.5 cursor-pointer flex items-center focus:outline-none"
+            title={`Switch to Bus ${activeBus === 1 ? 2 : 1}`}
+            aria-label={`Toggle between Bus 1 and Bus 2, currently Bus ${activeBus}`}
+          >
+            {/* Recessed slider channel */}
+            <div className="absolute inset-x-2 h-[2px] bg-black/90 top-1/2 -translate-y-1/2 rounded-full" />
+
+            {/* Teenage Engineering Orange Switch Cap */}
+            <div
+              className={`w-6 h-5 bg-[#f15a22] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.4)] flex items-center justify-center gap-[2px] transition-transform duration-200 ease-out z-10 ${
+                activeBus === 1 ? 'translate-x-0' : 'translate-x-[26px]'
+              }`}
+            >
+              {/* 3 tactile physical grip micro-ribs */}
+              <span className="w-[1.5px] h-3 bg-black/25 rounded-full" />
+              <span className="w-[1.5px] h-3 bg-black/25 rounded-full" />
+              <span className="w-[1.5px] h-3 bg-black/25 rounded-full" />
+            </div>
+          </button>
+
+          {/* Right Label: BUS 2 */}
           <button
             onClick={() => setActiveBus(2)}
-            className={`px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider flex items-center gap-2 border-t-2 transition-all cursor-pointer ${
-              activeBus === 2
-                ? 'bg-white border-t-[#d99b26] text-[#141617] shadow-xs border-x border-[#d2d5d2] -mb-[1px]'
-                : 'bg-[#e2e4e2] border-t-transparent text-[#73787a] hover:text-[#141617] hover:bg-[#d8dbd8]'
+            className={`flex items-center gap-1.5 font-mono text-[11px] font-bold tracking-wider uppercase transition-colors cursor-pointer ${
+              activeBus === 2 ? 'text-[#141617]' : 'text-[#8a9092] hover:text-[#141617]'
             }`}
           >
-            <GitBranch className={`w-3.5 h-3.5 ${activeBus === 2 ? 'text-[#d99b26]' : 'text-[#73787a]'}`} />
-            <span>BUS 2 (PARALLEL)</span>
             <span
-              className={`text-[8.5px] px-1.5 py-0.2 rounded-full font-mono ${
+              className={`text-[8.5px] px-1.5 py-0.5 rounded-[1px] font-mono transition-colors ${
                 activeBus === 2
-                  ? 'bg-[#d99b26] text-white'
+                  ? 'bg-[#d99b26] text-white font-bold'
                   : 'bg-black/10 text-[#73787a]'
               }`}
             >
-              {bus2Items.length}
+              {bus2Items.length} FX
             </span>
+            <span className={activeBus === 2 ? 'text-[#d99b26]' : ''}>BUS 2</span>
           </button>
         </div>
 
         {/* Global Bus Overview Badge */}
-        <div className="hidden sm:flex items-center gap-2 text-[9px] font-mono text-[#73787a] pb-1">
+        <div className="hidden sm:flex items-center gap-2 text-[9px] font-mono text-[#73787a]">
           <span>PARALLEL MIXING CORE</span>
           <span className="w-1 h-1 rounded-full bg-[#73787a]" />
           <span>{preset.list.length} TOTAL FX</span>
         </div>
       </div>
 
-      {/* 3. SIGNAL ROUTE HEADER & SCHEMATIC */}
-      <div className="bg-[#f8f9f8] px-4 py-2 border-b border-[#e2e4e2] flex items-center justify-between">
-        <div className="flex items-center gap-2 text-[9.5px] font-mono font-bold">
-          <Volume2 className="w-3.5 h-3.5 text-[#f15a22]" />
-          <span className="text-[#141617]">MIC INPUT</span>
-          <span className="text-[#73787a]">──►</span>
-          <span
-            className={`px-1.5 py-0.5 rounded-[1px] ${
-              activeBus === 1
-                ? 'bg-[#00a69c]/15 text-[#00a69c] border border-[#00a69c]/30'
-                : 'bg-[#d99b26]/15 text-[#d99b26] border border-[#d99b26]/30'
-            }`}
-          >
-            {activeBus === 1 ? 'BUS 1 PRIMARY STREAM' : 'BUS 2 PARALLEL STREAM'}
-          </span>
-          <span className="text-[#73787a]">──►</span>
-          <span className="text-[#141617]">STEREO MASTER SUM</span>
-        </div>
-
-        <button
-          onClick={() => setAddMenuTarget({})}
-          className={`px-2.5 py-1 text-[9.5px] font-mono font-bold rounded-[1px] flex items-center gap-1 cursor-pointer transition-colors shadow-xs text-white ${
-            activeBus === 1
-              ? 'bg-[#00a69c] hover:bg-black'
-              : 'bg-[#d99b26] hover:bg-black'
-          }`}
-        >
-          <Plus className="w-3 h-3" />
-          <span>ADD EFFECT TO BUS {activeBus}</span>
-        </button>
-      </div>
-
-      {/* 4. FOCUSED EFFECT CHAIN CANVAS (NO ROW NUMBERS) */}
+      {/* 3. FOCUSED EFFECT CHAIN CANVAS (NO ROW NUMBERS) */}
       <div className="p-4 bg-[#ffffff] flex flex-col items-center gap-0 relative border-b border-[#141617] min-h-[260px]">
         {currentBusItems.length === 0 ? (
           <div className="w-full py-12 flex flex-col items-center justify-center gap-3 border border-dashed border-[#d2d5d2] bg-[#fbfcfb] rounded-[2px] my-4">
@@ -662,12 +640,10 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
             </div>
             <button
               onClick={() => setAddMenuTarget({})}
-              className={`px-3 py-1.5 text-[9.5px] font-mono font-bold text-white rounded-[1px] flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs ${
-                activeBus === 1 ? 'bg-[#00a69c] hover:bg-black' : 'bg-[#d99b26] hover:bg-black'
-              }`}
+              className="px-4 py-1.5 text-[10px] font-mono font-bold text-white bg-[#141617] hover:bg-[#f15a22] rounded-[1px] flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>+ ADD FIRST EFFECT TO BUS {activeBus}</span>
+              <span>ADD EFFECT</span>
             </button>
           </div>
         ) : (
@@ -676,47 +652,33 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
               <React.Fragment key={item.fx.id}>
                 {renderEffectCard(item, bIdx)}
                 {/* Vertical Connector Line between effects */}
-                {bIdx < currentBusItems.length - 1 ? (
-                  <div className="flex flex-col items-center relative my-1">
+                {bIdx < currentBusItems.length - 1 && (
+                  <div className="flex flex-col items-center my-1">
                     <div
-                      className={`w-[2px] h-6 ${
+                      className={`w-[2px] h-5 ${
                         activeBus === 1 ? 'bg-[#00a69c]' : 'bg-[#d99b26]'
                       }`}
                     />
-                    <button
-                      onClick={() => setAddMenuTarget({ insertIndex: bIdx + 1 })}
-                      className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white border-2 flex items-center justify-center shadow-xs cursor-pointer text-[9px] font-bold transition-transform hover:scale-125 z-10 ${
-                        activeBus === 1
-                          ? 'border-[#00a69c] text-[#00a69c] hover:bg-[#00a69c] hover:text-white'
-                          : 'border-[#d99b26] text-[#d99b26] hover:bg-[#d99b26] hover:text-white'
-                      }`}
-                      title={`Insert effect here in Bus ${activeBus}`}
-                    >
-                      +
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center my-2">
-                    <div
-                      className={`w-[2px] h-4 ${
-                        activeBus === 1 ? 'bg-[#00a69c]' : 'bg-[#d99b26]'
-                      }`}
-                    />
-                    <button
-                      onClick={() => setAddMenuTarget({})}
-                      className={`px-3 py-1 text-[9px] font-mono font-bold rounded-[1px] border border-dashed flex items-center gap-1 cursor-pointer transition-colors ${
-                        activeBus === 1
-                          ? 'border-[#00a69c] text-[#00a69c] hover:bg-[#00a69c] hover:text-white'
-                          : 'border-[#d99b26] text-[#d99b26] hover:bg-[#d99b26] hover:text-white'
-                      }`}
-                    >
-                      <Plus className="w-3 h-3" />
-                      <span>+ ADD EFFECT TO BUS {activeBus}</span>
-                    </button>
                   </div>
                 )}
               </React.Fragment>
             ))}
+
+            {/* Single Add Effect Button at the bottom */}
+            <div className="flex flex-col items-center mt-2 mb-3">
+              <div
+                className={`w-[2px] h-4 ${
+                  activeBus === 1 ? 'bg-[#00a69c]' : 'bg-[#d99b26]'
+                }`}
+              />
+              <button
+                onClick={() => setAddMenuTarget({})}
+                className="px-4 py-1.5 text-[10px] font-mono font-bold rounded-[1px] border border-[#141617] bg-[#f8f9f8] hover:bg-[#141617] hover:text-white text-[#141617] flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>ADD EFFECT</span>
+              </button>
+            </div>
           </div>
         )}
 
@@ -728,7 +690,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
           >
             <div className="flex items-center justify-between border-b border-[#e2e4e2] pb-1 mb-1">
               <span className="text-[9.5px] font-mono font-bold uppercase tracking-wider text-[#f15a22]">
-                INSERT EFFECT TO BUS {activeBus}
+                ADD EFFECT (BUS {activeBus})
               </span>
               <button
                 onClick={() => setAddMenuTarget(null)}
