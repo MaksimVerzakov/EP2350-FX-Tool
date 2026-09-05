@@ -98,7 +98,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
   };
 
   return (
-    <div className="te-ledger-card w-full flex flex-col select-none overflow-hidden">
+    <div className="te-ledger-card w-full flex flex-col select-none overflow-hidden min-h-[580px]">
       {/* 1. TOP ORANGE HEADER TAB (styled after SAMPLE LIBRARY in ep-sample-tool) */}
       <div className="bg-[#f15a22] text-white px-4 py-2.5 border-b border-[#141617] flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
