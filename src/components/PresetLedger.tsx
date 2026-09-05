@@ -222,25 +222,56 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
     return (
       <div
         key={effect.id}
-        className={`w-full border p-2 flex flex-col gap-1.5 transition-all duration-100 shadow-2xs relative ${
+        className={`w-full border p-2 flex flex-col gap-1.5 transition-all duration-100 shadow-xs relative rounded-[2px] ${
           busMode === 'bus1'
-            ? 'border-l-[4px] border-l-[#00a69c] border-[#00a69c]/40 bg-[#f4fcfb]'
+            ? 'border-l-[4px] border-l-[#00a69c] border-[#00a69c]/50 bg-[#f4fcfb]'
             : busMode === 'bus2'
-            ? 'border-r-[4px] border-r-[#d99b26] border-[#d99b26]/40 bg-[#fffdf5]'
+            ? 'border-r-[4px] border-r-[#d99b26] border-[#d99b26]/50 bg-[#fffdf5]'
             : isSample
-            ? 'bg-[#f6f8f6] border-[#141617]/50'
-            : 'bg-[#ffffff] border-[#d2d5d2] hover:border-[#141617]'
+            ? 'border-l-[4px] border-l-[#141617] bg-[#f6f8f6] border-[#141617]/50'
+            : 'border-l-[4px] border-l-[#141617] bg-[#ffffff] border-[#d2d5d2] hover:border-[#141617]'
         }`}
       >
+        {/* Top & Bottom Connection Port Dots */}
+        <div
+          className={`absolute -top-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full border-2 bg-white z-10 ${
+            busMode === 'bus1'
+              ? 'border-[#00a69c]'
+              : busMode === 'bus2'
+              ? 'border-[#d99b26]'
+              : 'border-[#141617]'
+          }`}
+        />
+        <div
+          className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full border-2 bg-white z-10 ${
+            busMode === 'bus1'
+              ? 'border-[#00a69c]'
+              : busMode === 'bus2'
+              ? 'border-[#d99b26]'
+              : 'border-[#141617]'
+          }`}
+        />
+
         {/* Card Header Bar */}
         <div className="flex items-center justify-between border-b border-[#eceeed] pb-1 gap-1">
-          {/* Index & Name */}
+          {/* Index, Name, and Branch Badge */}
           <div className="flex items-center gap-1.5 min-w-0">
             <span className="font-mono text-[9.5px] font-bold text-[#f15a22]">
               {(idx + 1).toString().padStart(2, '0')}.
             </span>
             <span className="font-bold text-[11px] uppercase tracking-tight text-[#141617] truncate">
               {meta.displayName}
+            </span>
+            <span
+              className={`text-[7px] font-mono font-bold px-1 rounded-[1px] uppercase shrink-0 ${
+                busMode === 'bus1'
+                  ? 'bg-[#00a69c]/15 text-[#00a69c]'
+                  : busMode === 'bus2'
+                  ? 'bg-[#d99b26]/15 text-[#d99b26]'
+                  : 'bg-black/5 text-[#73787a]'
+              }`}
+            >
+              {busMode === 'bus1' ? 'BUS 1' : busMode === 'bus2' ? 'BUS 2' : 'SERIAL'}
             </span>
             {meta.singleInstance && (
               <span className="text-[7px] font-mono text-[#73787a] bg-black/5 px-1 rounded-[1px] shrink-0">
@@ -252,48 +283,50 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
           {/* 4-Way D-Pad + Delete */}
           <div className="flex items-center gap-1 shrink-0">
             {/* 4-Way D-Pad: [Left] [Up] [Down] [Right] */}
-            <div className="flex items-center border border-[#d2d5d2] bg-[#f8f9f8] rounded-[1px]">
+            <div className="flex items-center border border-[#141617] bg-[#f8f9f8] rounded-[1px] shadow-2xs">
               <button
                 disabled={busMode === 'bus1'}
                 onClick={() => handleShiftBus(idx, 'left')}
-                className="p-0.5 hover:bg-[#e2e4e2] disabled:opacity-20 disabled:pointer-events-none"
-                title="Move Left (Serial -> Bus 1, or Bus 2 -> Serial)"
+                className="px-1.5 py-0.5 hover:bg-[#00a69c] hover:text-white text-[#00a69c] disabled:opacity-20 disabled:pointer-events-none transition-colors font-mono text-[8px] font-bold flex items-center gap-0.5 cursor-pointer"
+                title={busMode === 'bus2' ? 'Shift back to Serial Main' : 'Shift into Bus 1 (Parallel Left)'}
               >
-                <ArrowLeft className="w-2.5 h-2.5 text-[#00a69c]" />
+                <ArrowLeft className="w-2.5 h-2.5" />
+                <span>{busMode === 'bus2' ? 'MAIN' : 'BUS 1'}</span>
               </button>
               <button
                 disabled={idx === 0}
                 onClick={() => handleMove(idx, idx - 1)}
-                className="p-0.5 hover:bg-[#e2e4e2] disabled:opacity-20 disabled:pointer-events-none border-l border-[#d2d5d2]"
-                title="Move Up in sequence"
+                className="p-1 hover:bg-[#141617] hover:text-white text-[#141617] disabled:opacity-20 disabled:pointer-events-none border-l border-[#d2d5d2] transition-colors cursor-pointer"
+                title="Move Up earlier in sequence"
               >
-                <ArrowUp className="w-2.5 h-2.5 text-[#141617]" />
+                <ArrowUp className="w-2.5 h-2.5" />
               </button>
               <button
                 disabled={idx === preset.list.length - 1}
                 onClick={() => handleMove(idx, idx + 1)}
-                className="p-0.5 hover:bg-[#e2e4e2] disabled:opacity-20 disabled:pointer-events-none border-l border-[#d2d5d2]"
-                title="Move Down in sequence"
+                className="p-1 hover:bg-[#141617] hover:text-white text-[#141617] disabled:opacity-20 disabled:pointer-events-none border-l border-[#d2d5d2] transition-colors cursor-pointer"
+                title="Move Down later in sequence"
               >
-                <ArrowDown className="w-2.5 h-2.5 text-[#141617]" />
+                <ArrowDown className="w-2.5 h-2.5" />
               </button>
               <button
                 disabled={busMode === 'bus2'}
                 onClick={() => handleShiftBus(idx, 'right')}
-                className="p-0.5 hover:bg-[#e2e4e2] disabled:opacity-20 disabled:pointer-events-none border-l border-[#d2d5d2]"
-                title="Move Right (Serial -> Bus 2, or Bus 1 -> Serial)"
+                className="px-1.5 py-0.5 hover:bg-[#d99b26] hover:text-white text-[#d99b26] disabled:opacity-20 disabled:pointer-events-none border-l border-[#d2d5d2] transition-colors font-mono text-[8px] font-bold flex items-center gap-0.5 cursor-pointer"
+                title={busMode === 'bus1' ? 'Shift back to Serial Main' : 'Shift into Bus 2 (Parallel Right)'}
               >
-                <ArrowRight className="w-2.5 h-2.5 text-[#d99b26]" />
+                <span>{busMode === 'bus1' ? 'MAIN' : 'BUS 2'}</span>
+                <ArrowRight className="w-2.5 h-2.5" />
               </button>
             </div>
 
             {/* Remove */}
             <button
               onClick={() => handleDeleteEffect(idx)}
-              className="p-0.5 text-[#73787a] hover:text-[#e52817] transition-colors"
+              className="p-1 text-[#73787a] hover:text-[#e52817] transition-colors cursor-pointer"
               title="Delete effect"
             >
-              <Trash2 className="w-2.5 h-2.5" />
+              <Trash2 className="w-3 h-3" />
             </button>
           </div>
         </div>
@@ -498,94 +531,138 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
       </div>
 
       {/* 2. ZAPIER-STYLE VISUAL WORKFLOW CANVAS */}
-      <div className="p-4 bg-[#ffffff] flex flex-col items-center gap-0 relative">
-        
+      <div className="w-full p-5 bg-[#ffffff] flex flex-col items-center gap-0 relative border-b border-[#141617] overflow-x-auto">
+        {/* Subtle Engineering Dot Grid Background */}
+        <div
+          className="absolute inset-0 pointer-events-none opacity-25"
+          style={{
+            backgroundImage: 'radial-gradient(#141617 1.2px, transparent 1.2px)',
+            backgroundSize: '16px 16px'
+          }}
+        />
+
         {/* INPUT NODE (Top of Signal Flow) */}
-        <div className="flex flex-col items-center">
-          <div className="bg-[#141617] text-white px-3 py-1 rounded-[2px] border border-[#141617] text-[10px] font-mono font-bold tracking-wider flex items-center gap-1.5 shadow-2xs">
-            <Volume2 className="w-3 h-3 text-[#f15a22]" />
-            AUDIO SOURCE / EP-2350 MIC
+        <div className="flex flex-col items-center relative z-10">
+          <div className="bg-[#141617] text-white px-3.5 py-1.5 rounded-[2px] border border-[#141617] text-[10px] font-mono font-bold tracking-wider flex items-center gap-2 shadow-xs">
+            <Volume2 className="w-3.5 h-3.5 text-[#f15a22]" />
+            <span>AUDIO SOURCE / EP-2350 MIC</span>
           </div>
-          {/* Vertical flow connector */}
-          <div className="w-[2px] h-5 bg-[#141617]" />
+          {/* Vertical lead into SVG Fork */}
+          <div className="w-[2px] h-3 bg-[#141617]" />
         </div>
 
-        {/* FORK DISTRIBUTION BAR (Splits into Bus 1, Serial, and Bus 2) */}
-        <div className="w-full flex flex-col items-center">
-          {/* Horizontal Fork Wire spanning the 3 lanes */}
-          <div className="w-[82%] h-[2px] bg-[#141617] relative flex justify-between items-center">
-            {/* Left Fork Node (Bus 1) */}
-            <div className="w-2.5 h-2.5 rounded-full bg-[#00a69c] border-2 border-[#141617] -ml-1" />
-            {/* Center Fork Node (Serial) */}
-            <div className="w-2.5 h-2.5 rounded-full bg-[#141617] border-2 border-[#141617]" />
-            {/* Right Fork Node (Bus 2) */}
-            <div className="w-2.5 h-2.5 rounded-full bg-[#d99b26] border-2 border-[#141617] -mr-1" />
-          </div>
+        {/* SVG VECTOR FORK (Curved Branch Lines to Bus 1, Serial, Bus 2) */}
+        <div className="w-full relative z-10 max-w-4xl">
+          <svg
+            className="w-full h-11 overflow-visible"
+            viewBox="0 0 100 44"
+            preserveAspectRatio="none"
+          >
+            {/* Central Vertical Stem */}
+            <line
+              x1="50"
+              y1="0"
+              x2="50"
+              y2="14"
+              stroke="#141617"
+              strokeWidth="2"
+              vectorEffect="non-scaling-stroke"
+            />
+            {/* Fork Junction Node */}
+            <circle cx="50" cy="14" r="3" fill="#141617" />
 
-          {/* 3 Drop-down branch wires into column headers */}
-          <div className="w-full grid grid-cols-3">
-            <div className="flex justify-center">
-              <div className="w-[2px] h-4 bg-[#00a69c]" />
-            </div>
-            <div className="flex justify-center">
-              <div className="w-[2px] h-4 bg-[#141617]" />
-            </div>
-            <div className="flex justify-center">
-              <div className="w-[2px] h-4 bg-[#d99b26]" />
-            </div>
-          </div>
+            {/* Left Branch Wire (Bus 1) */}
+            <path
+              d="M 50 14 C 50 30, 16.67 26, 16.67 44"
+              stroke="#00a69c"
+              strokeWidth="2"
+              fill="none"
+              strokeDasharray={bus1List.length > 0 ? 'none' : '3,3'}
+              vectorEffect="non-scaling-stroke"
+            />
+            {/* Bus 1 Junction Dot */}
+            <circle cx="16.67" cy="44" r="2.5" fill="#00a69c" />
+
+            {/* Center Main Wire (Serial Chain) */}
+            <line
+              x1="50"
+              y1="14"
+              x2="50"
+              y2="44"
+              stroke="#141617"
+              strokeWidth="2"
+              vectorEffect="non-scaling-stroke"
+            />
+            {/* Serial Junction Dot */}
+            <circle cx="50" cy="44" r="2.5" fill="#141617" />
+
+            {/* Right Branch Wire (Bus 2) */}
+            <path
+              d="M 50 14 C 50 30, 83.33 26, 83.33 44"
+              stroke="#d99b26"
+              strokeWidth="2"
+              fill="none"
+              strokeDasharray={bus2List.length > 0 ? 'none' : '3,3'}
+              vectorEffect="non-scaling-stroke"
+            />
+            {/* Bus 2 Junction Dot */}
+            <circle cx="83.33" cy="44" r="2.5" fill="#d99b26" />
+          </svg>
         </div>
 
-        {/* 3 PARALLEL WORKFLOW BRANCH COLUMNS (Side-by-side Zapier style) */}
-        <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-3 items-start relative">
-          
+        {/* 3 PARALLEL WORKFLOW BRANCH COLUMNS */}
+        <div className="w-full max-w-4xl grid grid-cols-3 gap-3 items-start relative z-10">
           {/* COLUMN 1: BUS 1 PARALLEL BRANCH (LEFT) */}
-          <div className="flex flex-col items-center w-full">
-            {/* Branch Header with + button */}
-            <div className="w-full bg-[#00a69c] text-white px-2 py-1 border border-[#00a69c] text-[9.5px] font-mono font-bold tracking-wider flex items-center justify-between shadow-2xs">
-              <div className="flex items-center gap-1">
-                <GitBranch className="w-3 h-3" />
-                <span>BUS 1 (PARALLEL)</span>
-              </div>
-              <button
-                onClick={() => setAddMenuTarget({ bus: 1 })}
-                className="bg-white text-[#00a69c] hover:bg-black hover:text-white px-1 py-0 text-[9px] font-bold rounded-[1px] flex items-center gap-0.5 cursor-pointer"
-                title="Add effect to Bus 1 (Left branch)"
-              >
-                <Plus className="w-2.5 h-2.5" /> ADD
-              </button>
-            </div>
-
-            {/* Connecting Wire */}
-            <div className="w-[2px] h-3 bg-[#00a69c]" />
-
-            {/* Effect Nodes Stack */}
+          <div className="flex flex-col items-center w-full min-w-0">
             {bus1List.length === 0 ? (
-              <div
-                onClick={() => setAddMenuTarget({ bus: 1 })}
-                className="w-full py-6 text-center text-[#73787a] font-mono text-[9.5px] border border-dashed border-[#00a69c]/40 bg-[#f4fcfb] hover:bg-[#e6f8f6] cursor-pointer flex flex-col items-center justify-center gap-1 transition-colors"
-                title="Click to add parallel effect to Bus 1"
-              >
-                <span className="text-[#00a69c] font-bold">+ ADD PARALLEL EFFECT</span>
-                <span className="text-[8px] text-[#73787a]">(Bus 1 Left Branch)</span>
+              <div className="flex flex-col items-center justify-center py-2 w-full">
+                <button
+                  onClick={() => setAddMenuTarget({ bus: 1 })}
+                  className="px-3 py-1.5 rounded-[2px] border border-dashed border-[#00a69c] text-[#00a69c] bg-[#00a69c]/5 hover:bg-[#00a69c] hover:text-white font-mono text-[9px] font-bold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer group"
+                  title="Add parallel effect to Bus 1"
+                >
+                  <Plus className="w-3.5 h-3.5 group-hover:rotate-90 transition-transform" />
+                  <span>+ PARALLEL BUS 1</span>
+                </button>
+                <span className="text-[7.5px] font-mono text-[#73787a] mt-1">
+                  (LEFT BRANCH)
+                </span>
               </div>
             ) : (
               <div className="flex flex-col items-center w-full">
+                {/* Branch Header */}
+                <div className="w-full bg-[#00a69c] text-white px-2.5 py-1 rounded-[2px] border border-[#00a69c] text-[9.5px] font-mono font-bold tracking-wider flex items-center justify-between shadow-2xs">
+                  <div className="flex items-center gap-1">
+                    <GitBranch className="w-3 h-3" />
+                    <span>BUS 1 (PARALLEL)</span>
+                  </div>
+                  <button
+                    onClick={() => setAddMenuTarget({ bus: 1 })}
+                    className="bg-white text-[#00a69c] hover:bg-black hover:text-white px-1.5 py-0.2 text-[8.5px] font-bold rounded-[1px] flex items-center gap-0.5 cursor-pointer transition-colors"
+                    title="Add effect to Bus 1"
+                  >
+                    <Plus className="w-2.5 h-2.5" /> ADD
+                  </button>
+                </div>
+
+                {/* Wire from Header to First Card */}
+                <div className="w-[2px] h-4 bg-[#00a69c]" />
+
+                {/* Bus 1 Cards Stack */}
                 {bus1List.map((item, bIdx) => (
                   <React.Fragment key={item.fx.id}>
                     {renderEffectCard(item)}
                     {/* Vertical Connector Line between effects */}
                     {bIdx < bus1List.length - 1 ? (
-                      <div className="flex flex-col items-center my-0.5">
-                        <div className="w-[2px] h-3 bg-[#00a69c]" />
+                      <div className="flex flex-col items-center relative my-1">
+                        <div className="w-[2px] h-6 bg-[#00a69c]" />
                         <button
                           onClick={() => setAddMenuTarget({ bus: 1, insertIndex: item.idx + 1 })}
-                          className="w-4 h-4 rounded-full bg-white border border-[#00a69c] text-[#00a69c] hover:bg-[#00a69c] hover:text-white flex items-center justify-center shadow-xs cursor-pointer text-[9px]"
+                          className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white border-2 border-[#00a69c] text-[#00a69c] hover:bg-[#00a69c] hover:text-white flex items-center justify-center shadow-xs cursor-pointer text-[9px] font-bold transition-transform hover:scale-125 z-10"
                           title="Insert effect here in Bus 1"
                         >
                           +
                         </button>
-                        <div className="w-[2px] h-3 bg-[#00a69c]" />
                       </div>
                     ) : (
                       <div className="w-[2px] h-4 bg-[#00a69c]" />
@@ -597,33 +674,36 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
           </div>
 
           {/* COLUMN 2: SERIAL CHAIN (CENTER MAIN) */}
-          <div className="flex flex-col items-center w-full">
-            {/* Branch Header with + button */}
-            <div className="w-full bg-[#141617] text-white px-2 py-1 border border-[#141617] text-[9.5px] font-mono font-bold tracking-wider flex items-center justify-between shadow-2xs">
+          <div className="flex flex-col items-center w-full min-w-0">
+            {/* Main Header */}
+            <div className="w-full bg-[#141617] text-white px-2.5 py-1 rounded-[2px] border border-[#141617] text-[9.5px] font-mono font-bold tracking-wider flex items-center justify-between shadow-2xs">
               <div className="flex items-center gap-1">
+                <Volume2 className="w-3 h-3 text-[#f15a22]" />
                 <span>SERIAL CHAIN (MAIN)</span>
               </div>
               <button
                 onClick={() => setAddMenuTarget({})}
-                className="bg-white text-[#141617] hover:bg-[#f15a22] hover:text-white px-1 py-0 text-[9px] font-bold rounded-[1px] flex items-center gap-0.5 cursor-pointer"
+                className="bg-white text-[#141617] hover:bg-[#f15a22] hover:text-white px-1.5 py-0.2 text-[8.5px] font-bold rounded-[1px] flex items-center gap-0.5 cursor-pointer transition-colors"
                 title="Add serial effect"
               >
                 <Plus className="w-2.5 h-2.5" /> ADD
               </button>
             </div>
 
-            {/* Connecting Wire */}
-            <div className="w-[2px] h-3 bg-[#141617]" />
+            {/* Wire from Header to First Card */}
+            <div className="w-[2px] h-4 bg-[#141617]" />
 
-            {/* Effect Nodes Stack */}
+            {/* Serial Cards Stack */}
             {serialList.length === 0 ? (
-              <div
-                onClick={() => setAddMenuTarget({})}
-                className="w-full py-6 text-center text-[#73787a] font-mono text-[9.5px] border border-dashed border-[#d2d5d2] bg-[#f8f9f8] hover:bg-[#f0f2f0] cursor-pointer flex flex-col items-center justify-center gap-1 transition-colors"
-                title="Click to add serial effect"
-              >
-                <span className="text-[#141617] font-bold">+ ADD SERIAL EFFECT</span>
-                <span className="text-[8px] text-[#73787a]">(Default Signal Path)</span>
+              <div className="flex flex-col items-center justify-center py-4 w-full">
+                <button
+                  onClick={() => setAddMenuTarget({})}
+                  className="px-3 py-1.5 rounded-[2px] border border-dashed border-[#141617] text-[#141617] bg-black/5 hover:bg-[#141617] hover:text-white font-mono text-[9px] font-bold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer group"
+                  title="Add effect to Serial chain"
+                >
+                  <Plus className="w-3.5 h-3.5 group-hover:rotate-90 transition-transform" />
+                  <span>+ ADD SERIAL EFFECT</span>
+                </button>
               </div>
             ) : (
               <div className="flex flex-col items-center w-full">
@@ -632,16 +712,15 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                     {renderEffectCard(item)}
                     {/* Vertical Connector Line between effects */}
                     {sIdx < serialList.length - 1 ? (
-                      <div className="flex flex-col items-center my-0.5">
-                        <div className="w-[2px] h-3 bg-[#141617]" />
+                      <div className="flex flex-col items-center relative my-1">
+                        <div className="w-[2px] h-6 bg-[#141617]" />
                         <button
                           onClick={() => setAddMenuTarget({ insertIndex: item.idx + 1 })}
-                          className="w-4 h-4 rounded-full bg-white border border-[#141617] text-[#141617] hover:bg-[#f15a22] hover:text-white flex items-center justify-center shadow-xs cursor-pointer text-[9px]"
+                          className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white border-2 border-[#141617] text-[#141617] hover:bg-[#f15a22] hover:text-white flex items-center justify-center shadow-xs cursor-pointer text-[9px] font-bold transition-transform hover:scale-125 z-10"
                           title="Insert effect here in Serial chain"
                         >
                           +
                         </button>
-                        <div className="w-[2px] h-3 bg-[#141617]" />
                       </div>
                     ) : (
                       <div className="w-[2px] h-4 bg-[#141617]" />
@@ -653,52 +732,56 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
           </div>
 
           {/* COLUMN 3: BUS 2 PARALLEL BRANCH (RIGHT) */}
-          <div className="flex flex-col items-center w-full">
-            {/* Branch Header with + button */}
-            <div className="w-full bg-[#d99b26] text-white px-2 py-1 border border-[#d99b26] text-[9.5px] font-mono font-bold tracking-wider flex items-center justify-between shadow-2xs">
-              <div className="flex items-center gap-1">
-                <GitBranch className="w-3 h-3" />
-                <span>BUS 2 (PARALLEL)</span>
-              </div>
-              <button
-                onClick={() => setAddMenuTarget({ bus: 2 })}
-                className="bg-white text-[#d99b26] hover:bg-black hover:text-white px-1 py-0 text-[9px] font-bold rounded-[1px] flex items-center gap-0.5 cursor-pointer"
-                title="Add effect to Bus 2 (Right branch)"
-              >
-                <Plus className="w-2.5 h-2.5" /> ADD
-              </button>
-            </div>
-
-            {/* Connecting Wire */}
-            <div className="w-[2px] h-3 bg-[#d99b26]" />
-
-            {/* Effect Nodes Stack */}
+          <div className="flex flex-col items-center w-full min-w-0">
             {bus2List.length === 0 ? (
-              <div
-                onClick={() => setAddMenuTarget({ bus: 2 })}
-                className="w-full py-6 text-center text-[#73787a] font-mono text-[9.5px] border border-dashed border-[#d99b26]/40 bg-[#fffdf5] hover:bg-[#fef9e8] cursor-pointer flex flex-col items-center justify-center gap-1 transition-colors"
-                title="Click to add parallel effect to Bus 2"
-              >
-                <span className="text-[#d99b26] font-bold">+ ADD PARALLEL EFFECT</span>
-                <span className="text-[8px] text-[#73787a]">(Bus 2 Right Branch)</span>
+              <div className="flex flex-col items-center justify-center py-2 w-full">
+                <button
+                  onClick={() => setAddMenuTarget({ bus: 2 })}
+                  className="px-3 py-1.5 rounded-[2px] border border-dashed border-[#d99b26] text-[#d99b26] bg-[#d99b26]/5 hover:bg-[#d99b26] hover:text-white font-mono text-[9px] font-bold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer group"
+                  title="Add parallel effect to Bus 2"
+                >
+                  <Plus className="w-3.5 h-3.5 group-hover:rotate-90 transition-transform" />
+                  <span>+ PARALLEL BUS 2</span>
+                </button>
+                <span className="text-[7.5px] font-mono text-[#73787a] mt-1">
+                  (RIGHT BRANCH)
+                </span>
               </div>
             ) : (
               <div className="flex flex-col items-center w-full">
+                {/* Branch Header */}
+                <div className="w-full bg-[#d99b26] text-white px-2.5 py-1 rounded-[2px] border border-[#d99b26] text-[9.5px] font-mono font-bold tracking-wider flex items-center justify-between shadow-2xs">
+                  <div className="flex items-center gap-1">
+                    <GitBranch className="w-3 h-3" />
+                    <span>BUS 2 (PARALLEL)</span>
+                  </div>
+                  <button
+                    onClick={() => setAddMenuTarget({ bus: 2 })}
+                    className="bg-white text-[#d99b26] hover:bg-black hover:text-white px-1.5 py-0.2 text-[8.5px] font-bold rounded-[1px] flex items-center gap-0.5 cursor-pointer transition-colors"
+                    title="Add effect to Bus 2"
+                  >
+                    <Plus className="w-2.5 h-2.5" /> ADD
+                  </button>
+                </div>
+
+                {/* Wire from Header to First Card */}
+                <div className="w-[2px] h-4 bg-[#d99b26]" />
+
+                {/* Bus 2 Cards Stack */}
                 {bus2List.map((item, bIdx) => (
                   <React.Fragment key={item.fx.id}>
                     {renderEffectCard(item)}
                     {/* Vertical Connector Line between effects */}
                     {bIdx < bus2List.length - 1 ? (
-                      <div className="flex flex-col items-center my-0.5">
-                        <div className="w-[2px] h-3 bg-[#d99b26]" />
+                      <div className="flex flex-col items-center relative my-1">
+                        <div className="w-[2px] h-6 bg-[#d99b26]" />
                         <button
                           onClick={() => setAddMenuTarget({ bus: 2, insertIndex: item.idx + 1 })}
-                          className="w-4 h-4 rounded-full bg-white border border-[#d99b26] text-[#d99b26] hover:bg-[#d99b26] hover:text-white flex items-center justify-center shadow-xs cursor-pointer text-[9px]"
+                          className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white border-2 border-[#d99b26] text-[#d99b26] hover:bg-[#d99b26] hover:text-white flex items-center justify-center shadow-xs cursor-pointer text-[9px] font-bold transition-transform hover:scale-125 z-10"
                           title="Insert effect here in Bus 2"
                         >
                           +
                         </button>
-                        <div className="w-[2px] h-3 bg-[#d99b26]" />
                       </div>
                     ) : (
                       <div className="w-[2px] h-4 bg-[#d99b26]" />
@@ -710,35 +793,72 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
           </div>
         </div>
 
-        {/* CONVERGENCE / MERGE BAR (Combines all 3 branches back to Output) */}
-        <div className="w-full flex flex-col items-center mt-1">
-          {/* 3 Upward wires from column bottoms */}
-          <div className="w-full grid grid-cols-3">
-            <div className="flex justify-center">
-              <div className="w-[2px] h-3 bg-[#00a69c]" />
-            </div>
-            <div className="flex justify-center">
-              <div className="w-[2px] h-3 bg-[#141617]" />
-            </div>
-            <div className="flex justify-center">
-              <div className="w-[2px] h-3 bg-[#d99b26]" />
-            </div>
-          </div>
+        {/* SVG VECTOR MERGE (Curved Lines Converging into Master Out) */}
+        <div className="w-full relative z-10 max-w-4xl">
+          <svg
+            className="w-full h-11 overflow-visible"
+            viewBox="0 0 100 44"
+            preserveAspectRatio="none"
+          >
+            {/* Bus 1 Top Terminal Dot */}
+            <circle cx="16.67" cy="0" r="2.5" fill={bus1List.length > 0 ? '#00a69c' : '#d2d5d2'} />
+            {/* Serial Top Terminal Dot */}
+            <circle cx="50" cy="0" r="2.5" fill="#141617" />
+            {/* Bus 2 Top Terminal Dot */}
+            <circle cx="83.33" cy="0" r="2.5" fill={bus2List.length > 0 ? '#d99b26' : '#d2d5d2'} />
 
-          {/* Horizontal Merge Wire */}
-          <div className="w-[82%] h-[2px] bg-[#141617] relative flex justify-between items-center">
-            <div className="w-2.5 h-2.5 rounded-full bg-[#00a69c] border-2 border-[#141617] -ml-1" />
-            <div className="w-2.5 h-2.5 rounded-full bg-[#141617] border-2 border-[#141617]" />
-            <div className="w-2.5 h-2.5 rounded-full bg-[#d99b26] border-2 border-[#141617] -mr-1" />
-          </div>
+            {/* Left Branch Merge Wire (Bus 1) */}
+            <path
+              d="M 16.67 0 C 16.67 18, 50 14, 50 30"
+              stroke={bus1List.length > 0 ? '#00a69c' : '#d2d5d2'}
+              strokeWidth="2"
+              fill="none"
+              strokeDasharray={bus1List.length > 0 ? 'none' : '2,2'}
+              vectorEffect="non-scaling-stroke"
+            />
 
-          {/* Final Lead into Output Node */}
-          <div className="w-[2px] h-4 bg-[#141617]" />
+            {/* Center Main Wire (Serial Chain) */}
+            <line
+              x1="50"
+              y1="0"
+              x2="50"
+              y2="30"
+              stroke="#141617"
+              strokeWidth="2"
+              vectorEffect="non-scaling-stroke"
+            />
 
-          {/* OUTPUT NODE */}
-          <div className="bg-[#141617] text-white px-3 py-1 rounded-[2px] border border-[#141617] text-[10px] font-mono font-bold tracking-wider shadow-2xs flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#00a69c] shadow-[0_0_4px_#00a69c]" />
-            SUMMING / MASTER OUT
+            {/* Right Branch Merge Wire (Bus 2) */}
+            <path
+              d="M 83.33 0 C 83.33 18, 50 14, 50 30"
+              stroke={bus2List.length > 0 ? '#d99b26' : '#d2d5d2'}
+              strokeWidth="2"
+              fill="none"
+              strokeDasharray={bus2List.length > 0 ? 'none' : '2,2'}
+              vectorEffect="non-scaling-stroke"
+            />
+
+            {/* Merge Junction Node */}
+            <circle cx="50" cy="30" r="3" fill="#141617" />
+
+            {/* Lead Wire to Master Out */}
+            <line
+              x1="50"
+              y1="30"
+              x2="50"
+              y2="44"
+              stroke="#141617"
+              strokeWidth="2"
+              vectorEffect="non-scaling-stroke"
+            />
+          </svg>
+        </div>
+
+        {/* OUTPUT NODE (Bottom of Signal Flow) */}
+        <div className="flex flex-col items-center relative z-10">
+          <div className="bg-[#141617] text-white px-3.5 py-1.5 rounded-[2px] border border-[#141617] text-[10px] font-mono font-bold tracking-wider shadow-xs flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[#00a69c] shadow-[0_0_6px_#00a69c]" />
+            <span>SUMMING / MASTER OUT</span>
           </div>
         </div>
 
