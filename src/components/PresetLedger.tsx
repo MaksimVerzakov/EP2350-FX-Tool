@@ -338,7 +338,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
     const defaultParam = m?.params[0]?.name || 'cutoff';
     onUpdatePreset({
       ...preset,
-      handle: { row: globalIdx, param: defaultParam, depth: 0.8 }
+      handle: { row: globalIdx, param: defaultParam, depth: 80 }
     });
   };
 
@@ -354,7 +354,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
     const defaultParam = m?.params[0]?.name || 'mix';
     onUpdatePreset({
       ...preset,
-      shake: { row: globalIdx, param: defaultParam, depth: 0.5 }
+      shake: { row: globalIdx, param: defaultParam, depth: 50 }
     });
   };
 
@@ -468,7 +468,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                 onChange={(e) =>
                   onUpdatePreset({
                     ...preset,
-                    handle: { row: globalIdx, param: e.target.value, depth: preset.handle?.depth ?? 0.8 }
+                    handle: { row: globalIdx, param: e.target.value, depth: preset.handle?.depth ?? 80 }
                   })
                 }
                 className="bg-black text-white text-[8px] px-1 py-0 border-0 outline-none uppercase"
@@ -480,22 +480,33 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                 ))}
               </select>
               <span>DEPTH:</span>
-              <input
-                type="number"
-                step="0.1"
-                value={preset.handle?.depth ?? 0.8}
-                onChange={(e) =>
-                  onUpdatePreset({
-                    ...preset,
-                    handle: {
-                      row: globalIdx,
-                      param: preset.handle?.param || meta.params[0]?.name || 'cutoff',
-                      depth: parseFloat(e.target.value) || 0
-                    }
-                  })
-                }
-                className="w-9 bg-black text-white text-center text-[8px] px-0.5 py-0 outline-none font-mono"
-              />
+              <div className="flex items-center">
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={
+                    typeof preset.handle?.depth === 'number'
+                      ? (preset.handle.depth <= 1.0 ? Math.round(preset.handle.depth * 100) : Math.round(preset.handle.depth))
+                      : 80
+                  }
+                  onChange={(e) => {
+                    const parsed = parseFloat(e.target.value) || 0;
+                    const clamped = Math.max(0, Math.min(100, parsed));
+                    onUpdatePreset({
+                      ...preset,
+                      handle: {
+                        row: globalIdx,
+                        param: preset.handle?.param || meta.params[0]?.name || 'cutoff',
+                        depth: clamped
+                      }
+                    });
+                  }}
+                  className="w-8 bg-black text-white text-center text-[8px] px-0.5 py-0 outline-none font-mono"
+                />
+                <span className="text-[7.5px] text-white/70 ml-0.5">%</span>
+              </div>
               <button
                 onClick={removeHandle}
                 className="hover:text-black hover:bg-white px-0.5 transition-colors cursor-pointer"
@@ -523,7 +534,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                 onChange={(e) =>
                   onUpdatePreset({
                     ...preset,
-                    shake: { row: globalIdx, param: e.target.value, depth: preset.shake?.depth ?? 0.5 }
+                    shake: { row: globalIdx, param: e.target.value, depth: preset.shake?.depth ?? 50 }
                   })
                 }
                 className="bg-black text-white text-[8px] px-1 py-0 border-0 outline-none uppercase"
@@ -535,22 +546,33 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                 ))}
               </select>
               <span>DEPTH:</span>
-              <input
-                type="number"
-                step="0.1"
-                value={preset.shake?.depth ?? 0.5}
-                onChange={(e) =>
-                  onUpdatePreset({
-                    ...preset,
-                    shake: {
-                      row: globalIdx,
-                      param: preset.shake?.param || meta.params[0]?.name || 'mix',
-                      depth: parseFloat(e.target.value) || 0
-                    }
-                  })
-                }
-                className="w-9 bg-black text-white text-center text-[8px] px-0.5 py-0 outline-none font-mono"
-              />
+              <div className="flex items-center">
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={
+                    typeof preset.shake?.depth === 'number'
+                      ? (preset.shake.depth <= 1.0 ? Math.round(preset.shake.depth * 100) : Math.round(preset.shake.depth))
+                      : 50
+                  }
+                  onChange={(e) => {
+                    const parsed = parseFloat(e.target.value) || 0;
+                    const clamped = Math.max(0, Math.min(100, parsed));
+                    onUpdatePreset({
+                      ...preset,
+                      shake: {
+                        row: globalIdx,
+                        param: preset.shake?.param || meta.params[0]?.name || 'mix',
+                        depth: clamped
+                      }
+                    });
+                  }}
+                  className="w-8 bg-black text-white text-center text-[8px] px-0.5 py-0 outline-none font-mono"
+                />
+                <span className="text-[7.5px] text-white/70 ml-0.5">%</span>
+              </div>
               <button
                 onClick={removeShake}
                 className="hover:text-black hover:bg-white px-0.5 transition-colors cursor-pointer"
@@ -1011,7 +1033,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                 onUpdatePreset({
                   ...preset,
                   lfo: {
-                    ...(preset.lfo || { row: 0, param: 'cutoff', depth: 0.2, speed: 2.0, shape: 'sine' }),
+                    ...(preset.lfo || { row: 0, param: 'cutoff', depth: 20, speed: 2.0, shape: 'sine' }),
                     shape: e.target.value as LfoShape
                   }
                 })
@@ -1035,7 +1057,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                 onUpdatePreset({
                   ...preset,
                   lfo: {
-                    ...(preset.lfo || { row: 0, param: 'cutoff', depth: 0.2, shape: 'sine', speed: 2.0 }),
+                    ...(preset.lfo || { row: 0, param: 'cutoff', depth: 20, shape: 'sine', speed: 2.0 }),
                     speed: parseFloat(e.target.value) || 0.1
                   }
                 })

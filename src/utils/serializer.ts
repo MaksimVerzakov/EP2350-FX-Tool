@@ -1,4 +1,5 @@
 import { PackConfig } from '../types/config';
+import { isPercentParam } from '../constants/effectsRegistry';
 
 export interface ValidationIssue {
   type: 'error' | 'warning';
@@ -132,8 +133,15 @@ export function serializeToConfigJson(pack: PackConfig): string {
       // Copy all effect-specific numeric parameters
       Object.keys(item).forEach((key) => {
         if (key !== 'id' && key !== 'effect' && key !== 'BUS' && typeof item[key] === 'number') {
-          // Clean round numbers to 3 decimal places max
-          effectEntry[key] = Math.round(item[key] * 1000) / 1000;
+          const val = item[key];
+          if (isPercentParam(item.effect, key)) {
+            // Percent parameters: adjust from 0..100 (UI) to 0.0..1.0 (JSON)
+            const jsonVal = val > 1 ? val / 100 : val;
+            effectEntry[key] = Math.round(jsonVal * 1000) / 1000;
+          } else {
+            // Clean round numbers to 3 decimal places max
+            effectEntry[key] = Math.round(val * 1000) / 1000;
+          }
         }
       });
 
@@ -149,28 +157,34 @@ export function serializeToConfigJson(pack: PackConfig): string {
           depth: Math.round(p.handle.depth * 1000) / 1000
         };
       } else if (typeof p.handle.row === 'number') {
+        const rawDepth = p.handle.depth;
+        const depth = rawDepth > 1 ? rawDepth / 100 : rawDepth;
         presetObj.handle = {
           row: p.handle.row,
           param: p.handle.param,
-          depth: Math.round(p.handle.depth * 1000) / 1000
+          depth: Math.round(depth * 1000) / 1000
         };
       }
     }
 
     if (p.shake && typeof p.shake.row === 'number') {
+      const rawDepth = p.shake.depth;
+      const depth = rawDepth > 1 ? rawDepth / 100 : rawDepth;
       presetObj.shake = {
         row: p.shake.row,
         param: p.shake.param,
-        depth: Math.round(p.shake.depth * 1000) / 1000
+        depth: Math.round(depth * 1000) / 1000
       };
     }
 
     if (p.lfo) {
+      const rawDepth = p.lfo.depth;
+      const depth = (p.lfo.target !== 'lfo' && rawDepth > 1) ? rawDepth / 100 : rawDepth;
       const lfoEntry: any = {
         param: p.lfo.param,
         shape: p.lfo.shape,
         speed: Math.round(p.lfo.speed * 100) / 100,
-        depth: Math.round(p.lfo.depth * 1000) / 1000
+        depth: Math.round(depth * 1000) / 1000
       };
       if (p.lfo.target === 'lfo') {
         lfoEntry.target = 'lfo';

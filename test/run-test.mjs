@@ -39,6 +39,15 @@ function validatePackConfig(pack) {
   return issues;
 }
 
+const PERCENT_PARAMS = new Set([
+  'echo', 'cross-feed', 'lowpass-cutoff', 'highpass-cutoff', 'wet-level', 'dry-level',
+  'mix', 'level', 'spring-mix'
+]);
+function isPercentParam(effect, param) {
+  if ((effect === 'LOWPASS' || effect === 'HIGHPASS') && param === 'cutoff') return false;
+  return PERCENT_PARAMS.has(param);
+}
+
 function serializeToConfigJson(pack) {
   const rootObj = {
     name: pack.name.trim() || 'UNTITLED PACK'
@@ -62,7 +71,13 @@ function serializeToConfigJson(pack) {
       if (item.BUS) effectEntry.BUS = item.BUS;
       Object.keys(item).forEach((key) => {
         if (key !== 'id' && key !== 'effect' && key !== 'BUS' && typeof item[key] === 'number') {
-          effectEntry[key] = Math.round(item[key] * 1000) / 1000;
+          const val = item[key];
+          if (isPercentParam(item.effect, key)) {
+            const jsonVal = val > 1 ? val / 100 : val;
+            effectEntry[key] = Math.round(jsonVal * 1000) / 1000;
+          } else {
+            effectEntry[key] = Math.round(val * 1000) / 1000;
+          }
         }
       });
       return effectEntry;
@@ -72,14 +87,20 @@ function serializeToConfigJson(pack) {
       if (p.handle.target === 'lfo') {
         presetObj.handle = { target: 'lfo', param: p.handle.param, depth: Math.round(p.handle.depth * 1000) / 1000 };
       } else if (typeof p.handle.row === 'number') {
-        presetObj.handle = { row: p.handle.row, param: p.handle.param, depth: Math.round(p.handle.depth * 1000) / 1000 };
+        const raw = p.handle.depth;
+        const depth = raw > 1 ? raw / 100 : raw;
+        presetObj.handle = { row: p.handle.row, param: p.handle.param, depth: Math.round(depth * 1000) / 1000 };
       }
     }
     if (p.shake && typeof p.shake.row === 'number') {
-      presetObj.shake = { row: p.shake.row, param: p.shake.param, depth: Math.round(p.shake.depth * 1000) / 1000 };
+      const raw = p.shake.depth;
+      const depth = raw > 1 ? raw / 100 : raw;
+      presetObj.shake = { row: p.shake.row, param: p.shake.param, depth: Math.round(depth * 1000) / 1000 };
     }
     if (p.lfo) {
-      const lfo = { param: p.lfo.param, shape: p.lfo.shape, speed: p.lfo.speed, depth: p.lfo.depth };
+      const raw = p.lfo.depth;
+      const depth = (p.lfo.target !== 'lfo' && raw > 1) ? raw / 100 : raw;
+      const lfo = { param: p.lfo.param, shape: p.lfo.shape, speed: p.lfo.speed, depth: Math.round(depth * 1000) / 1000 };
       if (p.lfo.target === 'lfo') lfo.target = 'lfo';
       else if (typeof p.lfo.row === 'number') lfo.row = p.lfo.row;
       presetObj.lfo = lfo;
@@ -102,14 +123,40 @@ function parseConfigJson(rawJson) {
     pos: p.pos ?? idx,
     name: p.name || '',
     comment: p.comment || '',
-    list: (p.list || []).map((item, itemIdx) => ({
-      id: `fx-${itemIdx}`,
-      effect: (item.effect || 'LOWPASS').toUpperCase(),
-      ...item
-    })),
-    handle: p.handle,
-    shake: p.shake,
-    lfo: p.lfo,
+    list: (p.list || []).map((item, itemIdx) => {
+      const effect = (item.effect || 'LOWPASS').toUpperCase();
+      const entry = {
+        id: `fx-${itemIdx}`,
+        effect,
+        ...item
+      };
+      Object.keys(entry).forEach((key) => {
+        if (isPercentParam(effect, key) && typeof entry[key] === 'number') {
+          if (entry[key] <= 1.0) {
+            entry[key] = Math.round(entry[key] * 100);
+          }
+        }
+      });
+      return entry;
+    }),
+    handle: p.handle ? {
+      ...p.handle,
+      depth: (p.handle.target !== 'lfo' && typeof p.handle.depth === 'number' && p.handle.depth <= 1.0)
+        ? Math.round(p.handle.depth * 100)
+        : p.handle.depth
+    } : undefined,
+    shake: p.shake ? {
+      ...p.shake,
+      depth: (typeof p.shake.depth === 'number' && p.shake.depth <= 1.0)
+        ? Math.round(p.shake.depth * 100)
+        : p.shake.depth
+    } : undefined,
+    lfo: p.lfo ? {
+      ...p.lfo,
+      depth: (p.lfo.target !== 'lfo' && typeof p.lfo.depth === 'number' && p.lfo.depth <= 1.0)
+        ? Math.round(p.lfo.depth * 100)
+        : p.lfo.depth
+    } : undefined,
     trigger: p.trigger
   }));
   return { pack: { name, useBuiltInSamples, presets } };
@@ -258,7 +305,46 @@ assert.strictEqual(EP_SIDEKICK_KNOB_COLORS[4 % 4], '#f15a22');
 for (let i = 0; i < 8; i++) {
   assert.strictEqual(EP_SIDEKICK_KNOB_COLORS[i % 4], EP_SIDEKICK_KNOB_COLORS[i % 4]);
 }
-console.log('✓ Teenage Engineering EP Sidekick 4-knob color cycle test passed!');
+// Test 7: Percentage standard scaling (0..100% in UI -> 0.0..1.0 in JSON -> 0..100% on parse)
+const percentTestPack = {
+  name: 'PERCENT TEST',
+  useBuiltInSamples: true,
+  presets: [
+    {
+      pos: 0,
+      name: 'PERCENT PRESET',
+      list: [
+        { effect: 'DIST', amount: 12, mix: 50 },
+        { effect: 'DELAY', time: 0.5, echo: 45, 'wet-level': 80, 'dry-level': 100 }
+      ],
+      handle: { row: 0, param: 'mix', depth: 80 },
+      shake: { row: 1, param: 'echo', depth: 50 },
+      lfo: { row: 1, param: 'echo', depth: 25, shape: 'sine', speed: 2.5 }
+    }
+  ]
+};
+
+const percentSerialized = serializeToConfigJson(percentTestPack);
+const percentParsedJson = JSON.parse(percentSerialized);
+
+assert.strictEqual(percentParsedJson.presets[0].list[0].mix, 0.5, 'DIST mix 50 must serialize to 0.5');
+assert.strictEqual(percentParsedJson.presets[0].list[1].echo, 0.45, 'DELAY echo 45 must serialize to 0.45');
+assert.strictEqual(percentParsedJson.presets[0].list[1]['wet-level'], 0.8, 'DELAY wet-level 80 must serialize to 0.8');
+assert.strictEqual(percentParsedJson.presets[0].list[1]['dry-level'], 1.0, 'DELAY dry-level 100 must serialize to 1.0');
+assert.strictEqual(percentParsedJson.presets[0].handle.depth, 0.8, 'Handle depth 80 must serialize to 0.8');
+assert.strictEqual(percentParsedJson.presets[0].shake.depth, 0.5, 'Shake depth 50 must serialize to 0.5');
+assert.strictEqual(percentParsedJson.presets[0].lfo.depth, 0.25, 'LFO depth 25 must serialize to 0.25');
+
+const percentRoundTrip = parseConfigJson(percentSerialized);
+assert.strictEqual(percentRoundTrip.pack.presets[0].list[0].mix, 50, 'Parsed DIST mix must be 50');
+assert.strictEqual(percentRoundTrip.pack.presets[0].list[1].echo, 45, 'Parsed DELAY echo must be 45');
+assert.strictEqual(percentRoundTrip.pack.presets[0].list[1]['wet-level'], 80, 'Parsed DELAY wet-level must be 80');
+assert.strictEqual(percentRoundTrip.pack.presets[0].list[1]['dry-level'], 100, 'Parsed DELAY dry-level must be 100');
+assert.strictEqual(percentRoundTrip.pack.presets[0].handle.depth, 80, 'Parsed Handle depth must be 80');
+assert.strictEqual(percentRoundTrip.pack.presets[0].shake.depth, 50, 'Parsed Shake depth must be 50');
+assert.strictEqual(percentRoundTrip.pack.presets[0].lfo.depth, 25, 'Parsed LFO depth must be 25');
+console.log('✓ Standard audio percentage scaling & JSON round-trip test passed!');
 
 console.log('=== ALL AUTOMATED COMPLIANCE TESTS PASSED (100%) ===');
+
 

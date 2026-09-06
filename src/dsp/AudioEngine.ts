@@ -284,7 +284,8 @@ export class DspAudioEngine {
         hpTone.type = 'highpass';
 
         // Mix routing
-        const mix = typeof fx.mix === 'number' ? fx.mix : 0.5;
+        const toRatio = (v: number | undefined, defaultVal: number) => typeof v === 'number' ? (v > 1 ? v / 100 : v) : defaultVal;
+        const mix = toRatio(fx.mix, 0.5);
         dryGain.gain.value = 1.0 - mix;
         wetGain.gain.value = mix;
 
@@ -294,9 +295,9 @@ export class DspAudioEngine {
         shaper.oversample = '4x';
 
         // Tones
-        const lp = typeof fx['lowpass-cutoff'] === 'number' ? fx['lowpass-cutoff'] : 1.0;
+        const lp = toRatio(fx['lowpass-cutoff'], 1.0);
         lpTone.frequency.value = 20 * Math.pow(1000, lp);
-        const hp = typeof fx['highpass-cutoff'] === 'number' ? fx['highpass-cutoff'] : 0.0;
+        const hp = toRatio(fx['highpass-cutoff'], 0.0);
         hpTone.frequency.value = 20 * Math.pow(1000, hp);
 
         // Wiring
@@ -325,19 +326,20 @@ export class DspAudioEngine {
         delayNode.delayTime.value = Math.max(0.01, Math.min(1.1, time));
 
         const feedbackGain = ctx.createGain();
-        const echo = typeof fx.echo === 'number' ? fx.echo : 0.4;
+        const toRatio = (v: number | undefined, defaultVal: number) => typeof v === 'number' ? (v > 1 ? v / 100 : v) : defaultVal;
+        const echo = toRatio(fx.echo, 0.4);
         feedbackGain.gain.value = Math.min(0.92, echo);
 
         const lpFilter = ctx.createBiquadFilter();
         lpFilter.type = 'lowpass';
-        const lp = typeof fx['lowpass-cutoff'] === 'number' ? fx['lowpass-cutoff'] : 1.0;
+        const lp = toRatio(fx['lowpass-cutoff'], 1.0);
         lpFilter.frequency.value = 20 * Math.pow(1000, lp);
 
         const dryGain = ctx.createGain();
-        dryGain.gain.value = typeof fx['dry-level'] === 'number' ? fx['dry-level'] : 1.0;
+        dryGain.gain.value = toRatio(fx['dry-level'], 1.0);
 
         const wetGain = ctx.createGain();
-        wetGain.gain.value = typeof fx['wet-level'] === 'number' ? fx['wet-level'] : 0.5;
+        wetGain.gain.value = toRatio(fx['wet-level'], 0.5);
 
         // Connect delay loop
         input.connect(dryGain);
@@ -363,21 +365,22 @@ export class DspAudioEngine {
         const input = ctx.createGain();
         const output = ctx.createGain();
 
+        const toRatio = (v: number | undefined, defaultVal: number) => typeof v === 'number' ? (v > 1 ? v / 100 : v) : defaultVal;
         const dryGain = ctx.createGain();
-        dryGain.gain.value = typeof fx['dry-level'] === 'number' ? fx['dry-level'] : 1.0;
+        dryGain.gain.value = toRatio(fx['dry-level'], 1.0);
         const wetGain = ctx.createGain();
-        wetGain.gain.value = typeof fx['wet-level'] === 'number' ? fx['wet-level'] : 0.5;
+        wetGain.gain.value = toRatio(fx['wet-level'], 0.5);
 
         const hpFilter = ctx.createBiquadFilter();
         hpFilter.type = 'highpass';
-        const hp = typeof fx['highpass-cutoff'] === 'number' ? fx['highpass-cutoff'] : 0.2;
+        const hp = toRatio(fx['highpass-cutoff'], 0.2);
         hpFilter.frequency.value = 20 * Math.pow(1000, hp);
 
         // Comb filters for metallic spring resonance
         const combTimes = [0.029, 0.037, 0.043, 0.051];
         const combGains = [0.82, 0.78, 0.74, 0.7];
         const timeScale = typeof fx.time === 'number' ? fx.time : 0.5;
-        const springMix = typeof fx['spring-mix'] === 'number' ? fx['spring-mix'] : 0.0;
+        const springMix = toRatio(fx['spring-mix'], 0.0);
 
         const combSum = ctx.createGain();
         combSum.gain.value = 0.28 + springMix * 0.4;
@@ -423,9 +426,10 @@ export class DspAudioEngine {
         osc.connect(ringGain.gain);
         osc.start();
 
+        const toRatio = (v: number | undefined, defaultVal: number) => typeof v === 'number' ? (v > 1 ? v / 100 : v) : defaultVal;
         const dryGain = ctx.createGain();
         const wetGain = ctx.createGain();
-        const mix = typeof fx.mix === 'number' ? fx.mix : 0.5;
+        const mix = toRatio(fx.mix, 0.5);
         dryGain.gain.value = 1.0 - mix;
         wetGain.gain.value = mix;
 
@@ -454,8 +458,9 @@ export class DspAudioEngine {
       }
 
       case 'SAMPLE': {
+        const toRatio = (v: number | undefined, defaultVal: number) => typeof v === 'number' ? (v > 1 ? v / 100 : v) : defaultVal;
         const gain = ctx.createGain();
-        const level = typeof fx.level === 'number' ? fx.level : 1.0;
+        const level = toRatio(fx.level, 1.0);
         gain.gain.value = level;
 
         if (this.sourceNode) {
@@ -504,14 +509,18 @@ export class DspAudioEngine {
       // Check handle modulation on this row
       let handleDelta = 0;
       if (handle && handle.target !== 'lfo' && handle.row === rowIdx) {
-        handleDelta = this.modState.handlePos * handle.depth;
+        const depthRatio = handle.depth > 1 ? handle.depth / 100 : handle.depth;
+        handleDelta = this.modState.handlePos * depthRatio;
       }
 
       // Check shake modulation on this row
       let shakeDelta = 0;
       if (shake && shake.row === rowIdx) {
-        shakeDelta = this.modState.shakeAmount * shake.depth;
+        const depthRatio = shake.depth > 1 ? shake.depth / 100 : shake.depth;
+        shakeDelta = this.modState.shakeAmount * depthRatio;
       }
+
+      const toRatio = (v: number | undefined, defaultVal: number) => typeof v === 'number' ? (v > 1 ? v / 100 : v) : defaultVal;
 
       if (effectType === 'LOWPASS' || effectType === 'HIGHPASS') {
         const baseCutoff = typeof params.cutoff === 'number' ? params.cutoff : (effectType === 'LOWPASS' ? 1.0 : 0.0);
@@ -526,14 +535,14 @@ export class DspAudioEngine {
         }
       } else if (effectType === 'DIST') {
         if (handle && handle.param === 'mix' && nodeRefs.wetGain) {
-          const baseMix = typeof params.mix === 'number' ? params.mix : 0.5;
+          const baseMix = toRatio(params.mix, 0.5);
           const mix = Math.max(0.0, Math.min(1.0, baseMix + handleDelta + shakeDelta));
           nodeRefs.wetGain.gain.setTargetAtTime(mix, ctx.currentTime, 0.02);
           nodeRefs.dryGain.gain.setTargetAtTime(1.0 - mix, ctx.currentTime, 0.02);
         }
       } else if (effectType === 'DELAY') {
         if (handle && handle.param === 'echo' && nodeRefs.feedbackGain) {
-          const baseEcho = typeof params.echo === 'number' ? params.echo : 0.4;
+          const baseEcho = toRatio(params.echo, 0.4);
           const echo = Math.max(0.0, Math.min(0.95, baseEcho + handleDelta + shakeDelta));
           nodeRefs.feedbackGain.gain.setTargetAtTime(echo, ctx.currentTime, 0.02);
         }

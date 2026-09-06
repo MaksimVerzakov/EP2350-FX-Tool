@@ -20,62 +20,62 @@ export const EFFECTS_REGISTRY: Record<EffectType, EffectMeta> = {
       {
         name: 'echo',
         label: 'ECHO (FEEDBACK)',
-        min: 0.0,
-        max: 1.0,
-        step: 0.01,
-        defaultVal: 0.4,
+        min: 0,
+        max: 100,
+        step: 1,
+        defaultVal: 40,
         unit: '%',
-        displayScale: (v) => `${(v * 100).toFixed(0)}%`
+        displayScale: (v) => `${Math.round(v)}%`
       },
       {
         name: 'cross-feed',
         label: 'CROSS-FEED',
-        min: 0.0,
-        max: 1.0,
-        step: 0.01,
-        defaultVal: 0.0,
+        min: 0,
+        max: 100,
+        step: 1,
+        defaultVal: 0,
         unit: '%',
-        displayScale: (v) => `${(v * 100).toFixed(0)}%`
+        displayScale: (v) => `${Math.round(v)}%`
       },
       {
         name: 'lowpass-cutoff',
         label: 'LP CUTOFF',
-        min: 0.0,
-        max: 1.0,
-        step: 0.01,
-        defaultVal: 1.0,
+        min: 0,
+        max: 100,
+        step: 1,
+        defaultVal: 100,
         unit: '%',
-        displayScale: (v) => `${(v * 100).toFixed(0)}%`
+        displayScale: (v) => `${Math.round(v)}%`
       },
       {
         name: 'highpass-cutoff',
         label: 'HP CUTOFF',
-        min: 0.0,
-        max: 1.0,
-        step: 0.01,
-        defaultVal: 0.0,
+        min: 0,
+        max: 100,
+        step: 1,
+        defaultVal: 0,
         unit: '%',
-        displayScale: (v) => `${(v * 100).toFixed(0)}%`
+        displayScale: (v) => `${Math.round(v)}%`
       },
       {
         name: 'wet-level',
         label: 'WET LEVEL',
-        min: 0.0,
-        max: 1.0,
-        step: 0.01,
-        defaultVal: 0.5,
+        min: 0,
+        max: 100,
+        step: 1,
+        defaultVal: 50,
         unit: '%',
-        displayScale: (v) => `${(v * 100).toFixed(0)}%`
+        displayScale: (v) => `${Math.round(v)}%`
       },
       {
         name: 'dry-level',
         label: 'DRY LEVEL',
-        min: 0.0,
-        max: 1.0,
-        step: 0.01,
-        defaultVal: 1.0,
+        min: 0,
+        max: 100,
+        step: 1,
+        defaultVal: 100,
         unit: '%',
-        displayScale: (v) => `${(v * 100).toFixed(0)}%`
+        displayScale: (v) => `${Math.round(v)}%`
       },
       {
         name: 'balance',
@@ -109,32 +109,32 @@ export const EFFECTS_REGISTRY: Record<EffectType, EffectMeta> = {
       {
         name: 'mix',
         label: 'WET MIX',
-        min: 0.0,
-        max: 1.0,
-        step: 0.01,
-        defaultVal: 0.5,
+        min: 0,
+        max: 100,
+        step: 1,
+        defaultVal: 50,
         unit: '%',
-        displayScale: (v) => `${(v * 100).toFixed(0)}%`
+        displayScale: (v) => `${Math.round(v)}%`
       },
       {
         name: 'lowpass-cutoff',
         label: 'LP TONE',
-        min: 0.0,
-        max: 1.0,
-        step: 0.01,
-        defaultVal: 1.0,
+        min: 0,
+        max: 100,
+        step: 1,
+        defaultVal: 100,
         unit: '%',
-        displayScale: (v) => `${(v * 100).toFixed(0)}%`
+        displayScale: (v) => `${Math.round(v)}%`
       },
       {
         name: 'highpass-cutoff',
         label: 'HP TONE',
-        min: 0.0,
-        max: 1.0,
-        step: 0.01,
-        defaultVal: 0.0,
+        min: 0,
+        max: 100,
+        step: 1,
+        defaultVal: 0,
         unit: '%',
-        displayScale: (v) => `${(v * 100).toFixed(0)}%`
+        displayScale: (v) => `${Math.round(v)}%`
       }
     ]
   },
@@ -200,12 +200,12 @@ export const EFFECTS_REGISTRY: Record<EffectType, EffectMeta> = {
       {
         name: 'dry-level',
         label: 'DRY LEVEL',
-        min: 0.0,
-        max: 1.0,
-        step: 0.01,
-        defaultVal: 1.0,
+        min: 0,
+        max: 100,
+        step: 1,
+        defaultVal: 100,
         unit: '%',
-        displayScale: (v) => `${(v * 100).toFixed(0)}%`
+        displayScale: (v) => `${Math.round(v)}%`
       }
     ]
   },
@@ -277,12 +277,12 @@ export const EFFECTS_REGISTRY: Record<EffectType, EffectMeta> = {
       {
         name: 'level',
         label: 'LEVEL (GAIN)',
-        min: 0.0,
-        max: 1.0,
-        step: 0.01,
-        defaultVal: 1.0,
+        min: 0,
+        max: 100,
+        step: 1,
+        defaultVal: 100,
         unit: '%',
-        displayScale: (v) => `${(v * 100).toFixed(0)}%`
+        displayScale: (v) => `${Math.round(v)}%`
       },
       {
         name: 'balance',
@@ -316,42 +316,42 @@ export const EFFECTS_REGISTRY: Record<EffectType, EffectMeta> = {
       {
         name: 'spring-mix',
         label: 'SPRING BOING',
-        min: 0.0,
-        max: 1.0,
-        step: 0.01,
-        defaultVal: 0.0,
+        min: 0,
+        max: 100,
+        step: 1,
+        defaultVal: 0,
         unit: '%',
-        displayScale: (v) => `${(v * 100).toFixed(0)}%`
+        displayScale: (v) => `${Math.round(v)}%`
       },
       {
         name: 'highpass-cutoff',
         label: 'HP ROLLOFF',
-        min: 0.0,
-        max: 1.0,
-        step: 0.01,
-        defaultVal: 0.2,
+        min: 0,
+        max: 100,
+        step: 1,
+        defaultVal: 20,
         unit: '%',
-        displayScale: (v) => `${(v * 100).toFixed(0)}%`
+        displayScale: (v) => `${Math.round(v)}%`
       },
       {
         name: 'wet-level',
         label: 'WET LEVEL',
-        min: 0.0,
-        max: 1.0,
-        step: 0.01,
-        defaultVal: 0.5,
+        min: 0,
+        max: 100,
+        step: 1,
+        defaultVal: 50,
         unit: '%',
-        displayScale: (v) => `${(v * 100).toFixed(0)}%`
+        displayScale: (v) => `${Math.round(v)}%`
       },
       {
         name: 'dry-level',
         label: 'DRY LEVEL',
-        min: 0.0,
-        max: 1.0,
-        step: 0.01,
-        defaultVal: 1.0,
+        min: 0,
+        max: 100,
+        step: 1,
+        defaultVal: 100,
         unit: '%',
-        displayScale: (v) => `${(v * 100).toFixed(0)}%`
+        displayScale: (v) => `${Math.round(v)}%`
       }
     ]
   },
@@ -375,12 +375,12 @@ export const EFFECTS_REGISTRY: Record<EffectType, EffectMeta> = {
       {
         name: 'mix',
         label: 'WET MIX',
-        min: 0.0,
-        max: 1.0,
-        step: 0.01,
-        defaultVal: 0.5,
+        min: 0,
+        max: 100,
+        step: 1,
+        defaultVal: 50,
         unit: '%',
-        displayScale: (v) => `${(v * 100).toFixed(0)}%`
+        displayScale: (v) => `${Math.round(v)}%`
       }
     ]
   },
@@ -427,4 +427,11 @@ export const EFFECTS_REGISTRY: Record<EffectType, EffectMeta> = {
       }
     ]
   }
+};
+
+export const isPercentParam = (effectType: string, paramName: string): boolean => {
+  const meta = EFFECTS_REGISTRY[effectType as EffectType];
+  if (!meta) return false;
+  const param = meta.params.find((p) => p.name === paramName);
+  return param?.unit === '%';
 };

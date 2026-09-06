@@ -36,12 +36,22 @@ export const Knob: React.FC<KnobProps> = ({
   const dragStartY = useRef(0);
   const dragStartVal = useRef(value);
 
+  const formatVal = useCallback((val: number): string => {
+    if (unit === '%') {
+      return `${Math.round(val)}%`;
+    }
+    if (displayValue !== undefined) {
+      return displayValue;
+    }
+    return Number.isInteger(val) ? `${val}` : `${Number(val.toFixed(2))}`;
+  }, [displayValue, unit]);
+
   // Keep internal input text in sync with value when not focused / dragging
   useEffect(() => {
     if (!isDragging) {
-      setInputText(displayValue ?? (Number.isInteger(value) ? `${value}` : `${Number(value.toFixed(2))}`));
+      setInputText(formatVal(value));
     }
-  }, [value, displayValue, isDragging]);
+  }, [value, isDragging, formatVal]);
 
   // Map value to angle: -135deg to +135deg (270deg total travel)
   const normalized = Math.max(0, Math.min(1, (value - min) / (max - min || 1)));
@@ -69,9 +79,9 @@ export const Knob: React.FC<KnobProps> = ({
       }
       const rounded = Math.round(newVal * 1000) / 1000;
       onChange(rounded);
-      setInputText(`${Number(rounded.toFixed(2))}`);
+      setInputText(formatVal(rounded));
     },
-    [isDragging, max, min, onChange, step]
+    [isDragging, max, min, onChange, step, formatVal]
   );
 
   const handleMouseUp = useCallback(() => {
@@ -96,20 +106,23 @@ export const Knob: React.FC<KnobProps> = ({
     if (step) newVal = Math.round(newVal / step) * step;
     const rounded = Math.round(newVal * 1000) / 1000;
     onChange(rounded);
-    setInputText(`${Number(rounded.toFixed(2))}`);
+    setInputText(formatVal(rounded));
   };
 
   const commitValue = (textToCommit: string) => {
     const cleanText = textToCommit.replace(/[^\d.-]/g, '');
-    const parsed = parseFloat(cleanText);
+    let parsed = parseFloat(cleanText);
     if (!isNaN(parsed)) {
+      if (unit === '%' && parsed > 0 && parsed <= 1.0 && max >= 100) {
+        parsed = parsed * 100;
+      }
       const clamped = Math.max(min, Math.min(max, parsed));
       const rounded = step ? Math.round(clamped / step) * step : clamped;
       const finalVal = Math.round(rounded * 1000) / 1000;
       onChange(finalVal);
-      setInputText(displayValue ?? `${Number(finalVal.toFixed(2))}`);
+      setInputText(formatVal(finalVal));
     } else {
-      setInputText(displayValue ?? `${Number(value.toFixed(2))}`);
+      setInputText(formatVal(value));
     }
   };
 
@@ -128,7 +141,7 @@ export const Knob: React.FC<KnobProps> = ({
       commitValue(inputText);
       (e.target as HTMLInputElement).blur();
     } else if (e.key === 'Escape') {
-      setInputText(displayValue ?? `${Number(value.toFixed(2))}`);
+      setInputText(formatVal(value));
       (e.target as HTMLInputElement).blur();
     }
   };

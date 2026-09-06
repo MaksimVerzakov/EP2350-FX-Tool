@@ -1,4 +1,5 @@
 import { AnyEffect, EffectType, PackConfig, PresetConfig, SampleSlotConfig } from '../types/config';
+import { isPercentParam } from '../constants/effectsRegistry';
 
 export function parseConfigJson(rawJson: string): { pack?: PackConfig; error?: string } {
   try {
@@ -45,6 +46,17 @@ export function parseConfigJson(rawJson: string): { pack?: PackConfig; error?: s
                 ...item
               };
               effectEntry.effect = effectType;
+
+              // Scale percent parameters from JSON (0.0..1.0) to UI percent (0..100)
+              Object.keys(effectEntry).forEach((key) => {
+                if (isPercentParam(effectType, key) && typeof effectEntry[key] === 'number') {
+                  const val = effectEntry[key];
+                  if (val <= 1.0) {
+                    effectEntry[key] = Math.round(val * 100);
+                  }
+                }
+              });
+
               return effectEntry;
             })
           : [];
@@ -58,28 +70,42 @@ export function parseConfigJson(rawJson: string): { pack?: PackConfig; error?: s
         };
 
         if (p.handle && typeof p.handle === 'object') {
+          const isLfo = p.handle.target === 'lfo';
+          let depth = typeof p.handle.depth === 'number' ? p.handle.depth : (isLfo ? 10.0 : 80);
+          if (!isLfo && depth <= 1.0) {
+            depth = Math.round(depth * 100);
+          }
           preset.handle = {
             target: p.handle.target,
             row: typeof p.handle.row === 'number' ? p.handle.row : undefined,
             param: typeof p.handle.param === 'string' ? p.handle.param : 'cutoff',
-            depth: typeof p.handle.depth === 'number' ? p.handle.depth : 0.5
+            depth
           };
         }
 
         if (p.shake && typeof p.shake === 'object') {
+          let depth = typeof p.shake.depth === 'number' ? p.shake.depth : 50;
+          if (depth <= 1.0) {
+            depth = Math.round(depth * 100);
+          }
           preset.shake = {
             row: typeof p.shake.row === 'number' ? p.shake.row : 0,
             param: typeof p.shake.param === 'string' ? p.shake.param : 'mix',
-            depth: typeof p.shake.depth === 'number' ? p.shake.depth : 0.5
+            depth
           };
         }
 
         if (p.lfo && typeof p.lfo === 'object') {
+          const isLfo = p.lfo.target === 'lfo';
+          let depth = typeof p.lfo.depth === 'number' ? p.lfo.depth : (isLfo ? 1.0 : 20);
+          if (!isLfo && depth <= 1.0) {
+            depth = Math.round(depth * 100);
+          }
           preset.lfo = {
             target: p.lfo.target,
             row: typeof p.lfo.row === 'number' ? p.lfo.row : 0,
             param: typeof p.lfo.param === 'string' ? p.lfo.param : 'cutoff',
-            depth: typeof p.lfo.depth === 'number' ? p.lfo.depth : 0.2,
+            depth,
             shape: ['sine', 'square', 'sawtooth', 'random'].includes(p.lfo.shape) ? p.lfo.shape : 'sine',
             speed: typeof p.lfo.speed === 'number' ? p.lfo.speed : 2.0,
             phase: typeof p.lfo.phase === 'number' ? p.lfo.phase : 0
