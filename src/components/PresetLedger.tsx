@@ -353,6 +353,11 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
     setActiveBus(destinationBus); // Auto-switch tab to see immediate impact
   };
 
+  // Cached target selections for when modulation is toggled off and on
+  const [cachedHandleTarget, setCachedHandleTarget] = useState<string>('0');
+  const [cachedShakeTarget, setCachedShakeTarget] = useState<string>('0');
+  const [cachedLfoTarget, setCachedLfoTarget] = useState<string>('0');
+
   // Modulation Target Helpers
   const LFO_SHAPES: LfoShape[] = ['sine', 'square', 'sawtooth', 'random'];
 
@@ -365,12 +370,91 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
   const isLfoOnRow = (globalIdx: number) =>
     preset.lfo?.target !== 'lfo' && preset.lfo?.row === globalIdx;
 
-  const handleSetHandleTarget = (targetVal: string) => {
-    if (targetVal === 'none') {
+  const handleToggleHandle = () => {
+    if (preset.handle) {
       const copy = { ...preset };
       delete copy.handle;
       onUpdatePreset(copy);
-    } else if (targetVal === 'lfo') {
+    } else {
+      if (cachedHandleTarget === 'lfo' || preset.list.length === 0) {
+        onUpdatePreset({
+          ...preset,
+          handle: {
+            target: 'lfo',
+            param: 'speed',
+            depth: 10.0
+          }
+        });
+      } else {
+        const rowIdx = parseInt(cachedHandleTarget, 10);
+        const targetRow = (!isNaN(rowIdx) && rowIdx < preset.list.length) ? rowIdx : 0;
+        const fx = preset.list[targetRow];
+        const m = fx ? EFFECTS_REGISTRY[fx.effect] : null;
+        const defaultParam = m?.params[0]?.name || 'cutoff';
+        onUpdatePreset({
+          ...preset,
+          handle: {
+            row: targetRow,
+            param: defaultParam,
+            depth: 80
+          }
+        });
+      }
+    }
+  };
+
+  const handleToggleShake = () => {
+    if (preset.shake) {
+      const copy = { ...preset };
+      delete copy.shake;
+      onUpdatePreset(copy);
+    } else {
+      if (preset.list.length === 0) return;
+      const rowIdx = parseInt(cachedShakeTarget, 10);
+      const targetRow = (!isNaN(rowIdx) && rowIdx < preset.list.length) ? rowIdx : 0;
+      const fx = preset.list[targetRow];
+      const m = fx ? EFFECTS_REGISTRY[fx.effect] : null;
+      const defaultParam = m?.params[0]?.name || 'mix';
+      onUpdatePreset({
+        ...preset,
+        shake: {
+          row: targetRow,
+          param: defaultParam,
+          depth: 50
+        }
+      });
+    }
+  };
+
+  const handleToggleLfo = () => {
+    if (preset.lfo) {
+      const copy = { ...preset };
+      delete copy.lfo;
+      onUpdatePreset(copy);
+    } else {
+      if (preset.list.length === 0) return;
+      const rowIdx = parseInt(cachedLfoTarget, 10);
+      const targetRow = (!isNaN(rowIdx) && rowIdx < preset.list.length) ? rowIdx : 0;
+      const fx = preset.list[targetRow];
+      const m = fx ? EFFECTS_REGISTRY[fx.effect] : null;
+      const defaultParam = m?.params[0]?.name || 'cutoff';
+      onUpdatePreset({
+        ...preset,
+        lfo: {
+          row: targetRow,
+          param: defaultParam,
+          depth: 20,
+          shape: 'sine',
+          speed: 2.0,
+          phase: 0
+        }
+      });
+    }
+  };
+
+  const handleSetHandleTarget = (targetVal: string) => {
+    setCachedHandleTarget(targetVal);
+    if (targetVal === 'lfo') {
       onUpdatePreset({
         ...preset,
         handle: {
@@ -405,24 +489,19 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
   };
 
   const handleSetShakeTarget = (targetVal: string) => {
-    if (targetVal === 'none') {
-      const copy = { ...preset };
-      delete copy.shake;
-      onUpdatePreset(copy);
-    } else {
-      const rowIdx = parseInt(targetVal, 10);
-      const fx = preset.list[rowIdx];
-      const m = fx ? EFFECTS_REGISTRY[fx.effect] : null;
-      const defaultParam = m?.params[0]?.name || 'mix';
-      onUpdatePreset({
-        ...preset,
-        shake: {
-          row: rowIdx,
-          param: defaultParam,
-          depth: typeof preset.shake?.depth === 'number' ? preset.shake.depth : 50
-        }
-      });
-    }
+    setCachedShakeTarget(targetVal);
+    const rowIdx = parseInt(targetVal, 10);
+    const fx = preset.list[rowIdx];
+    const m = fx ? EFFECTS_REGISTRY[fx.effect] : null;
+    const defaultParam = m?.params[0]?.name || 'mix';
+    onUpdatePreset({
+      ...preset,
+      shake: {
+        row: rowIdx,
+        param: defaultParam,
+        depth: typeof preset.shake?.depth === 'number' ? preset.shake.depth : 50
+      }
+    });
   };
 
   const handleSetShakeParam = (paramName: string) => {
@@ -435,26 +514,22 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
   };
 
   const handleSetLfoTarget = (targetVal: string) => {
-    if (targetVal === 'none') {
-      const copy = { ...preset };
-      delete copy.lfo;
-      onUpdatePreset(copy);
-    } else {
-      const rowIdx = parseInt(targetVal, 10);
-      const fx = preset.list[rowIdx];
-      const m = fx ? EFFECTS_REGISTRY[fx.effect] : null;
-      const defaultParam = m?.params[0]?.name || 'cutoff';
-      onUpdatePreset({
-        ...preset,
-        lfo: {
-          row: rowIdx,
-          param: defaultParam,
-          depth: typeof preset.lfo?.depth === 'number' ? preset.lfo.depth : 20,
-          shape: preset.lfo?.shape ?? 'sine',
-          speed: preset.lfo?.speed ?? 2.0
-        }
-      });
-    }
+    setCachedLfoTarget(targetVal);
+    const rowIdx = parseInt(targetVal, 10);
+    const fx = preset.list[rowIdx];
+    const m = fx ? EFFECTS_REGISTRY[fx.effect] : null;
+    const defaultParam = m?.params[0]?.name || 'cutoff';
+    onUpdatePreset({
+      ...preset,
+      lfo: {
+        row: rowIdx,
+        param: defaultParam,
+        depth: typeof preset.lfo?.depth === 'number' ? preset.lfo.depth : 20,
+        shape: preset.lfo?.shape ?? 'sine',
+        speed: preset.lfo?.speed ?? 2.0,
+        phase: preset.lfo?.phase ?? 0
+      }
+    });
   };
 
   const handleSetLfoParam = (paramName: string) => {
@@ -986,20 +1061,31 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
 
       {/* 4. FIXED BOTTOM MODULATION MATRIX (HANDLE, SHAKE, LFO) */}
       {(() => {
-        const handleTargetVal = preset.handle?.target === 'lfo' ? 'lfo' : (typeof preset.handle?.row === 'number' ? String(preset.handle.row) : 'none');
-        const handleEffect = typeof preset.handle?.row === 'number' ? preset.list[preset.handle.row] : undefined;
+        const handleTargetVal = preset.handle
+          ? (preset.handle.target === 'lfo' ? 'lfo' : String(preset.handle.row ?? 0))
+          : (preset.list.length > 0 ? (cachedHandleTarget === 'lfo' ? 'lfo' : String(Math.min(preset.list.length - 1, parseInt(cachedHandleTarget, 10) || 0))) : 'lfo');
+        const effectiveHandleRow = preset.handle?.target !== 'lfo'
+          ? (typeof preset.handle?.row === 'number' ? preset.handle.row : (handleTargetVal !== 'lfo' ? parseInt(handleTargetVal, 10) : undefined))
+          : undefined;
+        const handleEffect = typeof effectiveHandleRow === 'number' ? preset.list[effectiveHandleRow] : undefined;
         const handleEffectMeta = handleEffect ? EFFECTS_REGISTRY[handleEffect.effect] : undefined;
-        const handleParamVal = preset.handle?.target === 'lfo' ? 'speed' : (preset.handle?.param || '');
+        const handleParamVal = preset.handle?.target === 'lfo' || handleTargetVal === 'lfo' ? 'speed' : (preset.handle?.param || handleEffectMeta?.params[0]?.name || '');
 
-        const shakeTargetVal = typeof preset.shake?.row === 'number' ? String(preset.shake.row) : 'none';
-        const shakeEffect = typeof preset.shake?.row === 'number' ? preset.list[preset.shake.row] : undefined;
+        const shakeTargetVal = preset.shake
+          ? String(preset.shake.row ?? 0)
+          : (preset.list.length > 0 ? String(Math.min(preset.list.length - 1, parseInt(cachedShakeTarget, 10) || 0)) : '');
+        const effectiveShakeRow = typeof preset.shake?.row === 'number' ? preset.shake.row : (shakeTargetVal !== '' ? parseInt(shakeTargetVal, 10) : undefined);
+        const shakeEffect = typeof effectiveShakeRow === 'number' ? preset.list[effectiveShakeRow] : undefined;
         const shakeEffectMeta = shakeEffect ? EFFECTS_REGISTRY[shakeEffect.effect] : undefined;
-        const shakeParamVal = preset.shake?.param || '';
+        const shakeParamVal = preset.shake?.param || shakeEffectMeta?.params[0]?.name || '';
 
-        const lfoTargetVal = typeof preset.lfo?.row === 'number' ? String(preset.lfo.row) : 'none';
-        const lfoEffect = typeof preset.lfo?.row === 'number' ? preset.list[preset.lfo.row] : undefined;
+        const lfoTargetVal = preset.lfo
+          ? String(preset.lfo.row ?? 0)
+          : (preset.list.length > 0 ? String(Math.min(preset.list.length - 1, parseInt(cachedLfoTarget, 10) || 0)) : '');
+        const effectiveLfoRow = typeof preset.lfo?.row === 'number' ? preset.lfo.row : (lfoTargetVal !== '' ? parseInt(lfoTargetVal, 10) : undefined);
+        const lfoEffect = typeof effectiveLfoRow === 'number' ? preset.list[effectiveLfoRow] : undefined;
         const lfoEffectMeta = lfoEffect ? EFFECTS_REGISTRY[lfoEffect.effect] : undefined;
-        const lfoParamVal = preset.lfo?.param || '';
+        const lfoParamVal = preset.lfo?.param || lfoEffectMeta?.params[0]?.name || '';
 
         const lfoShapeIdx = LFO_SHAPES.indexOf(preset.lfo?.shape ?? 'sine');
         const safeLfoShapeIdx = lfoShapeIdx !== -1 ? lfoShapeIdx : 0;
@@ -1009,28 +1095,58 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1.5fr] gap-2">
               {/* BLOCK 1: HANDLE */}
               <div className="border border-[#141617] bg-white p-2 flex flex-col justify-between rounded-[0px] shadow-[1px_1px_0px_#141617]">
-                <div>
-                  {/* Header */}
-                  <div className="flex items-center justify-between border-b border-[#eceeed] pb-1 mb-1.5">
-                    <span className="font-mono text-[9px] font-bold tracking-wider uppercase text-[#f15a22] flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 bg-[#f15a22] rounded-full" />
+                {/* Header with inline mechanical ON/OFF switch */}
+                <div className="flex items-center justify-between border-b border-[#eceeed] pb-1 mb-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                        preset.handle ? 'bg-[#f15a22] shadow-[0_0_4px_#f15a22]' : 'bg-[#989fa5]'
+                      }`}
+                    />
+                    <span className="font-mono text-[9px] font-bold tracking-wider uppercase text-[#141617]">
                       HANDLE
-                    </span>
-                    <span className={`text-[7px] font-mono font-bold uppercase ${preset.handle ? 'text-[#00a69c]' : 'text-[#8a9092]'}`}>
-                      {preset.handle ? 'ACTIVE' : 'OFF'}
                     </span>
                   </div>
 
-                  {/* Dropdowns */}
+                  <div className="flex items-center gap-1">
+                    <span
+                      className={`text-[7px] font-mono font-bold uppercase transition-colors ${
+                        preset.handle ? 'text-[#f15a22]' : 'text-[#8a9092]'
+                      }`}
+                    >
+                      {preset.handle ? 'ON' : 'OFF'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleToggleHandle}
+                      className={`relative inline-flex items-center h-[14px] w-[28px] rounded-[1px] border border-[#141617] p-[1px] transition-colors cursor-pointer shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)] focus:outline-none ${
+                        preset.handle ? 'bg-[#181a1b]' : 'bg-[#c5c8c5]'
+                      }`}
+                      title={preset.handle ? 'Turn Handle Modulation OFF' : 'Turn Handle Modulation ON'}
+                      aria-label="Toggle Handle Modulation"
+                    >
+                      <span
+                        className={`inline-block w-[11px] h-[10px] rounded-[0.5px] border border-[#141617] transition-transform duration-150 ${
+                          preset.handle
+                            ? 'translate-x-[13px] bg-[#f15a22] shadow-[1px_1px_0px_#000000]'
+                            : 'translate-x-0 bg-[#ffffff]'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Dropdowns & Knobs Container (dimmed when OFF) */}
+                <div className={`flex flex-col justify-between flex-1 transition-opacity duration-150 ${!preset.handle ? 'opacity-35 pointer-events-none' : ''}`}>
                   <div className="flex flex-col gap-1 mb-1.5">
                     <div className="flex items-center gap-1">
                       <span className="text-[7.5px] font-mono font-bold text-[#73787a] uppercase w-8 shrink-0">TGT:</span>
                       <select
+                        disabled={!preset.handle}
                         value={handleTargetVal}
                         onChange={(e) => handleSetHandleTarget(e.target.value)}
-                        className="bg-[#ffffff] border border-[#141617] text-[#141617] text-[8.5px] font-mono px-1 py-0.5 rounded-[1px] outline-none shadow-[1px_1px_0px_#141617] focus:border-[#f15a22] cursor-pointer truncate w-full"
+                        className="bg-[#ffffff] border border-[#141617] text-[#141617] text-[8.5px] font-mono px-1 py-0.5 rounded-[1px] outline-none shadow-[1px_1px_0px_#141617] focus:border-[#f15a22] cursor-pointer truncate w-full disabled:opacity-40 disabled:pointer-events-none"
                       >
-                        <option value="none">-- OFF --</option>
                         {preset.list.map((fx, idx) => {
                           const m = EFFECTS_REGISTRY[fx.effect];
                           return (
@@ -1065,78 +1181,112 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                       </select>
                     </div>
                   </div>
-                </div>
 
-                {/* Knob */}
-                <div className={`flex items-center justify-center pt-0.5 ${!preset.handle ? 'opacity-30 pointer-events-none' : ''}`}>
-                  {preset.handle?.target === 'lfo' ? (
-                    <Knob
-                      label="DEPTH"
-                      value={preset.handle.depth ?? 10.0}
-                      min={-20}
-                      max={20}
-                      step={0.5}
-                      unit="Hz"
-                      displayScale={(v) => `${v > 0 ? '+' : ''}${v.toFixed(1)}Hz`}
-                      onChange={(v) => onUpdatePreset({ ...preset, handle: { ...preset.handle!, depth: v } })}
-                      onReset={() => onUpdatePreset({ ...preset, handle: { ...preset.handle!, depth: 10.0 } })}
-                      accentColor="#f15a22"
-                      size={34}
-                    />
-                  ) : (
-                    <Knob
-                      label="DEPTH"
-                      value={
-                        typeof preset.handle?.depth === 'number'
-                          ? (Math.abs(preset.handle.depth) <= 1.0 ? Math.round(preset.handle.depth * 100) : Math.round(preset.handle.depth))
-                          : 80
-                      }
-                      min={-100}
-                      max={100}
-                      step={1}
-                      unit="%"
-                      displayScale={(v) => `${Math.round(v) > 0 ? '+' : ''}${Math.round(v)}%`}
-                      onChange={(v) => onUpdatePreset({ ...preset, handle: { ...preset.handle!, depth: v } })}
-                      onReset={() => onUpdatePreset({ ...preset, handle: { ...preset.handle!, depth: 80 } })}
-                      accentColor="#f15a22"
-                      size={34}
-                    />
-                  )}
+                  {/* Knob: Starts with Orange (#f15a22) */}
+                  <div className="flex items-center justify-center pt-0.5">
+                    {preset.handle?.target === 'lfo' ? (
+                      <Knob
+                        label="DEPTH"
+                        value={preset.handle.depth ?? 10.0}
+                        min={-20}
+                        max={20}
+                        step={0.5}
+                        unit="Hz"
+                        displayScale={(v) => `${v > 0 ? '+' : ''}${v.toFixed(1)}Hz`}
+                        onChange={(v) => onUpdatePreset({ ...preset, handle: { ...preset.handle!, depth: v } })}
+                        onReset={() => onUpdatePreset({ ...preset, handle: { ...preset.handle!, depth: 10.0 } })}
+                        accentColor="#f15a22"
+                        size={34}
+                      />
+                    ) : (
+                      <Knob
+                        label="DEPTH"
+                        value={
+                          typeof preset.handle?.depth === 'number'
+                            ? (Math.abs(preset.handle.depth) <= 1.0 ? Math.round(preset.handle.depth * 100) : Math.round(preset.handle.depth))
+                            : 80
+                        }
+                        min={-100}
+                        max={100}
+                        step={1}
+                        unit="%"
+                        displayScale={(v) => `${Math.round(v) > 0 ? '+' : ''}${Math.round(v)}%`}
+                        onChange={(v) => onUpdatePreset({ ...preset, handle: { ...preset.handle!, depth: v } })}
+                        onReset={() => onUpdatePreset({ ...preset, handle: { ...preset.handle!, depth: 80 } })}
+                        accentColor="#f15a22"
+                        size={34}
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* BLOCK 2: SHAKE */}
               <div className="border border-[#141617] bg-white p-2 flex flex-col justify-between rounded-[0px] shadow-[1px_1px_0px_#141617]">
-                <div>
-                  {/* Header */}
-                  <div className="flex items-center justify-between border-b border-[#eceeed] pb-1 mb-1.5">
-                    <span className="font-mono text-[9px] font-bold tracking-wider uppercase text-[#141617] flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 bg-[#141617] rounded-full" />
+                {/* Header with inline mechanical ON/OFF switch */}
+                <div className="flex items-center justify-between border-b border-[#eceeed] pb-1 mb-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                        preset.shake ? 'bg-[#f15a22] shadow-[0_0_4px_#f15a22]' : 'bg-[#989fa5]'
+                      }`}
+                    />
+                    <span className="font-mono text-[9px] font-bold tracking-wider uppercase text-[#141617]">
                       SHAKE
-                    </span>
-                    <span className={`text-[7px] font-mono font-bold uppercase ${preset.shake ? 'text-[#00a69c]' : 'text-[#8a9092]'}`}>
-                      {preset.shake ? 'ACTIVE' : 'OFF'}
                     </span>
                   </div>
 
-                  {/* Dropdowns */}
+                  <div className="flex items-center gap-1">
+                    <span
+                      className={`text-[7px] font-mono font-bold uppercase transition-colors ${
+                        preset.shake ? 'text-[#f15a22]' : 'text-[#8a9092]'
+                      }`}
+                    >
+                      {preset.shake ? 'ON' : 'OFF'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleToggleShake}
+                      className={`relative inline-flex items-center h-[14px] w-[28px] rounded-[1px] border border-[#141617] p-[1px] transition-colors cursor-pointer shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)] focus:outline-none ${
+                        preset.shake ? 'bg-[#181a1b]' : 'bg-[#c5c8c5]'
+                      }`}
+                      title={preset.shake ? 'Turn Shake Modulation OFF' : 'Turn Shake Modulation ON'}
+                      aria-label="Toggle Shake Modulation"
+                    >
+                      <span
+                        className={`inline-block w-[11px] h-[10px] rounded-[0.5px] border border-[#141617] transition-transform duration-150 ${
+                          preset.shake
+                            ? 'translate-x-[13px] bg-[#f15a22] shadow-[1px_1px_0px_#000000]'
+                            : 'translate-x-0 bg-[#ffffff]'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Dropdowns & Knobs Container (dimmed when OFF) */}
+                <div className={`flex flex-col justify-between flex-1 transition-opacity duration-150 ${!preset.shake ? 'opacity-35 pointer-events-none' : ''}`}>
                   <div className="flex flex-col gap-1 mb-1.5">
                     <div className="flex items-center gap-1">
                       <span className="text-[7.5px] font-mono font-bold text-[#73787a] uppercase w-8 shrink-0">TGT:</span>
                       <select
+                        disabled={!preset.shake}
                         value={shakeTargetVal}
                         onChange={(e) => handleSetShakeTarget(e.target.value)}
-                        className="bg-[#ffffff] border border-[#141617] text-[#141617] text-[8.5px] font-mono px-1 py-0.5 rounded-[1px] outline-none shadow-[1px_1px_0px_#141617] focus:border-[#141617] cursor-pointer truncate w-full"
+                        className="bg-[#ffffff] border border-[#141617] text-[#141617] text-[8.5px] font-mono px-1 py-0.5 rounded-[1px] outline-none shadow-[1px_1px_0px_#141617] focus:border-[#f15a22] cursor-pointer truncate w-full disabled:opacity-40 disabled:pointer-events-none"
                       >
-                        <option value="none">-- OFF --</option>
-                        {preset.list.map((fx, idx) => {
-                          const m = EFFECTS_REGISTRY[fx.effect];
-                          return (
-                            <option key={fx.id} value={idx}>
-                              {(idx + 1).toString().padStart(2, '0')}. {m?.displayName || fx.effect} (B{fx.BUS || 1})
-                            </option>
-                          );
-                        })}
+                        {preset.list.length > 0 ? (
+                          preset.list.map((fx, idx) => {
+                            const m = EFFECTS_REGISTRY[fx.effect];
+                            return (
+                              <option key={fx.id} value={idx}>
+                                {(idx + 1).toString().padStart(2, '0')}. {m?.displayName || fx.effect} (B{fx.BUS || 1})
+                              </option>
+                            );
+                          })
+                        ) : (
+                          <option value="">NO EFFECTS</option>
+                        )}
                       </select>
                     </div>
 
@@ -1146,7 +1296,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                         disabled={!preset.shake}
                         value={shakeParamVal}
                         onChange={(e) => handleSetShakeParam(e.target.value)}
-                        className="bg-[#ffffff] border border-[#141617] text-[#141617] text-[8.5px] font-mono px-1 py-0.5 rounded-[1px] outline-none shadow-[1px_1px_0px_#141617] focus:border-[#141617] cursor-pointer truncate w-full disabled:opacity-40 disabled:pointer-events-none"
+                        className="bg-[#ffffff] border border-[#141617] text-[#141617] text-[8.5px] font-mono px-1 py-0.5 rounded-[1px] outline-none shadow-[1px_1px_0px_#141617] focus:border-[#f15a22] cursor-pointer truncate w-full disabled:opacity-40 disabled:pointer-events-none"
                       >
                         {shakeEffectMeta ? (
                           shakeEffectMeta.params.map((p) => (
@@ -1160,62 +1310,96 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                       </select>
                     </div>
                   </div>
-                </div>
 
-                {/* Knob */}
-                <div className={`flex items-center justify-center pt-0.5 ${!preset.shake ? 'opacity-30 pointer-events-none' : ''}`}>
-                  <Knob
-                    label="DEPTH"
-                    value={
-                      typeof preset.shake?.depth === 'number'
-                        ? (Math.abs(preset.shake.depth) <= 1.0 ? Math.round(preset.shake.depth * 100) : Math.round(preset.shake.depth))
-                        : 50
-                    }
-                    min={-100}
-                    max={100}
-                    step={1}
-                    unit="%"
-                    displayScale={(v) => `${Math.round(v) > 0 ? '+' : ''}${Math.round(v)}%`}
-                    onChange={(v) => onUpdatePreset({ ...preset, shake: { ...preset.shake!, depth: v } })}
-                    onReset={() => onUpdatePreset({ ...preset, shake: { ...preset.shake!, depth: 50 } })}
-                    accentColor="#141617"
-                    size={34}
-                  />
+                  {/* Knob: Starts with Orange (#f15a22) */}
+                  <div className="flex items-center justify-center pt-0.5">
+                    <Knob
+                      label="DEPTH"
+                      value={
+                        typeof preset.shake?.depth === 'number'
+                          ? (Math.abs(preset.shake.depth) <= 1.0 ? Math.round(preset.shake.depth * 100) : Math.round(preset.shake.depth))
+                          : 50
+                      }
+                      min={-100}
+                      max={100}
+                      step={1}
+                      unit="%"
+                      displayScale={(v) => `${Math.round(v) > 0 ? '+' : ''}${Math.round(v)}%`}
+                      onChange={(v) => onUpdatePreset({ ...preset, shake: { ...preset.shake!, depth: v } })}
+                      onReset={() => onUpdatePreset({ ...preset, shake: { ...preset.shake!, depth: 50 } })}
+                      accentColor="#f15a22"
+                      size={34}
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* BLOCK 3: LFO CYCLER */}
               <div className="border border-[#141617] bg-white p-2 flex flex-col justify-between rounded-[0px] shadow-[1px_1px_0px_#141617]">
-                <div>
-                  {/* Header */}
-                  <div className="flex items-center justify-between border-b border-[#eceeed] pb-1 mb-1.5">
-                    <span className="font-mono text-[9px] font-bold tracking-wider uppercase text-[#00a69c] flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 bg-[#00a69c] rounded-full" />
+                {/* Header with inline mechanical ON/OFF switch */}
+                <div className="flex items-center justify-between border-b border-[#eceeed] pb-1 mb-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                        preset.lfo ? 'bg-[#f15a22] shadow-[0_0_4px_#f15a22]' : 'bg-[#989fa5]'
+                      }`}
+                    />
+                    <span className="font-mono text-[9px] font-bold tracking-wider uppercase text-[#141617]">
                       LFO CYCLER
-                    </span>
-                    <span className={`text-[7px] font-mono font-bold uppercase ${preset.lfo ? 'text-[#00a69c]' : 'text-[#8a9092]'}`}>
-                      {preset.lfo ? 'ACTIVE' : 'OFF'}
                     </span>
                   </div>
 
-                  {/* Dropdowns */}
+                  <div className="flex items-center gap-1">
+                    <span
+                      className={`text-[7px] font-mono font-bold uppercase transition-colors ${
+                        preset.lfo ? 'text-[#f15a22]' : 'text-[#8a9092]'
+                      }`}
+                    >
+                      {preset.lfo ? 'ON' : 'OFF'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleToggleLfo}
+                      className={`relative inline-flex items-center h-[14px] w-[28px] rounded-[1px] border border-[#141617] p-[1px] transition-colors cursor-pointer shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)] focus:outline-none ${
+                        preset.lfo ? 'bg-[#181a1b]' : 'bg-[#c5c8c5]'
+                      }`}
+                      title={preset.lfo ? 'Turn LFO Modulation OFF' : 'Turn LFO Modulation ON'}
+                      aria-label="Toggle LFO Modulation"
+                    >
+                      <span
+                        className={`inline-block w-[11px] h-[10px] rounded-[0.5px] border border-[#141617] transition-transform duration-150 ${
+                          preset.lfo
+                            ? 'translate-x-[13px] bg-[#f15a22] shadow-[1px_1px_0px_#000000]'
+                            : 'translate-x-0 bg-[#ffffff]'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Dropdowns & Knobs Container (dimmed when OFF) */}
+                <div className={`flex flex-col justify-between flex-1 transition-opacity duration-150 ${!preset.lfo ? 'opacity-35 pointer-events-none' : ''}`}>
                   <div className="flex flex-col gap-1 mb-1.5">
                     <div className="flex items-center gap-1">
                       <span className="text-[7.5px] font-mono font-bold text-[#73787a] uppercase w-8 shrink-0">TGT:</span>
                       <select
+                        disabled={!preset.lfo}
                         value={lfoTargetVal}
                         onChange={(e) => handleSetLfoTarget(e.target.value)}
-                        className="bg-[#ffffff] border border-[#141617] text-[#141617] text-[8.5px] font-mono px-1 py-0.5 rounded-[1px] outline-none shadow-[1px_1px_0px_#141617] focus:border-[#00a69c] cursor-pointer truncate w-full"
+                        className="bg-[#ffffff] border border-[#141617] text-[#141617] text-[8.5px] font-mono px-1 py-0.5 rounded-[1px] outline-none shadow-[1px_1px_0px_#141617] focus:border-[#f15a22] cursor-pointer truncate w-full disabled:opacity-40 disabled:pointer-events-none"
                       >
-                        <option value="none">-- OFF --</option>
-                        {preset.list.map((fx, idx) => {
-                          const m = EFFECTS_REGISTRY[fx.effect];
-                          return (
-                            <option key={fx.id} value={idx}>
-                              {(idx + 1).toString().padStart(2, '0')}. {m?.displayName || fx.effect} (B{fx.BUS || 1})
-                            </option>
-                          );
-                        })}
+                        {preset.list.length > 0 ? (
+                          preset.list.map((fx, idx) => {
+                            const m = EFFECTS_REGISTRY[fx.effect];
+                            return (
+                              <option key={fx.id} value={idx}>
+                                {(idx + 1).toString().padStart(2, '0')}. {m?.displayName || fx.effect} (B{fx.BUS || 1})
+                              </option>
+                            );
+                          })
+                        ) : (
+                          <option value="">NO EFFECTS</option>
+                        )}
                       </select>
                     </div>
 
@@ -1225,7 +1409,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                         disabled={!preset.lfo}
                         value={lfoParamVal}
                         onChange={(e) => handleSetLfoParam(e.target.value)}
-                        className="bg-[#ffffff] border border-[#141617] text-[#141617] text-[8.5px] font-mono px-1 py-0.5 rounded-[1px] outline-none shadow-[1px_1px_0px_#141617] focus:border-[#00a69c] cursor-pointer truncate w-full disabled:opacity-40 disabled:pointer-events-none"
+                        className="bg-[#ffffff] border border-[#141617] text-[#141617] text-[8.5px] font-mono px-1 py-0.5 rounded-[1px] outline-none shadow-[1px_1px_0px_#141617] focus:border-[#f15a22] cursor-pointer truncate w-full disabled:opacity-40 disabled:pointer-events-none"
                       >
                         {lfoEffectMeta ? (
                           lfoEffectMeta.params.map((p) => (
@@ -1239,57 +1423,57 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                       </select>
                     </div>
                   </div>
-                </div>
 
-                {/* 3 Knobs for LFO */}
-                <div className={`flex items-center justify-around pt-0.5 gap-0.5 ${!preset.lfo ? 'opacity-30 pointer-events-none' : ''}`}>
-                  <Knob
-                    label="DEPTH"
-                    value={
-                      typeof preset.lfo?.depth === 'number'
-                        ? (Math.abs(preset.lfo.depth) <= 1.0 ? Math.round(preset.lfo.depth * 100) : Math.round(preset.lfo.depth))
-                        : 20
-                    }
-                    min={-100}
-                    max={100}
-                    step={1}
-                    unit="%"
-                    displayScale={(v) => `${Math.round(v) > 0 ? '+' : ''}${Math.round(v)}%`}
-                    onChange={(v) => onUpdatePreset({ ...preset, lfo: { ...preset.lfo!, depth: v } })}
-                    onReset={() => onUpdatePreset({ ...preset, lfo: { ...preset.lfo!, depth: 20 } })}
-                    accentColor="#00a69c"
-                    size={30}
-                  />
+                  {/* 3 Knobs for LFO: Orange (#f15a22), Cream (#e4e3df), Slate Gray (#989fa5) */}
+                  <div className="flex items-center justify-around pt-0.5 gap-0.5">
+                    <Knob
+                      label="DEPTH"
+                      value={
+                        typeof preset.lfo?.depth === 'number'
+                          ? (Math.abs(preset.lfo.depth) <= 1.0 ? Math.round(preset.lfo.depth * 100) : Math.round(preset.lfo.depth))
+                          : 20
+                      }
+                      min={-100}
+                      max={100}
+                      step={1}
+                      unit="%"
+                      displayScale={(v) => `${Math.round(v) > 0 ? '+' : ''}${Math.round(v)}%`}
+                      onChange={(v) => onUpdatePreset({ ...preset, lfo: { ...preset.lfo!, depth: v } })}
+                      onReset={() => onUpdatePreset({ ...preset, lfo: { ...preset.lfo!, depth: 20 } })}
+                      accentColor="#f15a22"
+                      size={30}
+                    />
 
-                  <Knob
-                    label="SPEED"
-                    value={preset.lfo?.speed ?? 2.0}
-                    min={0.1}
-                    max={20.0}
-                    step={0.1}
-                    unit="Hz"
-                    displayScale={(v) => `${v.toFixed(1)}Hz`}
-                    onChange={(v) => onUpdatePreset({ ...preset, lfo: { ...preset.lfo!, speed: v } })}
-                    onReset={() => onUpdatePreset({ ...preset, lfo: { ...preset.lfo!, speed: 2.0 } })}
-                    accentColor="#e4e3df"
-                    size={30}
-                  />
+                    <Knob
+                      label="SPEED"
+                      value={preset.lfo?.speed ?? 2.0}
+                      min={0.1}
+                      max={20.0}
+                      step={0.1}
+                      unit="Hz"
+                      displayScale={(v) => `${v.toFixed(1)}Hz`}
+                      onChange={(v) => onUpdatePreset({ ...preset, lfo: { ...preset.lfo!, speed: v } })}
+                      onReset={() => onUpdatePreset({ ...preset, lfo: { ...preset.lfo!, speed: 2.0 } })}
+                      accentColor="#e4e3df"
+                      size={30}
+                    />
 
-                  <Knob
-                    label="SHAPE"
-                    value={safeLfoShapeIdx}
-                    min={0}
-                    max={3}
-                    step={1}
-                    displayScale={(v) => ['SIN', 'SQR', 'SAW', 'RND'][Math.round(v)] || 'SIN'}
-                    onChange={(v) => {
-                      const newShape = LFO_SHAPES[Math.round(v)] || 'sine';
-                      onUpdatePreset({ ...preset, lfo: { ...preset.lfo!, shape: newShape } });
-                    }}
-                    onReset={() => onUpdatePreset({ ...preset, lfo: { ...preset.lfo!, shape: 'sine' } })}
-                    accentColor="#231f20"
-                    size={30}
-                  />
+                    <Knob
+                      label="SHAPE"
+                      value={safeLfoShapeIdx}
+                      min={0}
+                      max={3}
+                      step={1}
+                      displayScale={(v) => ['SIN', 'SQR', 'SAW', 'RND'][Math.round(v)] || 'SIN'}
+                      onChange={(v) => {
+                        const newShape = LFO_SHAPES[Math.round(v)] || 'sine';
+                        onUpdatePreset({ ...preset, lfo: { ...preset.lfo!, shape: newShape } });
+                      }}
+                      onReset={() => onUpdatePreset({ ...preset, lfo: { ...preset.lfo!, shape: 'sine' } })}
+                      accentColor="#989fa5"
+                      size={30}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
