@@ -1073,11 +1073,11 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                     <Knob
                       label="DEPTH"
                       value={preset.handle.depth ?? 10.0}
-                      min={0}
+                      min={-20}
                       max={20}
                       step={0.5}
                       unit="Hz"
-                      displayValue={`${(preset.handle.depth ?? 10.0).toFixed(1)}Hz`}
+                      displayScale={(v) => `${v > 0 ? '+' : ''}${v.toFixed(1)}Hz`}
                       onChange={(v) => onUpdatePreset({ ...preset, handle: { ...preset.handle!, depth: v } })}
                       onReset={() => onUpdatePreset({ ...preset, handle: { ...preset.handle!, depth: 10.0 } })}
                       accentColor="#f15a22"
@@ -1088,14 +1088,14 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                       label="DEPTH"
                       value={
                         typeof preset.handle?.depth === 'number'
-                          ? (preset.handle.depth <= 1.0 ? Math.round(preset.handle.depth * 100) : Math.round(preset.handle.depth))
+                          ? (Math.abs(preset.handle.depth) <= 1.0 ? Math.round(preset.handle.depth * 100) : Math.round(preset.handle.depth))
                           : 80
                       }
-                      min={0}
+                      min={-100}
                       max={100}
                       step={1}
                       unit="%"
-                      displayScale={(v) => `${Math.round(v)}%`}
+                      displayScale={(v) => `${Math.round(v) > 0 ? '+' : ''}${Math.round(v)}%`}
                       onChange={(v) => onUpdatePreset({ ...preset, handle: { ...preset.handle!, depth: v } })}
                       onReset={() => onUpdatePreset({ ...preset, handle: { ...preset.handle!, depth: 80 } })}
                       accentColor="#f15a22"
@@ -1168,14 +1168,14 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                     label="DEPTH"
                     value={
                       typeof preset.shake?.depth === 'number'
-                        ? (preset.shake.depth <= 1.0 ? Math.round(preset.shake.depth * 100) : Math.round(preset.shake.depth))
+                        ? (Math.abs(preset.shake.depth) <= 1.0 ? Math.round(preset.shake.depth * 100) : Math.round(preset.shake.depth))
                         : 50
                     }
-                    min={0}
+                    min={-100}
                     max={100}
                     step={1}
                     unit="%"
-                    displayScale={(v) => `${Math.round(v)}%`}
+                    displayScale={(v) => `${Math.round(v) > 0 ? '+' : ''}${Math.round(v)}%`}
                     onChange={(v) => onUpdatePreset({ ...preset, shake: { ...preset.shake!, depth: v } })}
                     onReset={() => onUpdatePreset({ ...preset, shake: { ...preset.shake!, depth: 50 } })}
                     accentColor="#141617"
@@ -1247,14 +1247,14 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                     label="DEPTH"
                     value={
                       typeof preset.lfo?.depth === 'number'
-                        ? (preset.lfo.depth <= 1.0 ? Math.round(preset.lfo.depth * 100) : Math.round(preset.lfo.depth))
+                        ? (Math.abs(preset.lfo.depth) <= 1.0 ? Math.round(preset.lfo.depth * 100) : Math.round(preset.lfo.depth))
                         : 20
                     }
-                    min={0}
+                    min={-100}
                     max={100}
                     step={1}
                     unit="%"
-                    displayScale={(v) => `${Math.round(v)}%`}
+                    displayScale={(v) => `${Math.round(v) > 0 ? '+' : ''}${Math.round(v)}%`}
                     onChange={(v) => onUpdatePreset({ ...preset, lfo: { ...preset.lfo!, depth: v } })}
                     onReset={() => onUpdatePreset({ ...preset, lfo: { ...preset.lfo!, depth: 20 } })}
                     accentColor="#00a69c"

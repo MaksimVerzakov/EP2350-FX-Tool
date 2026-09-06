@@ -516,21 +516,21 @@ export class DspAudioEngine {
       // Check handle modulation on this row
       let handleDelta = 0;
       if (handle && handle.target !== 'lfo' && handle.row === rowIdx) {
-        const depthRatio = handle.depth > 1 ? handle.depth / 100 : handle.depth;
+        const depthRatio = Math.abs(handle.depth) > 1 ? handle.depth / 100 : handle.depth;
         handleDelta = this.modState.handlePos * depthRatio;
       }
 
       // Check shake modulation on this row
       let shakeDelta = 0;
       if (shake && shake.row === rowIdx) {
-        const depthRatio = shake.depth > 1 ? shake.depth / 100 : shake.depth;
+        const depthRatio = Math.abs(shake.depth) > 1 ? shake.depth / 100 : shake.depth;
         shakeDelta = this.modState.shakeAmount * depthRatio;
       }
 
       // Check LFO modulation on this row
       let lfoDelta = 0;
       if (lfo && lfo.target !== 'lfo' && lfo.row === rowIdx) {
-        const depthRatio = lfo.depth > 1 ? lfo.depth / 100 : lfo.depth;
+        const depthRatio = Math.abs(lfo.depth) > 1 ? lfo.depth / 100 : lfo.depth;
         const phase = (ctx.currentTime * effectiveLfoSpeed) % 1.0;
         let lfoWave = 0;
         if (lfo.shape === 'square') {

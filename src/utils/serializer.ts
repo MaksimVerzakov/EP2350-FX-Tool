@@ -158,7 +158,7 @@ export function serializeToConfigJson(pack: PackConfig): string {
         };
       } else if (typeof p.handle.row === 'number') {
         const rawDepth = p.handle.depth;
-        const depth = rawDepth > 1 ? rawDepth / 100 : rawDepth;
+        const depth = Math.abs(rawDepth) > 1 ? rawDepth / 100 : rawDepth;
         presetObj.handle = {
           row: p.handle.row,
           param: p.handle.param,
@@ -169,7 +169,7 @@ export function serializeToConfigJson(pack: PackConfig): string {
 
     if (p.shake && typeof p.shake.row === 'number') {
       const rawDepth = p.shake.depth;
-      const depth = rawDepth > 1 ? rawDepth / 100 : rawDepth;
+      const depth = Math.abs(rawDepth) > 1 ? rawDepth / 100 : rawDepth;
       presetObj.shake = {
         row: p.shake.row,
         param: p.shake.param,
@@ -179,7 +179,7 @@ export function serializeToConfigJson(pack: PackConfig): string {
 
     if (p.lfo) {
       const rawDepth = p.lfo.depth;
-      const depth = (p.lfo.target !== 'lfo' && rawDepth > 1) ? rawDepth / 100 : rawDepth;
+      const depth = (p.lfo.target !== 'lfo' && Math.abs(rawDepth) > 1) ? rawDepth / 100 : rawDepth;
       const lfoEntry: any = {
         param: p.lfo.param,
         shape: p.lfo.shape,

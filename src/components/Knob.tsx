@@ -39,17 +39,20 @@ export const Knob: React.FC<KnobProps> = ({
   const dragStartVal = useRef(value);
 
   const formatVal = useCallback((val: number): string => {
-    if (unit === '%') {
-      return `${Math.round(val)}%`;
-    }
     if (displayScale) {
       return displayScale(val);
     }
     if (displayValue !== undefined) {
       return displayValue;
     }
+    if (unit === '%') {
+      if (min < 0 && val > 0) {
+        return `+${Math.round(val)}%`;
+      }
+      return `${Math.round(val)}%`;
+    }
     return Number.isInteger(val) ? `${val}` : `${Number(val.toFixed(2))}`;
-  }, [displayScale, displayValue, unit]);
+  }, [displayScale, displayValue, min, unit]);
 
   // Keep internal input text in sync with value when not focused / dragging
   useEffect(() => {
@@ -129,7 +132,7 @@ export const Knob: React.FC<KnobProps> = ({
     const cleanText = textToCommit.replace(/[^\d.-]/g, '');
     let parsed = parseFloat(cleanText);
     if (!isNaN(parsed)) {
-      if (unit === '%' && parsed > 0 && parsed <= 1.0 && max >= 100) {
+      if (unit === '%' && Math.abs(parsed) > 0 && Math.abs(parsed) <= 1.0 && max >= 100) {
         parsed = parsed * 100;
       }
       const clamped = Math.max(min, Math.min(max, parsed));
@@ -144,6 +147,9 @@ export const Knob: React.FC<KnobProps> = ({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputText(e.target.value);
+    if (e.target.value === '-' || e.target.value === '+') {
+      return;
+    }
     const parsed = parseFloat(e.target.value.replace(/[^\d.-]/g, ''));
     if (!isNaN(parsed)) {
       const clamped = Math.max(min, Math.min(max, parsed));

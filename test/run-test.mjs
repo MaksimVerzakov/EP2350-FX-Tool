@@ -88,18 +88,18 @@ function serializeToConfigJson(pack) {
         presetObj.handle = { target: 'lfo', param: p.handle.param, depth: Math.round(p.handle.depth * 1000) / 1000 };
       } else if (typeof p.handle.row === 'number') {
         const raw = p.handle.depth;
-        const depth = raw > 1 ? raw / 100 : raw;
+        const depth = Math.abs(raw) > 1 ? raw / 100 : raw;
         presetObj.handle = { row: p.handle.row, param: p.handle.param, depth: Math.round(depth * 1000) / 1000 };
       }
     }
     if (p.shake && typeof p.shake.row === 'number') {
       const raw = p.shake.depth;
-      const depth = raw > 1 ? raw / 100 : raw;
+      const depth = Math.abs(raw) > 1 ? raw / 100 : raw;
       presetObj.shake = { row: p.shake.row, param: p.shake.param, depth: Math.round(depth * 1000) / 1000 };
     }
     if (p.lfo) {
       const raw = p.lfo.depth;
-      const depth = (p.lfo.target !== 'lfo' && raw > 1) ? raw / 100 : raw;
+      const depth = (p.lfo.target !== 'lfo' && Math.abs(raw) > 1) ? raw / 100 : raw;
       const lfo = { param: p.lfo.param, shape: p.lfo.shape, speed: p.lfo.speed, depth: Math.round(depth * 1000) / 1000 };
       if (p.lfo.target === 'lfo') lfo.target = 'lfo';
       else if (typeof p.lfo.row === 'number') lfo.row = p.lfo.row;
@@ -141,19 +141,19 @@ function parseConfigJson(rawJson) {
     }),
     handle: p.handle ? {
       ...p.handle,
-      depth: (p.handle.target !== 'lfo' && typeof p.handle.depth === 'number' && p.handle.depth <= 1.0)
+      depth: (p.handle.target !== 'lfo' && typeof p.handle.depth === 'number' && Math.abs(p.handle.depth) <= 1.0)
         ? Math.round(p.handle.depth * 100)
         : p.handle.depth
     } : undefined,
     shake: p.shake ? {
       ...p.shake,
-      depth: (typeof p.shake.depth === 'number' && p.shake.depth <= 1.0)
+      depth: (typeof p.shake.depth === 'number' && Math.abs(p.shake.depth) <= 1.0)
         ? Math.round(p.shake.depth * 100)
         : p.shake.depth
     } : undefined,
     lfo: p.lfo ? {
       ...p.lfo,
-      depth: (p.lfo.target !== 'lfo' && typeof p.lfo.depth === 'number' && p.lfo.depth <= 1.0)
+      depth: (p.lfo.target !== 'lfo' && typeof p.lfo.depth === 'number' && Math.abs(p.lfo.depth) <= 1.0)
         ? Math.round(p.lfo.depth * 100)
         : p.lfo.depth
     } : undefined,
@@ -345,6 +345,48 @@ assert.strictEqual(percentRoundTrip.pack.presets[0].shake.depth, 50, 'Parsed Sha
 assert.strictEqual(percentRoundTrip.pack.presets[0].lfo.depth, 25, 'Parsed LFO depth must be 25');
 console.log('✓ Standard audio percentage scaling & JSON round-trip test passed!');
 
+// Test 8: Bipolar modulation depth (negative and positive values)
+const bipolarTestPack = {
+  name: 'BIPOLAR TEST',
+  useBuiltInSamples: true,
+  presets: [
+    {
+      pos: 0,
+      name: 'INVERTED SWEEP',
+      list: [
+        { effect: 'LOWPASS', cutoff: 80 },
+        { effect: 'DIST', amount: 10, mix: 60 }
+      ],
+      handle: { row: 0, param: 'cutoff', depth: -75 },
+      shake: { row: 1, param: 'mix', depth: -40 },
+      lfo: { row: 0, param: 'cutoff', depth: -50, shape: 'sine', speed: 1.5 }
+    },
+    {
+      pos: 1,
+      name: 'LFO ACCEL / DECEL',
+      list: [{ effect: 'CHORUS' }],
+      handle: { target: 'lfo', param: 'speed', depth: -8.5 },
+      lfo: { row: 0, param: 'depth', depth: 90, shape: 'sawtooth', speed: 4.0 }
+    }
+  ]
+};
+
+const bipolarSerialized = serializeToConfigJson(bipolarTestPack);
+const bipolarParsedJson = JSON.parse(bipolarSerialized);
+
+assert.strictEqual(bipolarParsedJson.presets[0].handle.depth, -0.75, 'Negative handle depth -75 must serialize to -0.75');
+assert.strictEqual(bipolarParsedJson.presets[0].shake.depth, -0.4, 'Negative shake depth -40 must serialize to -0.4');
+assert.strictEqual(bipolarParsedJson.presets[0].lfo.depth, -0.5, 'Negative lfo depth -50 must serialize to -0.5');
+assert.strictEqual(bipolarParsedJson.presets[1].handle.depth, -8.5, 'Negative LFO speed handle depth must serialize to -8.5');
+
+const bipolarRoundTrip = parseConfigJson(bipolarSerialized);
+assert.strictEqual(bipolarRoundTrip.pack.presets[0].handle.depth, -75, 'Parsed negative handle depth must be -75%');
+assert.strictEqual(bipolarRoundTrip.pack.presets[0].shake.depth, -40, 'Parsed negative shake depth must be -40%');
+assert.strictEqual(bipolarRoundTrip.pack.presets[0].lfo.depth, -50, 'Parsed negative lfo depth must be -50%');
+assert.strictEqual(bipolarRoundTrip.pack.presets[1].handle.depth, -8.5, 'Parsed negative LFO speed depth must be -8.5 Hz');
+console.log('✓ Chapter 7 & Guide Bipolar modulation depth (negative and positive) test passed!');
+
 console.log('=== ALL AUTOMATED COMPLIANCE TESTS PASSED (100%) ===');
+
 
 

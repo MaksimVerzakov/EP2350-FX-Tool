@@ -72,7 +72,7 @@ export function parseConfigJson(rawJson: string): { pack?: PackConfig; error?: s
         if (p.handle && typeof p.handle === 'object') {
           const isLfo = p.handle.target === 'lfo';
           let depth = typeof p.handle.depth === 'number' ? p.handle.depth : (isLfo ? 10.0 : 80);
-          if (!isLfo && depth <= 1.0) {
+          if (!isLfo && Math.abs(depth) <= 1.0) {
             depth = Math.round(depth * 100);
           }
           preset.handle = {
@@ -85,7 +85,7 @@ export function parseConfigJson(rawJson: string): { pack?: PackConfig; error?: s
 
         if (p.shake && typeof p.shake === 'object') {
           let depth = typeof p.shake.depth === 'number' ? p.shake.depth : 50;
-          if (depth <= 1.0) {
+          if (Math.abs(depth) <= 1.0) {
             depth = Math.round(depth * 100);
           }
           preset.shake = {
@@ -98,7 +98,7 @@ export function parseConfigJson(rawJson: string): { pack?: PackConfig; error?: s
         if (p.lfo && typeof p.lfo === 'object') {
           const isLfo = p.lfo.target === 'lfo';
           let depth = typeof p.lfo.depth === 'number' ? p.lfo.depth : (isLfo ? 1.0 : 20);
-          if (!isLfo && depth <= 1.0) {
+          if (!isLfo && Math.abs(depth) <= 1.0) {
             depth = Math.round(depth * 100);
           }
           preset.lfo = {
