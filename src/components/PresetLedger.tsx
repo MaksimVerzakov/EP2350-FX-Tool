@@ -353,7 +353,9 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
     setActiveBus(destinationBus); // Auto-switch tab to see immediate impact
   };
 
-  // In-Situ Modulation Helpers for an effect by its global index
+  // Modulation Target Helpers
+  const LFO_SHAPES: LfoShape[] = ['sine', 'square', 'sawtooth', 'random'];
+
   const isHandleOnRow = (globalIdx: number) =>
     preset.handle?.target !== 'lfo' && preset.handle?.row === globalIdx;
 
@@ -363,58 +365,105 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
   const isLfoOnRow = (globalIdx: number) =>
     preset.lfo?.target !== 'lfo' && preset.lfo?.row === globalIdx;
 
-  const assignHandleToRow = (globalIdx: number) => {
-    const ef = preset.list[globalIdx];
-    const m = ef ? EFFECTS_REGISTRY[ef.effect] : null;
-    const defaultParam = m?.params[0]?.name || 'cutoff';
-    onUpdatePreset({
-      ...preset,
-      handle: { row: globalIdx, param: defaultParam, depth: 80 }
-    });
+  const handleSetHandleTarget = (targetVal: string) => {
+    if (targetVal === 'none') {
+      const copy = { ...preset };
+      delete copy.handle;
+      onUpdatePreset(copy);
+    } else if (targetVal === 'lfo') {
+      onUpdatePreset({
+        ...preset,
+        handle: {
+          target: 'lfo',
+          param: 'speed',
+          depth: typeof preset.handle?.depth === 'number' && preset.handle.target === 'lfo' ? preset.handle.depth : 10.0
+        }
+      });
+    } else {
+      const rowIdx = parseInt(targetVal, 10);
+      const fx = preset.list[rowIdx];
+      const m = fx ? EFFECTS_REGISTRY[fx.effect] : null;
+      const defaultParam = m?.params[0]?.name || 'cutoff';
+      onUpdatePreset({
+        ...preset,
+        handle: {
+          row: rowIdx,
+          param: defaultParam,
+          depth: typeof preset.handle?.depth === 'number' && preset.handle.target !== 'lfo' ? preset.handle.depth : 80
+        }
+      });
+    }
   };
 
-  const removeHandle = () => {
-    const copy = { ...preset };
-    delete copy.handle;
-    onUpdatePreset(copy);
+  const handleSetHandleParam = (paramName: string) => {
+    if (preset.handle && preset.handle.target !== 'lfo') {
+      onUpdatePreset({
+        ...preset,
+        handle: { ...preset.handle, param: paramName }
+      });
+    }
   };
 
-  const assignShakeToRow = (globalIdx: number) => {
-    const ef = preset.list[globalIdx];
-    const m = ef ? EFFECTS_REGISTRY[ef.effect] : null;
-    const defaultParam = m?.params[0]?.name || 'mix';
-    onUpdatePreset({
-      ...preset,
-      shake: { row: globalIdx, param: defaultParam, depth: 50 }
-    });
+  const handleSetShakeTarget = (targetVal: string) => {
+    if (targetVal === 'none') {
+      const copy = { ...preset };
+      delete copy.shake;
+      onUpdatePreset(copy);
+    } else {
+      const rowIdx = parseInt(targetVal, 10);
+      const fx = preset.list[rowIdx];
+      const m = fx ? EFFECTS_REGISTRY[fx.effect] : null;
+      const defaultParam = m?.params[0]?.name || 'mix';
+      onUpdatePreset({
+        ...preset,
+        shake: {
+          row: rowIdx,
+          param: defaultParam,
+          depth: typeof preset.shake?.depth === 'number' ? preset.shake.depth : 50
+        }
+      });
+    }
   };
 
-  const removeShake = () => {
-    const copy = { ...preset };
-    delete copy.shake;
-    onUpdatePreset(copy);
+  const handleSetShakeParam = (paramName: string) => {
+    if (preset.shake) {
+      onUpdatePreset({
+        ...preset,
+        shake: { ...preset.shake, param: paramName }
+      });
+    }
   };
 
-  const assignLfoToRow = (globalIdx: number) => {
-    const ef = preset.list[globalIdx];
-    const m = ef ? EFFECTS_REGISTRY[ef.effect] : null;
-    const defaultParam = m?.params[0]?.name || 'cutoff';
-    onUpdatePreset({
-      ...preset,
-      lfo: {
-        row: globalIdx,
-        param: defaultParam,
-        depth: typeof preset.lfo?.depth === 'number' ? preset.lfo.depth : 20,
-        shape: preset.lfo?.shape ?? 'sine',
-        speed: preset.lfo?.speed ?? 2.0
-      }
-    });
+  const handleSetLfoTarget = (targetVal: string) => {
+    if (targetVal === 'none') {
+      const copy = { ...preset };
+      delete copy.lfo;
+      onUpdatePreset(copy);
+    } else {
+      const rowIdx = parseInt(targetVal, 10);
+      const fx = preset.list[rowIdx];
+      const m = fx ? EFFECTS_REGISTRY[fx.effect] : null;
+      const defaultParam = m?.params[0]?.name || 'cutoff';
+      onUpdatePreset({
+        ...preset,
+        lfo: {
+          row: rowIdx,
+          param: defaultParam,
+          depth: typeof preset.lfo?.depth === 'number' ? preset.lfo.depth : 20,
+          shape: preset.lfo?.shape ?? 'sine',
+          speed: preset.lfo?.speed ?? 2.0
+        }
+      });
+    }
   };
 
-  const removeLfo = () => {
-    const copy = { ...preset };
-    delete copy.lfo;
-    onUpdatePreset(copy);
+  const handleSetLfoParam = (paramName: string) => {
+    if (preset.lfo) {
+      onUpdatePreset({
+        ...preset,
+        lfo: { ...preset.lfo, param: paramName }
+      });
+    }
   };
 
   // Render a single effect card
@@ -435,7 +484,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
       >
         {/* Card Header Bar */}
         <div className="flex items-center justify-between border-b border-[#eceeed] pb-1.5 gap-2">
-          {/* Sequential Step Counter & Effect Name (NO visible row numbers) */}
+          {/* Sequential Step Counter & Effect Name + Modulation Badges */}
           <div className="flex items-center gap-2 min-w-0">
             <span className="font-mono text-[10px] font-bold text-[#f15a22]">
               {(busPosition + 1).toString().padStart(2, '0')}.
@@ -443,6 +492,35 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
             <span className="font-bold text-[12px] uppercase tracking-tight text-[#141617] truncate">
               {meta.displayName}
             </span>
+            {/* Modulation Badges indicating effect is modulated */}
+            {(isHandleTarget || isShakeTarget || isLfoTarget) && (
+              <div className="flex items-center gap-1 shrink-0 ml-1">
+                {isHandleTarget && (
+                  <span
+                    className="text-[7.5px] font-mono font-bold bg-[#f15a22] text-white px-1.5 py-0.5 rounded-[1px] uppercase tracking-tight"
+                    title={`Handle modulates ${preset.handle?.param}`}
+                  >
+                    HNDL: {preset.handle?.param}
+                  </span>
+                )}
+                {isShakeTarget && (
+                  <span
+                    className="text-[7.5px] font-mono font-bold bg-[#141617] text-white px-1.5 py-0.5 rounded-[1px] uppercase tracking-tight"
+                    title={`Shake modulates ${preset.shake?.param}`}
+                  >
+                    SHK: {preset.shake?.param}
+                  </span>
+                )}
+                {isLfoTarget && (
+                  <span
+                    className="text-[7.5px] font-mono font-bold bg-[#00a69c] text-white px-1.5 py-0.5 rounded-[1px] uppercase tracking-tight"
+                    title={`LFO modulates ${preset.lfo?.param}`}
+                  >
+                    LFO: {preset.lfo?.param}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Action Controls: Positioned Directional Control Cluster & Delete */}
@@ -502,299 +580,6 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
               <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
-        </div>
-
-        {/* In-Situ Modulation Strip directly on card: Handle, Shake, and LFO */}
-        <div className="flex flex-wrap items-center gap-1.5 text-[8px] font-mono">
-          {/* Handle Modulation */}
-          {isHandleTarget ? (
-            <div className="flex items-center gap-1 bg-[#f15a22] text-white px-1.5 py-0.5 rounded-[1px] font-bold">
-              <span>HNDL:</span>
-              <select
-                value={preset.handle?.param}
-                onChange={(e) =>
-                  onUpdatePreset({
-                    ...preset,
-                    handle: { row: globalIdx, param: e.target.value, depth: preset.handle?.depth ?? 80 }
-                  })
-                }
-                className="bg-black text-white text-[8px] px-1 py-0 border-0 outline-none uppercase"
-              >
-                {meta.params.map((p) => (
-                  <option key={p.name} value={p.name}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-              <span>DEPTH:</span>
-              <div className="flex items-center">
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={
-                    typeof preset.handle?.depth === 'number'
-                      ? (preset.handle.depth <= 1.0 ? Math.round(preset.handle.depth * 100) : Math.round(preset.handle.depth))
-                      : 80
-                  }
-                  onChange={(e) => {
-                    const parsed = parseFloat(e.target.value) || 0;
-                    const clamped = Math.max(0, Math.min(100, parsed));
-                    onUpdatePreset({
-                      ...preset,
-                      handle: {
-                        row: globalIdx,
-                        param: preset.handle?.param || meta.params[0]?.name || 'cutoff',
-                        depth: clamped
-                      }
-                    });
-                  }}
-                  className="w-8 bg-black text-white text-center text-[8px] px-0.5 py-0 outline-none font-mono"
-                />
-                <span className="text-[7.5px] text-white/70 ml-0.5">%</span>
-              </div>
-              <button
-                onClick={removeHandle}
-                className="hover:text-black hover:bg-white px-0.5 transition-colors cursor-pointer"
-                title="Remove handle modulation"
-              >
-                ✕
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => assignHandleToRow(globalIdx)}
-              className="text-[8px] font-bold border border-dashed border-[#f15a22] text-[#f15a22] hover:bg-[#f15a22] hover:text-white px-1.5 py-0.5 rounded-[1px] transition-colors cursor-pointer"
-              title="Assign Squeeze Handle to modulate this effect"
-            >
-              + HNDL
-            </button>
-          )}
-
-          {/* Shake Modulation */}
-          {isShakeTarget ? (
-            <div className="flex items-center gap-1 bg-[#141617] text-white px-1.5 py-0.5 rounded-[1px] font-bold">
-              <span>SHK:</span>
-              <select
-                value={preset.shake?.param}
-                onChange={(e) =>
-                  onUpdatePreset({
-                    ...preset,
-                    shake: { row: globalIdx, param: e.target.value, depth: preset.shake?.depth ?? 50 }
-                  })
-                }
-                className="bg-black text-white text-[8px] px-1 py-0 border-0 outline-none uppercase"
-              >
-                {meta.params.map((p) => (
-                  <option key={p.name} value={p.name}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-              <span>DEPTH:</span>
-              <div className="flex items-center">
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={
-                    typeof preset.shake?.depth === 'number'
-                      ? (preset.shake.depth <= 1.0 ? Math.round(preset.shake.depth * 100) : Math.round(preset.shake.depth))
-                      : 50
-                  }
-                  onChange={(e) => {
-                    const parsed = parseFloat(e.target.value) || 0;
-                    const clamped = Math.max(0, Math.min(100, parsed));
-                    onUpdatePreset({
-                      ...preset,
-                      shake: {
-                        row: globalIdx,
-                        param: preset.shake?.param || meta.params[0]?.name || 'mix',
-                        depth: clamped
-                      }
-                    });
-                  }}
-                  className="w-8 bg-black text-white text-center text-[8px] px-0.5 py-0 outline-none font-mono"
-                />
-                <span className="text-[7.5px] text-white/70 ml-0.5">%</span>
-              </div>
-              <button
-                onClick={removeShake}
-                className="hover:text-black hover:bg-white px-0.5 transition-colors cursor-pointer"
-                title="Remove shake modulation"
-              >
-                ✕
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => assignShakeToRow(globalIdx)}
-              className="text-[8px] font-bold border border-dashed border-[#141617] text-[#141617] hover:bg-[#141617] hover:text-white px-1.5 py-0.5 rounded-[1px] transition-colors cursor-pointer"
-              title="Assign Shake Sensor to modulate this effect"
-            >
-              + SHAKE
-            </button>
-          )}
-
-          {/* LFO Modulation */}
-          {isLfoTarget ? (
-            <div className="flex items-center gap-1 bg-[#00a69c] text-white px-1.5 py-0.5 rounded-[1px] font-bold">
-              <span>LFO:</span>
-              <select
-                value={preset.lfo?.param}
-                onChange={(e) =>
-                  onUpdatePreset({
-                    ...preset,
-                    lfo: {
-                      ...(preset.lfo || { row: globalIdx, param: meta.params[0]?.name || 'cutoff', depth: 20, shape: 'sine', speed: 2.0 }),
-                      row: globalIdx,
-                      param: e.target.value
-                    }
-                  })
-                }
-                className="bg-black text-white text-[8px] px-1 py-0 border-0 outline-none uppercase"
-              >
-                {meta.params.map((p) => (
-                  <option key={p.name} value={p.name}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-              <span>DEPTH:</span>
-              <div className="flex items-center">
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={
-                    typeof preset.lfo?.depth === 'number'
-                      ? (preset.lfo.depth <= 1.0 ? Math.round(preset.lfo.depth * 100) : Math.round(preset.lfo.depth))
-                      : 20
-                  }
-                  onChange={(e) => {
-                    const parsed = parseFloat(e.target.value) || 0;
-                    const clamped = Math.max(0, Math.min(100, parsed));
-                    onUpdatePreset({
-                      ...preset,
-                      lfo: {
-                        ...(preset.lfo || { row: globalIdx, param: meta.params[0]?.name || 'cutoff', shape: 'sine', speed: 2.0 }),
-                        row: globalIdx,
-                        depth: clamped
-                      }
-                    });
-                  }}
-                  className="w-8 bg-black text-white text-center text-[8px] px-0.5 py-0 outline-none font-mono"
-                />
-                <span className="text-[7.5px] text-white/70 ml-0.5">%</span>
-              </div>
-              <span>SHAPE:</span>
-              <select
-                value={preset.lfo?.shape ?? 'sine'}
-                onChange={(e) =>
-                  onUpdatePreset({
-                    ...preset,
-                    lfo: {
-                      ...(preset.lfo || { row: globalIdx, param: meta.params[0]?.name || 'cutoff', depth: 20, speed: 2.0, shape: 'sine' }),
-                      row: globalIdx,
-                      shape: e.target.value as LfoShape
-                    }
-                  })
-                }
-                className="bg-black text-white text-[8px] px-1 py-0 border-0 outline-none uppercase"
-              >
-                <option value="sine">SIN</option>
-                <option value="square">SQR</option>
-                <option value="sawtooth">SAW</option>
-                <option value="random">RND</option>
-              </select>
-              <span>SPD:</span>
-              <div className="flex items-center">
-                <input
-                  type="number"
-                  min="0.1"
-                  max="20"
-                  step="0.1"
-                  value={preset.lfo?.speed ?? 2.0}
-                  onChange={(e) => {
-                    const parsed = parseFloat(e.target.value) || 0.1;
-                    const clamped = Math.max(0.1, Math.min(20, parsed));
-                    onUpdatePreset({
-                      ...preset,
-                      lfo: {
-                        ...(preset.lfo || { row: globalIdx, param: meta.params[0]?.name || 'cutoff', depth: 20, shape: 'sine', speed: 2.0 }),
-                        row: globalIdx,
-                        speed: clamped
-                      }
-                    });
-                  }}
-                  className="w-10 bg-black text-white text-center text-[8px] px-0.5 py-0 outline-none font-mono"
-                />
-                <span className="text-[7.5px] text-white/70 ml-0.5">Hz</span>
-              </div>
-
-              {/* Squeeze Handle accelerates LFO speed option */}
-              <label
-                className="flex items-center gap-1 cursor-pointer text-[7.5px] border-l border-white/30 pl-1.5 ml-0.5"
-                title="Squeeze Handle accelerates LFO speed"
-              >
-                <input
-                  type="checkbox"
-                  checked={preset.handle?.target === 'lfo'}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      onUpdatePreset({
-                        ...preset,
-                        handle: { target: 'lfo', param: 'speed', depth: 10.0 }
-                      });
-                    } else if (preset.handle?.target === 'lfo') {
-                      const copy = { ...preset };
-                      delete copy.handle;
-                      onUpdatePreset(copy);
-                    }
-                  }}
-                  className="w-2.5 h-2.5 cursor-pointer accent-black"
-                />
-                <span className="text-white whitespace-nowrap">HNDL→SPD</span>
-              </label>
-              {preset.handle?.target === 'lfo' && (
-                <div className="flex items-center text-[7.5px] text-white">
-                  <span>+</span>
-                  <input
-                    type="number"
-                    step="1"
-                    value={preset.handle?.depth ?? 10.0}
-                    onChange={(e) =>
-                      onUpdatePreset({
-                        ...preset,
-                        handle: { target: 'lfo', param: 'speed', depth: parseFloat(e.target.value) || 0 }
-                      })
-                    }
-                    className="w-7 bg-black text-white text-center text-[8px] px-0.5 py-0 outline-none font-mono"
-                  />
-                  <span className="text-[7.5px] text-white/70 ml-0.5">Hz</span>
-                </div>
-              )}
-
-              <button
-                onClick={removeLfo}
-                className="hover:text-black hover:bg-white px-0.5 transition-colors cursor-pointer"
-                title="Remove LFO modulation"
-              >
-                ✕
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => assignLfoToRow(globalIdx)}
-              className="text-[8px] font-bold border border-dashed border-[#00a69c] text-[#00a69c] hover:bg-[#00a69c] hover:text-white px-1.5 py-0.5 rounded-[1px] transition-colors cursor-pointer"
-              title="Assign LFO (Low-Frequency Oscillator) to modulate this effect"
-            >
-              + LFO
-            </button>
-          )}
         </div>
 
         {/* Knobs Strip: 2 lines for DELAY (8 knobs), inline for <= 5 knobs */}
@@ -1198,6 +983,319 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
           </div>
         )}
       </div>
+
+      {/* 4. FIXED BOTTOM MODULATION MATRIX (HANDLE, SHAKE, LFO) */}
+      {(() => {
+        const handleTargetVal = preset.handle?.target === 'lfo' ? 'lfo' : (typeof preset.handle?.row === 'number' ? String(preset.handle.row) : 'none');
+        const handleEffect = typeof preset.handle?.row === 'number' ? preset.list[preset.handle.row] : undefined;
+        const handleEffectMeta = handleEffect ? EFFECTS_REGISTRY[handleEffect.effect] : undefined;
+        const handleParamVal = preset.handle?.target === 'lfo' ? 'speed' : (preset.handle?.param || '');
+
+        const shakeTargetVal = typeof preset.shake?.row === 'number' ? String(preset.shake.row) : 'none';
+        const shakeEffect = typeof preset.shake?.row === 'number' ? preset.list[preset.shake.row] : undefined;
+        const shakeEffectMeta = shakeEffect ? EFFECTS_REGISTRY[shakeEffect.effect] : undefined;
+        const shakeParamVal = preset.shake?.param || '';
+
+        const lfoTargetVal = typeof preset.lfo?.row === 'number' ? String(preset.lfo.row) : 'none';
+        const lfoEffect = typeof preset.lfo?.row === 'number' ? preset.list[preset.lfo.row] : undefined;
+        const lfoEffectMeta = lfoEffect ? EFFECTS_REGISTRY[lfoEffect.effect] : undefined;
+        const lfoParamVal = preset.lfo?.param || '';
+
+        const lfoShapeIdx = LFO_SHAPES.indexOf(preset.lfo?.shape ?? 'sine');
+        const safeLfoShapeIdx = lfoShapeIdx !== -1 ? lfoShapeIdx : 0;
+
+        return (
+          <div className="shrink-0 border-t border-[#141617] bg-[#eceeed] p-2 flex flex-col gap-1 select-none">
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1.5fr] gap-2">
+              {/* BLOCK 1: HANDLE */}
+              <div className="border border-[#141617] bg-white p-2 flex flex-col justify-between rounded-[0px] shadow-[1px_1px_0px_#141617]">
+                <div>
+                  {/* Header */}
+                  <div className="flex items-center justify-between border-b border-[#eceeed] pb-1 mb-1.5">
+                    <span className="font-mono text-[9px] font-bold tracking-wider uppercase text-[#f15a22] flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 bg-[#f15a22] rounded-full" />
+                      HANDLE
+                    </span>
+                    <span className={`text-[7px] font-mono font-bold uppercase ${preset.handle ? 'text-[#00a69c]' : 'text-[#8a9092]'}`}>
+                      {preset.handle ? 'ACTIVE' : 'OFF'}
+                    </span>
+                  </div>
+
+                  {/* Dropdowns */}
+                  <div className="flex flex-col gap-1 mb-1.5">
+                    <div className="flex items-center gap-1">
+                      <span className="text-[7.5px] font-mono font-bold text-[#73787a] uppercase w-8 shrink-0">TGT:</span>
+                      <select
+                        value={handleTargetVal}
+                        onChange={(e) => handleSetHandleTarget(e.target.value)}
+                        className="bg-[#ffffff] border border-[#141617] text-[#141617] text-[8.5px] font-mono px-1 py-0.5 rounded-[1px] outline-none shadow-[1px_1px_0px_#141617] focus:border-[#f15a22] cursor-pointer truncate w-full"
+                      >
+                        <option value="none">-- OFF --</option>
+                        {preset.list.map((fx, idx) => {
+                          const m = EFFECTS_REGISTRY[fx.effect];
+                          return (
+                            <option key={fx.id} value={idx}>
+                              {(idx + 1).toString().padStart(2, '0')}. {m?.displayName || fx.effect} (B{fx.BUS || 1})
+                            </option>
+                          );
+                        })}
+                        <option value="lfo">LFO SPEED</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <span className="text-[7.5px] font-mono font-bold text-[#73787a] uppercase w-8 shrink-0">PRM:</span>
+                      <select
+                        disabled={!preset.handle || preset.handle.target === 'lfo'}
+                        value={handleParamVal}
+                        onChange={(e) => handleSetHandleParam(e.target.value)}
+                        className="bg-[#ffffff] border border-[#141617] text-[#141617] text-[8.5px] font-mono px-1 py-0.5 rounded-[1px] outline-none shadow-[1px_1px_0px_#141617] focus:border-[#f15a22] cursor-pointer truncate w-full disabled:opacity-40 disabled:pointer-events-none"
+                      >
+                        {preset.handle?.target === 'lfo' ? (
+                          <option value="speed">SPEED (Hz)</option>
+                        ) : handleEffectMeta ? (
+                          handleEffectMeta.params.map((p) => (
+                            <option key={p.name} value={p.name}>
+                              {p.label}
+                            </option>
+                          ))
+                        ) : (
+                          <option value="">--</option>
+                        )}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Knob */}
+                <div className={`flex items-center justify-center pt-0.5 ${!preset.handle ? 'opacity-30 pointer-events-none' : ''}`}>
+                  {preset.handle?.target === 'lfo' ? (
+                    <Knob
+                      label="DEPTH"
+                      value={preset.handle.depth ?? 10.0}
+                      min={0}
+                      max={20}
+                      step={0.5}
+                      unit="Hz"
+                      displayValue={`${(preset.handle.depth ?? 10.0).toFixed(1)}Hz`}
+                      onChange={(v) => onUpdatePreset({ ...preset, handle: { ...preset.handle!, depth: v } })}
+                      onReset={() => onUpdatePreset({ ...preset, handle: { ...preset.handle!, depth: 10.0 } })}
+                      accentColor="#f15a22"
+                      size={34}
+                    />
+                  ) : (
+                    <Knob
+                      label="DEPTH"
+                      value={
+                        typeof preset.handle?.depth === 'number'
+                          ? (preset.handle.depth <= 1.0 ? Math.round(preset.handle.depth * 100) : Math.round(preset.handle.depth))
+                          : 80
+                      }
+                      min={0}
+                      max={100}
+                      step={1}
+                      unit="%"
+                      displayScale={(v) => `${Math.round(v)}%`}
+                      onChange={(v) => onUpdatePreset({ ...preset, handle: { ...preset.handle!, depth: v } })}
+                      onReset={() => onUpdatePreset({ ...preset, handle: { ...preset.handle!, depth: 80 } })}
+                      accentColor="#f15a22"
+                      size={34}
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* BLOCK 2: SHAKE */}
+              <div className="border border-[#141617] bg-white p-2 flex flex-col justify-between rounded-[0px] shadow-[1px_1px_0px_#141617]">
+                <div>
+                  {/* Header */}
+                  <div className="flex items-center justify-between border-b border-[#eceeed] pb-1 mb-1.5">
+                    <span className="font-mono text-[9px] font-bold tracking-wider uppercase text-[#141617] flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 bg-[#141617] rounded-full" />
+                      SHAKE
+                    </span>
+                    <span className={`text-[7px] font-mono font-bold uppercase ${preset.shake ? 'text-[#00a69c]' : 'text-[#8a9092]'}`}>
+                      {preset.shake ? 'ACTIVE' : 'OFF'}
+                    </span>
+                  </div>
+
+                  {/* Dropdowns */}
+                  <div className="flex flex-col gap-1 mb-1.5">
+                    <div className="flex items-center gap-1">
+                      <span className="text-[7.5px] font-mono font-bold text-[#73787a] uppercase w-8 shrink-0">TGT:</span>
+                      <select
+                        value={shakeTargetVal}
+                        onChange={(e) => handleSetShakeTarget(e.target.value)}
+                        className="bg-[#ffffff] border border-[#141617] text-[#141617] text-[8.5px] font-mono px-1 py-0.5 rounded-[1px] outline-none shadow-[1px_1px_0px_#141617] focus:border-[#141617] cursor-pointer truncate w-full"
+                      >
+                        <option value="none">-- OFF --</option>
+                        {preset.list.map((fx, idx) => {
+                          const m = EFFECTS_REGISTRY[fx.effect];
+                          return (
+                            <option key={fx.id} value={idx}>
+                              {(idx + 1).toString().padStart(2, '0')}. {m?.displayName || fx.effect} (B{fx.BUS || 1})
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <span className="text-[7.5px] font-mono font-bold text-[#73787a] uppercase w-8 shrink-0">PRM:</span>
+                      <select
+                        disabled={!preset.shake}
+                        value={shakeParamVal}
+                        onChange={(e) => handleSetShakeParam(e.target.value)}
+                        className="bg-[#ffffff] border border-[#141617] text-[#141617] text-[8.5px] font-mono px-1 py-0.5 rounded-[1px] outline-none shadow-[1px_1px_0px_#141617] focus:border-[#141617] cursor-pointer truncate w-full disabled:opacity-40 disabled:pointer-events-none"
+                      >
+                        {shakeEffectMeta ? (
+                          shakeEffectMeta.params.map((p) => (
+                            <option key={p.name} value={p.name}>
+                              {p.label}
+                            </option>
+                          ))
+                        ) : (
+                          <option value="">--</option>
+                        )}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Knob */}
+                <div className={`flex items-center justify-center pt-0.5 ${!preset.shake ? 'opacity-30 pointer-events-none' : ''}`}>
+                  <Knob
+                    label="DEPTH"
+                    value={
+                      typeof preset.shake?.depth === 'number'
+                        ? (preset.shake.depth <= 1.0 ? Math.round(preset.shake.depth * 100) : Math.round(preset.shake.depth))
+                        : 50
+                    }
+                    min={0}
+                    max={100}
+                    step={1}
+                    unit="%"
+                    displayScale={(v) => `${Math.round(v)}%`}
+                    onChange={(v) => onUpdatePreset({ ...preset, shake: { ...preset.shake!, depth: v } })}
+                    onReset={() => onUpdatePreset({ ...preset, shake: { ...preset.shake!, depth: 50 } })}
+                    accentColor="#141617"
+                    size={34}
+                  />
+                </div>
+              </div>
+
+              {/* BLOCK 3: LFO CYCLER */}
+              <div className="border border-[#141617] bg-white p-2 flex flex-col justify-between rounded-[0px] shadow-[1px_1px_0px_#141617]">
+                <div>
+                  {/* Header */}
+                  <div className="flex items-center justify-between border-b border-[#eceeed] pb-1 mb-1.5">
+                    <span className="font-mono text-[9px] font-bold tracking-wider uppercase text-[#00a69c] flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 bg-[#00a69c] rounded-full" />
+                      LFO CYCLER
+                    </span>
+                    <span className={`text-[7px] font-mono font-bold uppercase ${preset.lfo ? 'text-[#00a69c]' : 'text-[#8a9092]'}`}>
+                      {preset.lfo ? 'ACTIVE' : 'OFF'}
+                    </span>
+                  </div>
+
+                  {/* Dropdowns */}
+                  <div className="flex flex-col gap-1 mb-1.5">
+                    <div className="flex items-center gap-1">
+                      <span className="text-[7.5px] font-mono font-bold text-[#73787a] uppercase w-8 shrink-0">TGT:</span>
+                      <select
+                        value={lfoTargetVal}
+                        onChange={(e) => handleSetLfoTarget(e.target.value)}
+                        className="bg-[#ffffff] border border-[#141617] text-[#141617] text-[8.5px] font-mono px-1 py-0.5 rounded-[1px] outline-none shadow-[1px_1px_0px_#141617] focus:border-[#00a69c] cursor-pointer truncate w-full"
+                      >
+                        <option value="none">-- OFF --</option>
+                        {preset.list.map((fx, idx) => {
+                          const m = EFFECTS_REGISTRY[fx.effect];
+                          return (
+                            <option key={fx.id} value={idx}>
+                              {(idx + 1).toString().padStart(2, '0')}. {m?.displayName || fx.effect} (B{fx.BUS || 1})
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <span className="text-[7.5px] font-mono font-bold text-[#73787a] uppercase w-8 shrink-0">PRM:</span>
+                      <select
+                        disabled={!preset.lfo}
+                        value={lfoParamVal}
+                        onChange={(e) => handleSetLfoParam(e.target.value)}
+                        className="bg-[#ffffff] border border-[#141617] text-[#141617] text-[8.5px] font-mono px-1 py-0.5 rounded-[1px] outline-none shadow-[1px_1px_0px_#141617] focus:border-[#00a69c] cursor-pointer truncate w-full disabled:opacity-40 disabled:pointer-events-none"
+                      >
+                        {lfoEffectMeta ? (
+                          lfoEffectMeta.params.map((p) => (
+                            <option key={p.name} value={p.name}>
+                              {p.label}
+                            </option>
+                          ))
+                        ) : (
+                          <option value="">--</option>
+                        )}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3 Knobs for LFO */}
+                <div className={`flex items-center justify-around pt-0.5 gap-0.5 ${!preset.lfo ? 'opacity-30 pointer-events-none' : ''}`}>
+                  <Knob
+                    label="DEPTH"
+                    value={
+                      typeof preset.lfo?.depth === 'number'
+                        ? (preset.lfo.depth <= 1.0 ? Math.round(preset.lfo.depth * 100) : Math.round(preset.lfo.depth))
+                        : 20
+                    }
+                    min={0}
+                    max={100}
+                    step={1}
+                    unit="%"
+                    displayScale={(v) => `${Math.round(v)}%`}
+                    onChange={(v) => onUpdatePreset({ ...preset, lfo: { ...preset.lfo!, depth: v } })}
+                    onReset={() => onUpdatePreset({ ...preset, lfo: { ...preset.lfo!, depth: 20 } })}
+                    accentColor="#00a69c"
+                    size={30}
+                  />
+
+                  <Knob
+                    label="SPEED"
+                    value={preset.lfo?.speed ?? 2.0}
+                    min={0.1}
+                    max={20.0}
+                    step={0.1}
+                    unit="Hz"
+                    displayScale={(v) => `${v.toFixed(1)}Hz`}
+                    onChange={(v) => onUpdatePreset({ ...preset, lfo: { ...preset.lfo!, speed: v } })}
+                    onReset={() => onUpdatePreset({ ...preset, lfo: { ...preset.lfo!, speed: 2.0 } })}
+                    accentColor="#e4e3df"
+                    size={30}
+                  />
+
+                  <Knob
+                    label="SHAPE"
+                    value={safeLfoShapeIdx}
+                    min={0}
+                    max={3}
+                    step={1}
+                    displayScale={(v) => ['SIN', 'SQR', 'SAW', 'RND'][Math.round(v)] || 'SIN'}
+                    onChange={(v) => {
+                      const newShape = LFO_SHAPES[Math.round(v)] || 'sine';
+                      onUpdatePreset({ ...preset, lfo: { ...preset.lfo!, shape: newShape } });
+                    }}
+                    onReset={() => onUpdatePreset({ ...preset, lfo: { ...preset.lfo!, shape: 'sine' } })}
+                    accentColor="#231f20"
+                    size={30}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };

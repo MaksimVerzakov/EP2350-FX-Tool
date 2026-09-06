@@ -8,6 +8,7 @@ interface KnobProps {
   step?: number;
   unit?: string;
   displayValue?: string;
+  displayScale?: (val: number) => string;
   onChange: (val: number) => void;
   onReset?: () => void;
   accentColor?: string;
@@ -24,6 +25,7 @@ export const Knob: React.FC<KnobProps> = ({
   step = 0.01,
   unit = '',
   displayValue,
+  displayScale,
   onChange,
   onReset,
   accentColor = '#f15a22',
@@ -40,11 +42,14 @@ export const Knob: React.FC<KnobProps> = ({
     if (unit === '%') {
       return `${Math.round(val)}%`;
     }
+    if (displayScale) {
+      return displayScale(val);
+    }
     if (displayValue !== undefined) {
       return displayValue;
     }
     return Number.isInteger(val) ? `${val}` : `${Number(val.toFixed(2))}`;
-  }, [displayValue, unit]);
+  }, [displayScale, displayValue, unit]);
 
   // Keep internal input text in sync with value when not focused / dragging
   useEffect(() => {
@@ -110,6 +115,17 @@ export const Knob: React.FC<KnobProps> = ({
   };
 
   const commitValue = (textToCommit: string) => {
+    const cleanLower = textToCommit.trim().toLowerCase();
+    if (displayScale) {
+      const stepVal = step || 1;
+      for (let testVal = min; testVal <= max; testVal += stepVal) {
+        if (displayScale(testVal).toLowerCase() === cleanLower) {
+          onChange(testVal);
+          setInputText(formatVal(testVal));
+          return;
+        }
+      }
+    }
     const cleanText = textToCommit.replace(/[^\d.-]/g, '');
     let parsed = parseFloat(cleanText);
     if (!isNaN(parsed)) {
