@@ -170,7 +170,13 @@ export const Knob: React.FC<KnobProps> = ({
         </span>
         {isModulated && (
           <span
-            className="text-[6.5px] font-te-bold px-0.5 py-[0.5px] bg-[#f15a22] text-white rounded-[1px] leading-none uppercase shrink-0"
+            className={`text-[6.5px] font-te-bold px-0.5 py-[0.5px] text-white rounded-[1px] leading-none uppercase shrink-0 ${
+              modulationSource === 'LFO'
+                ? 'bg-[#00a69c]'
+                : modulationSource === 'SHK'
+                ? 'bg-[#141617]'
+                : 'bg-[#f15a22]'
+            }`}
             title={`Modulated by ${modulationSource || 'source'}`}
           >
             {modulationSource ? modulationSource.slice(0, 3) : 'MOD'}

@@ -9,7 +9,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Trash2,
-  Sparkles,
   GitBranch
 } from 'lucide-react';
 
@@ -194,21 +193,25 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
     });
 
     let newList = [...preset.list];
+    let insertedGlobalIndex = newList.length;
 
     // Determine insertion position in the global preset.list
     if (typeof insertBusIndex === 'number' && insertBusIndex >= 0 && insertBusIndex < currentBusItems.length) {
-      const targetGlobalIndex = currentBusItems[insertBusIndex].idx;
-      newList.splice(targetGlobalIndex, 0, newEffect);
+      insertedGlobalIndex = currentBusItems[insertBusIndex].idx;
+      newList.splice(insertedGlobalIndex, 0, newEffect);
     } else if (activeBus === 1) {
       // Append at end of Bus 1 items or start of Bus 2 items
       const lastBus1 = bus1Items[bus1Items.length - 1];
       if (lastBus1) {
-        newList.splice(lastBus1.idx + 1, 0, newEffect);
+        insertedGlobalIndex = lastBus1.idx + 1;
+        newList.splice(insertedGlobalIndex, 0, newEffect);
       } else {
+        insertedGlobalIndex = 0;
         newList.unshift(newEffect);
       }
     } else {
       // Append at end of preset.list
+      insertedGlobalIndex = newList.length;
       newList.push(newEffect);
     }
 
@@ -223,6 +226,22 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
       if (sampleIdx !== -1) {
         updatedPreset.trigger = { row: sampleIdx };
       }
+    }
+
+    // Shift modulation rows if inserted before existing rows
+    const shiftRow = (row?: number) => {
+      if (typeof row !== 'number') return undefined;
+      return row >= insertedGlobalIndex ? row + 1 : row;
+    };
+
+    if (updatedPreset.handle && updatedPreset.handle.target !== 'lfo' && typeof updatedPreset.handle.row === 'number') {
+      updatedPreset.handle = { ...updatedPreset.handle, row: shiftRow(updatedPreset.handle.row)! };
+    }
+    if (updatedPreset.shake && typeof updatedPreset.shake.row === 'number') {
+      updatedPreset.shake = { ...updatedPreset.shake, row: shiftRow(updatedPreset.shake.row)! };
+    }
+    if (updatedPreset.lfo && updatedPreset.lfo.target !== 'lfo' && typeof updatedPreset.lfo.row === 'number') {
+      updatedPreset.lfo = { ...updatedPreset.lfo, row: shiftRow(updatedPreset.lfo.row)! };
     }
 
     setLastAddedEffectId(newEffect.id);
@@ -254,6 +273,12 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
     if (updatedPreset.shake && typeof updatedPreset.shake.row === 'number') {
       if (updatedPreset.shake.row === globalIdx) delete updatedPreset.shake;
       else if (updatedPreset.shake.row > globalIdx) updatedPreset.shake = { ...updatedPreset.shake, row: updatedPreset.shake.row - 1 };
+    }
+
+    // Re-index or clear lfo
+    if (updatedPreset.lfo && updatedPreset.lfo.target !== 'lfo' && typeof updatedPreset.lfo.row === 'number') {
+      if (updatedPreset.lfo.row === globalIdx) delete updatedPreset.lfo;
+      else if (updatedPreset.lfo.row > globalIdx) updatedPreset.lfo = { ...updatedPreset.lfo, row: updatedPreset.lfo.row - 1 };
     }
 
     // Auto-clean trigger if SAMPLE was deleted, or re-index
@@ -296,6 +321,9 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
     if (updatedPreset.shake && typeof updatedPreset.shake.row === 'number') {
       updatedPreset.shake = { ...updatedPreset.shake, row: remapRow(updatedPreset.shake.row)! };
     }
+    if (updatedPreset.lfo && updatedPreset.lfo.target !== 'lfo' && typeof updatedPreset.lfo.row === 'number') {
+      updatedPreset.lfo = { ...updatedPreset.lfo, row: remapRow(updatedPreset.lfo.row)! };
+    }
     if (updatedPreset.trigger && typeof updatedPreset.trigger.row === 'number') {
       updatedPreset.trigger = { row: remapRow(updatedPreset.trigger.row)! };
     }
@@ -332,6 +360,9 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
   const isShakeOnRow = (globalIdx: number) =>
     preset.shake?.row === globalIdx;
 
+  const isLfoOnRow = (globalIdx: number) =>
+    preset.lfo?.target !== 'lfo' && preset.lfo?.row === globalIdx;
+
   const assignHandleToRow = (globalIdx: number) => {
     const ef = preset.list[globalIdx];
     const m = ef ? EFFECTS_REGISTRY[ef.effect] : null;
@@ -364,6 +395,28 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
     onUpdatePreset(copy);
   };
 
+  const assignLfoToRow = (globalIdx: number) => {
+    const ef = preset.list[globalIdx];
+    const m = ef ? EFFECTS_REGISTRY[ef.effect] : null;
+    const defaultParam = m?.params[0]?.name || 'cutoff';
+    onUpdatePreset({
+      ...preset,
+      lfo: {
+        row: globalIdx,
+        param: defaultParam,
+        depth: typeof preset.lfo?.depth === 'number' ? preset.lfo.depth : 20,
+        shape: preset.lfo?.shape ?? 'sine',
+        speed: preset.lfo?.speed ?? 2.0
+      }
+    });
+  };
+
+  const removeLfo = () => {
+    const copy = { ...preset };
+    delete copy.lfo;
+    onUpdatePreset(copy);
+  };
+
   // Render a single effect card
   const renderEffectCard = (item: { fx: AnyEffect; idx: number }, busPosition: number) => {
     const { fx: effect, idx: globalIdx } = item;
@@ -372,19 +425,13 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
 
     const isHandleTarget = isHandleOnRow(globalIdx);
     const isShakeTarget = isShakeOnRow(globalIdx);
-    const isBus2 = effect.BUS === 2;
+    const isLfoTarget = isLfoOnRow(globalIdx);
 
     return (
       <div
         id={`effect-card-${effect.id}`}
         key={effect.id}
-        className={`w-full border p-3 flex flex-col gap-2 transition-all duration-75 relative rounded-[0px] shadow-[2px_2px_0px_#141617] ${
-          isBus2
-            ? 'border-l-[4px] border-l-[#d99b26] border-[#141617] bg-[#fffdfa]'
-            : isSample
-            ? 'border-l-[4px] border-l-[#f15a22] border-[#141617] bg-[#fffcfb]'
-            : 'border-l-[4px] border-l-[#00a69c] border-[#141617] bg-[#ffffff] hover:border-[#000000]'
-        }`}
+        className="w-full border border-[#141617] bg-white p-3 flex flex-col gap-2 relative rounded-[0px] shadow-[2px_2px_0px_#141617]"
       >
         {/* Card Header Bar */}
         <div className="flex items-center justify-between border-b border-[#eceeed] pb-1.5 gap-2">
@@ -457,7 +504,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
           </div>
         </div>
 
-        {/* In-Situ Modulation Strip directly on card */}
+        {/* In-Situ Modulation Strip directly on card: Handle, Shake, and LFO */}
         <div className="flex flex-wrap items-center gap-1.5 text-[8px] font-mono">
           {/* Handle Modulation */}
           {isHandleTarget ? (
@@ -591,11 +638,162 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
             </button>
           )}
 
-          {/* Linked Trigger Indicator for SAMPLE */}
-          {isSample && (
-            <span className="text-[8px] font-bold bg-[#f15a22]/15 text-[#f15a22] border border-[#f15a22]/30 px-1.5 py-0.5 rounded-[1px] flex items-center gap-1">
-              <span>TRIGGER: WHITE BTN</span>
-            </span>
+          {/* LFO Modulation */}
+          {isLfoTarget ? (
+            <div className="flex items-center gap-1 bg-[#00a69c] text-white px-1.5 py-0.5 rounded-[1px] font-bold">
+              <span>LFO:</span>
+              <select
+                value={preset.lfo?.param}
+                onChange={(e) =>
+                  onUpdatePreset({
+                    ...preset,
+                    lfo: {
+                      ...(preset.lfo || { row: globalIdx, param: meta.params[0]?.name || 'cutoff', depth: 20, shape: 'sine', speed: 2.0 }),
+                      row: globalIdx,
+                      param: e.target.value
+                    }
+                  })
+                }
+                className="bg-black text-white text-[8px] px-1 py-0 border-0 outline-none uppercase"
+              >
+                {meta.params.map((p) => (
+                  <option key={p.name} value={p.name}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+              <span>DEPTH:</span>
+              <div className="flex items-center">
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={
+                    typeof preset.lfo?.depth === 'number'
+                      ? (preset.lfo.depth <= 1.0 ? Math.round(preset.lfo.depth * 100) : Math.round(preset.lfo.depth))
+                      : 20
+                  }
+                  onChange={(e) => {
+                    const parsed = parseFloat(e.target.value) || 0;
+                    const clamped = Math.max(0, Math.min(100, parsed));
+                    onUpdatePreset({
+                      ...preset,
+                      lfo: {
+                        ...(preset.lfo || { row: globalIdx, param: meta.params[0]?.name || 'cutoff', shape: 'sine', speed: 2.0 }),
+                        row: globalIdx,
+                        depth: clamped
+                      }
+                    });
+                  }}
+                  className="w-8 bg-black text-white text-center text-[8px] px-0.5 py-0 outline-none font-mono"
+                />
+                <span className="text-[7.5px] text-white/70 ml-0.5">%</span>
+              </div>
+              <span>SHAPE:</span>
+              <select
+                value={preset.lfo?.shape ?? 'sine'}
+                onChange={(e) =>
+                  onUpdatePreset({
+                    ...preset,
+                    lfo: {
+                      ...(preset.lfo || { row: globalIdx, param: meta.params[0]?.name || 'cutoff', depth: 20, speed: 2.0, shape: 'sine' }),
+                      row: globalIdx,
+                      shape: e.target.value as LfoShape
+                    }
+                  })
+                }
+                className="bg-black text-white text-[8px] px-1 py-0 border-0 outline-none uppercase"
+              >
+                <option value="sine">SIN</option>
+                <option value="square">SQR</option>
+                <option value="sawtooth">SAW</option>
+                <option value="random">RND</option>
+              </select>
+              <span>SPD:</span>
+              <div className="flex items-center">
+                <input
+                  type="number"
+                  min="0.1"
+                  max="20"
+                  step="0.1"
+                  value={preset.lfo?.speed ?? 2.0}
+                  onChange={(e) => {
+                    const parsed = parseFloat(e.target.value) || 0.1;
+                    const clamped = Math.max(0.1, Math.min(20, parsed));
+                    onUpdatePreset({
+                      ...preset,
+                      lfo: {
+                        ...(preset.lfo || { row: globalIdx, param: meta.params[0]?.name || 'cutoff', depth: 20, shape: 'sine', speed: 2.0 }),
+                        row: globalIdx,
+                        speed: clamped
+                      }
+                    });
+                  }}
+                  className="w-10 bg-black text-white text-center text-[8px] px-0.5 py-0 outline-none font-mono"
+                />
+                <span className="text-[7.5px] text-white/70 ml-0.5">Hz</span>
+              </div>
+
+              {/* Squeeze Handle accelerates LFO speed option */}
+              <label
+                className="flex items-center gap-1 cursor-pointer text-[7.5px] border-l border-white/30 pl-1.5 ml-0.5"
+                title="Squeeze Handle accelerates LFO speed"
+              >
+                <input
+                  type="checkbox"
+                  checked={preset.handle?.target === 'lfo'}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      onUpdatePreset({
+                        ...preset,
+                        handle: { target: 'lfo', param: 'speed', depth: 10.0 }
+                      });
+                    } else if (preset.handle?.target === 'lfo') {
+                      const copy = { ...preset };
+                      delete copy.handle;
+                      onUpdatePreset(copy);
+                    }
+                  }}
+                  className="w-2.5 h-2.5 cursor-pointer accent-black"
+                />
+                <span className="text-white whitespace-nowrap">HNDL→SPD</span>
+              </label>
+              {preset.handle?.target === 'lfo' && (
+                <div className="flex items-center text-[7.5px] text-white">
+                  <span>+</span>
+                  <input
+                    type="number"
+                    step="1"
+                    value={preset.handle?.depth ?? 10.0}
+                    onChange={(e) =>
+                      onUpdatePreset({
+                        ...preset,
+                        handle: { target: 'lfo', param: 'speed', depth: parseFloat(e.target.value) || 0 }
+                      })
+                    }
+                    className="w-7 bg-black text-white text-center text-[8px] px-0.5 py-0 outline-none font-mono"
+                  />
+                  <span className="text-[7.5px] text-white/70 ml-0.5">Hz</span>
+                </div>
+              )}
+
+              <button
+                onClick={removeLfo}
+                className="hover:text-black hover:bg-white px-0.5 transition-colors cursor-pointer"
+                title="Remove LFO modulation"
+              >
+                ✕
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => assignLfoToRow(globalIdx)}
+              className="text-[8px] font-bold border border-dashed border-[#00a69c] text-[#00a69c] hover:bg-[#00a69c] hover:text-white px-1.5 py-0.5 rounded-[1px] transition-colors cursor-pointer"
+              title="Assign LFO (Low-Frequency Oscillator) to modulate this effect"
+            >
+              + LFO
+            </button>
           )}
         </div>
 
@@ -608,16 +806,19 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                   ? effect[param.name]
                   : param.defaultVal;
 
-              const isParamModulated =
-                (isHandleTarget && preset.handle?.param === param.name) ||
-                (isShakeTarget && preset.shake?.param === param.name);
+              const isHandleMod = isHandleTarget && preset.handle?.param === param.name;
+              const isShakeMod = isShakeTarget && preset.shake?.param === param.name;
+              const isLfoMod = isLfoTarget && preset.lfo?.param === param.name;
 
-              const modSrc =
-                isHandleTarget && preset.handle?.param === param.name
-                  ? 'HNDL'
-                  : isShakeTarget && preset.shake?.param === param.name
-                  ? 'SHK'
-                  : undefined;
+              const isParamModulated = isHandleMod || isShakeMod || isLfoMod;
+
+              const modSrc = isHandleMod
+                ? 'HNDL'
+                : isShakeMod
+                ? 'SHK'
+                : isLfoMod
+                ? 'LFO'
+                : undefined;
 
               const encoderColor = EP_SIDEKICK_KNOB_COLORS[pIdx % 4];
 
@@ -651,16 +852,19 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                   ? effect[param.name]
                   : param.defaultVal;
 
-              const isParamModulated =
-                (isHandleTarget && preset.handle?.param === param.name) ||
-                (isShakeTarget && preset.shake?.param === param.name);
+              const isHandleMod = isHandleTarget && preset.handle?.param === param.name;
+              const isShakeMod = isShakeTarget && preset.shake?.param === param.name;
+              const isLfoMod = isLfoTarget && preset.lfo?.param === param.name;
 
-              const modSrc =
-                isHandleTarget && preset.handle?.param === param.name
-                  ? 'HNDL'
-                  : isShakeTarget && preset.shake?.param === param.name
-                  ? 'SHK'
-                  : undefined;
+              const isParamModulated = isHandleMod || isShakeMod || isLfoMod;
+
+              const modSrc = isHandleMod
+                ? 'HNDL'
+                : isShakeMod
+                ? 'SHK'
+                : isLfoMod
+                ? 'LFO'
+                : undefined;
 
               const encoderColor = EP_SIDEKICK_KNOB_COLORS[pIdx % 4];
 
@@ -1009,106 +1213,6 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
             </div>
           </div>
         )}
-      </div>
-
-      {/* 5. ADVANCED MODULATION: CHAPTER 7.9 LFO CYCLER */}
-      <div className="shrink-0 border-t border-[#141617] bg-[#f8f9f8] p-3 border-x-0 flex flex-col gap-2">
-        <div className="flex items-center justify-between border-b border-[#e2e4e2] pb-1">
-          <span className="text-[9px] font-bold text-[#141617] uppercase tracking-wider flex items-center gap-1.5">
-            <Sparkles className="w-3 h-3 text-[#00a69c]" />
-            ADVANCED MODULATION: LFO CYCLER (CHAPTER 7.9)
-          </span>
-          <span className="text-[8px] font-mono text-[#73787a]">
-            GLOBAL AUTOMATION OVER TIME
-          </span>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-between text-[10px] font-mono gap-3">
-          {/* LFO Shape & Speed */}
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-[#00a69c]">LFO SHAPE:</span>
-            <select
-              value={preset.lfo?.shape ?? 'sine'}
-              onChange={(e) =>
-                onUpdatePreset({
-                  ...preset,
-                  lfo: {
-                    ...(preset.lfo || { row: 0, param: 'cutoff', depth: 20, speed: 2.0, shape: 'sine' }),
-                    shape: e.target.value as LfoShape
-                  }
-                })
-              }
-              className="bg-[#fff] border border-[#d2d5d2] px-1.5 py-0.5 text-[9px] font-mono"
-            >
-              <option value="sine">SINE (SMOOTH)</option>
-              <option value="square">SQUARE (ON/OFF CHOP)</option>
-              <option value="sawtooth">SAW (RAMP)</option>
-              <option value="random">RANDOM (CHAOS)</option>
-            </select>
-
-            <span className="font-bold text-[#00a69c]">SPEED:</span>
-            <input
-              type="number"
-              step="0.1"
-              min="0.1"
-              max="20"
-              value={preset.lfo?.speed ?? 2.0}
-              onChange={(e) =>
-                onUpdatePreset({
-                  ...preset,
-                  lfo: {
-                    ...(preset.lfo || { row: 0, param: 'cutoff', depth: 20, shape: 'sine', speed: 2.0 }),
-                    speed: parseFloat(e.target.value) || 0.1
-                  }
-                })
-              }
-              className="w-12 bg-[#fff] border border-[#d2d5d2] px-1 py-0.5 text-[9px] font-mono text-center"
-            />
-            <span className="text-[8px] text-[#73787a]">Hz</span>
-          </div>
-
-          {/* Handle Modulates LFO Speed */}
-          <div className="flex items-center gap-1.5 bg-white px-2 py-1 border border-[#d2d5d2]">
-            <input
-              type="checkbox"
-              id="handleLfoSpeed"
-              checked={preset.handle?.target === 'lfo'}
-              onChange={(e) => {
-                if (e.target.checked) {
-                  onUpdatePreset({
-                    ...preset,
-                    handle: { target: 'lfo', param: 'speed', depth: 10.0 }
-                  });
-                } else if (preset.handle?.target === 'lfo') {
-                  const copy = { ...preset };
-                  delete copy.handle;
-                  onUpdatePreset(copy);
-                }
-              }}
-              className="cursor-pointer"
-            />
-            <label htmlFor="handleLfoSpeed" className="text-[8.5px] font-mono font-bold text-[#141617] cursor-pointer">
-              SQUEEZE HANDLE ACCELERATES LFO SPEED
-            </label>
-            {preset.handle?.target === 'lfo' && (
-              <div className="flex items-center gap-1 ml-1 text-[8px]">
-                <span>+DEPTH:</span>
-                <input
-                  type="number"
-                  step="1"
-                  value={preset.handle?.depth ?? 10.0}
-                  onChange={(e) =>
-                    onUpdatePreset({
-                      ...preset,
-                      handle: { target: 'lfo', param: 'speed', depth: parseFloat(e.target.value) || 0 }
-                    })
-                  }
-                  className="w-10 bg-white border border-[#d2d5d2] px-1 py-0 text-center font-mono"
-                />
-              </div>
-            )}
-          </div>
-        </div>
       </div>
     </div>
   );

@@ -502,6 +502,13 @@ export class DspAudioEngine {
 
     const handle = this.preset.handle;
     const shake = this.preset.shake;
+    const lfo = this.preset.lfo;
+
+    // Calculate dynamic LFO speed if handle is assigned to accelerate LFO
+    let effectiveLfoSpeed = lfo?.speed ?? 2.0;
+    if (handle && handle.target === 'lfo') {
+      effectiveLfoSpeed += this.modState.handlePos * (handle.depth || 10.0);
+    }
 
     this.activeNodes.forEach(({ effectType, params, nodeRefs }) => {
       const rowIdx = nodeRefs.rowIdx;
@@ -520,13 +527,33 @@ export class DspAudioEngine {
         shakeDelta = this.modState.shakeAmount * depthRatio;
       }
 
+      // Check LFO modulation on this row
+      let lfoDelta = 0;
+      if (lfo && lfo.target !== 'lfo' && lfo.row === rowIdx) {
+        const depthRatio = lfo.depth > 1 ? lfo.depth / 100 : lfo.depth;
+        const phase = (ctx.currentTime * effectiveLfoSpeed) % 1.0;
+        let lfoWave = 0;
+        if (lfo.shape === 'square') {
+          lfoWave = phase < 0.5 ? 1 : -1;
+        } else if (lfo.shape === 'sawtooth') {
+          lfoWave = 2 * (phase - Math.floor(phase + 0.5));
+        } else if (lfo.shape === 'random') {
+          lfoWave = (Math.sin(Math.floor(ctx.currentTime * effectiveLfoSpeed) * 999) % 1);
+        } else {
+          // Sine
+          lfoWave = Math.sin(phase * 2 * Math.PI);
+        }
+        lfoDelta = lfoWave * depthRatio;
+      }
+
       const toRatio = (v: number | undefined, defaultVal: number) => typeof v === 'number' ? (v > 1 ? v / 100 : v) : defaultVal;
 
       if (effectType === 'LOWPASS' || effectType === 'HIGHPASS') {
         const baseCutoff = typeof params.cutoff === 'number' ? params.cutoff : (effectType === 'LOWPASS' ? 1.0 : 0.0);
         let moddedCutoff = baseCutoff;
-        if (handle && handle.param === 'cutoff') moddedCutoff += handleDelta;
-        if (shake && shake.param === 'cutoff') moddedCutoff += shakeDelta;
+        if (handle && handle.target !== 'lfo' && handle.row === rowIdx && handle.param === 'cutoff') moddedCutoff += handleDelta;
+        if (shake && shake.row === rowIdx && shake.param === 'cutoff') moddedCutoff += shakeDelta;
+        if (lfo && lfo.target !== 'lfo' && lfo.row === rowIdx && lfo.param === 'cutoff') moddedCutoff += lfoDelta;
         moddedCutoff = Math.max(0.0, Math.min(1.0, moddedCutoff));
 
         const hz = 20 * Math.pow(1000, moddedCutoff);
@@ -534,17 +561,37 @@ export class DspAudioEngine {
           nodeRefs.filter.frequency.setTargetAtTime(hz, ctx.currentTime, 0.02);
         }
       } else if (effectType === 'DIST') {
-        if (handle && handle.param === 'mix' && nodeRefs.wetGain) {
+        if (nodeRefs.wetGain && nodeRefs.dryGain) {
           const baseMix = toRatio(params.mix, 0.5);
-          const mix = Math.max(0.0, Math.min(1.0, baseMix + handleDelta + shakeDelta));
+          let delta = 0;
+          if (handle && handle.target !== 'lfo' && handle.row === rowIdx && handle.param === 'mix') delta += handleDelta;
+          if (shake && shake.row === rowIdx && shake.param === 'mix') delta += shakeDelta;
+          if (lfo && lfo.target !== 'lfo' && lfo.row === rowIdx && lfo.param === 'mix') delta += lfoDelta;
+          const mix = Math.max(0.0, Math.min(1.0, baseMix + delta));
           nodeRefs.wetGain.gain.setTargetAtTime(mix, ctx.currentTime, 0.02);
           nodeRefs.dryGain.gain.setTargetAtTime(1.0 - mix, ctx.currentTime, 0.02);
         }
       } else if (effectType === 'DELAY') {
-        if (handle && handle.param === 'echo' && nodeRefs.feedbackGain) {
+        if (nodeRefs.feedbackGain) {
           const baseEcho = toRatio(params.echo, 0.4);
-          const echo = Math.max(0.0, Math.min(0.95, baseEcho + handleDelta + shakeDelta));
+          let delta = 0;
+          if (handle && handle.target !== 'lfo' && handle.row === rowIdx && handle.param === 'echo') delta += handleDelta;
+          if (shake && shake.row === rowIdx && shake.param === 'echo') delta += shakeDelta;
+          if (lfo && lfo.target !== 'lfo' && lfo.row === rowIdx && lfo.param === 'echo') delta += lfoDelta;
+          const echo = Math.max(0.0, Math.min(0.95, baseEcho + delta));
           nodeRefs.feedbackGain.gain.setTargetAtTime(echo, ctx.currentTime, 0.02);
+        }
+      } else if (effectType === 'RING') {
+        if (nodeRefs.osc) {
+          const baseFreq = typeof params.frequency === 'number' ? params.frequency : 440.0;
+          let moddedFreq = baseFreq;
+          if (lfo && lfo.target !== 'lfo' && lfo.row === rowIdx && lfo.param === 'frequency') {
+            const rawDepth = typeof lfo.depth === 'number' ? lfo.depth : 50.0;
+            const phase = (ctx.currentTime * effectiveLfoSpeed) % 1.0;
+            const lfoWave = Math.sin(phase * 2 * Math.PI);
+            moddedFreq = Math.max(1, baseFreq + lfoWave * rawDepth);
+          }
+          nodeRefs.osc.frequency.setTargetAtTime(moddedFreq, ctx.currentTime, 0.02);
         }
       }
     });
