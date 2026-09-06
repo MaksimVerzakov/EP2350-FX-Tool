@@ -945,18 +945,18 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
       {/* 2. DUAL PARALLEL BUS PHYSICAL SWITCH BAR */}
       <div className="bg-[#eceeed] border-b border-[#141617] flex items-center justify-center px-4 py-2 shrink-0 select-none">
         {/* PHYSICAL TE MECHANICAL DUAL BUS CONSOLE */}
-        <div className="flex items-center justify-between bg-[#f8f9f8] px-3 py-1.5 rounded-[0px] border border-[#141617] shadow-[1px_1px_0px_#141617] w-full max-w-[460px]">
+        <div className="flex items-center justify-between bg-[#f8f9f8] px-3 py-1.5 rounded-[0px] border border-[#141617] shadow-[1px_1px_0px_#141617] w-full max-w-[360px]">
           {/* Left Station: BUS 1 */}
           <button
             type="button"
             onClick={() => setActiveBus(1)}
-            className="flex items-center gap-2.5 flex-1 justify-start group cursor-pointer focus:outline-none"
+            className="flex items-center gap-2 flex-1 justify-start group cursor-pointer focus:outline-none"
             title="Switch to Bus 1 (Primary signal path)"
           >
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               {/* Status LED Indicator */}
               <span
-                className={`w-2.5 h-2.5 rounded-full border border-black/40 transition-all ${
+                className={`w-2.5 h-2.5 rounded-full border border-black/40 transition-all shrink-0 ${
                   activeBus === 1
                     ? 'bg-[#00a69c] shadow-[0_0_8px_#00a69c]'
                     : 'bg-black/15'
@@ -970,22 +970,14 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                 >
                   BUS 1
                 </span>
-                <span className="font-mono text-[8px] text-[#73787a] tracking-tight uppercase">
-                  PRIMARY
+                <span
+                  className={`font-mono text-[8.5px] tracking-tight uppercase font-bold transition-colors ${
+                    activeBus === 1 ? 'text-[#00a69c]' : 'text-[#73787a]'
+                  }`}
+                >
+                  {bus1Items.length} FX
                 </span>
               </div>
-            </div>
-
-            {/* Symmetrical TE LCD-Style Tally Counter */}
-            <div
-              className={`flex items-center gap-1 px-2 py-0.5 font-mono text-[10px] font-bold rounded-[1px] border border-[#141617] shadow-[1px_1px_0px_#141617] transition-all ${
-                activeBus === 1
-                  ? 'bg-[#00a69c] text-white'
-                  : 'bg-[#e4e7e5] text-[#73787a]'
-              }`}
-            >
-              <span>{String(bus1Items.length).padStart(2, '0')}</span>
-              <span className="text-[8px] opacity-75 font-normal">FX</span>
             </div>
           </button>
 
@@ -1019,22 +1011,10 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
           <button
             type="button"
             onClick={() => setActiveBus(2)}
-            className="flex items-center gap-2.5 flex-1 justify-end group cursor-pointer focus:outline-none"
+            className="flex items-center gap-2 flex-1 justify-end group cursor-pointer focus:outline-none"
             title="Switch to Bus 2 (Parallel signal path)"
           >
-            {/* Symmetrical TE LCD-Style Tally Counter */}
-            <div
-              className={`flex items-center gap-1 px-2 py-0.5 font-mono text-[10px] font-bold rounded-[1px] border border-[#141617] shadow-[1px_1px_0px_#141617] transition-all ${
-                activeBus === 2
-                  ? 'bg-[#d99b26] text-white'
-                  : 'bg-[#e4e7e5] text-[#73787a]'
-              }`}
-            >
-              <span>{String(bus2Items.length).padStart(2, '0')}</span>
-              <span className="text-[8px] opacity-75 font-normal">FX</span>
-            </div>
-
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <div className="flex flex-col items-end leading-tight">
                 <span
                   className={`font-mono text-[11px] font-bold tracking-wider uppercase transition-colors ${
@@ -1043,13 +1023,17 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                 >
                   BUS 2
                 </span>
-                <span className="font-mono text-[8px] text-[#73787a] tracking-tight uppercase">
-                  PARALLEL
+                <span
+                  className={`font-mono text-[8.5px] tracking-tight uppercase font-bold transition-colors ${
+                    activeBus === 2 ? 'text-[#d99b26]' : 'text-[#73787a]'
+                  }`}
+                >
+                  {bus2Items.length} FX
                 </span>
               </div>
               {/* Status LED Indicator */}
               <span
-                className={`w-2.5 h-2.5 rounded-full border border-black/40 transition-all ${
+                className={`w-2.5 h-2.5 rounded-full border border-black/40 transition-all shrink-0 ${
                   activeBus === 2
                     ? 'bg-[#d99b26] shadow-[0_0_8px_#d99b26]'
                     : 'bg-black/15'
