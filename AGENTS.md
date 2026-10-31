@@ -11,7 +11,7 @@
      - `chore/<short-name>` or `docs/<short-name>` for maintenance/tooling
    - Push the branch to `origin` (`git push -u origin <branch-name>`) and provide the Pull Request creation URL (`https://github.com/MaksimVerzakov/EP2350-FX-Tool/pull/new/<branch-name>`).
 
-3. **Conventional Commits & Semantic Versioning (SemVer)**:
+3. **Conventional Commits & Tag-Driven Semantic Versioning (SemVer)**:
    - Use Conventional Commit messages (`feat: ...`, `fix: ...`, `feat!: ...` / `BREAKING CHANGE: ...`, `chore: ...`).
-   - Do **not** hardcode version strings in UI components. The single source of truth is `"version"` in `package.json`, injected at build time via `__APP_VERSION__`.
-   - When a PR is merged into `main`, `.github/workflows/deploy.yml` automatically bumps `package.json` (`major`, `minor`, or `patch` based on commit/PR prefix), tags `vX.Y.Z`, pushes the release commit, and deploys the updated build to GitHub Pages.
+   - Do **not** hardcode version strings in UI components or manually bump `package.json` in feature branches (which avoids merge conflicts across parallel PRs).
+   - When a PR is merged into `main`, `.github/workflows/deploy.yml` automatically reads the latest `vX.Y.Z` Git tag, computes the next version (`major`, `minor`, or `patch`), pushes the new `vX.Y.Z` tag, injects `__APP_VERSION__` at build time, and deploys the updated build to GitHub Pages.

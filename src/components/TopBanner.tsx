@@ -59,7 +59,7 @@ export const TopBanner: React.FC<TopBannerProps> = ({
       }`}
     >
       {/* 1. Iconic TE Modular Badge */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col items-start gap-1">
         <div
           className={`flex items-stretch border ${
             isTing
@@ -124,7 +124,7 @@ export const TopBanner: React.FC<TopBannerProps> = ({
         </div>
 
         <span
-          className={`text-[10px] font-mono ${
+          className={`w-12 text-center text-[10px] font-mono leading-none mt-0.5 ${
             isTing ? 'text-[#00503a]/75' : 'text-[#73787a]'
           }`}
         >

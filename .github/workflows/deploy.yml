@@ -17,7 +17,6 @@ concurrency:
 
 jobs:
   build-and-deploy:
-    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -35,35 +34,44 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Auto-Bump Semantic Version on Merge
-        if: github.event_name == 'push'
+      - name: Compute & Tag Next Semantic Version
+        id: semver
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          LAST_MSG=$(git log -1 --pretty=%B)
-          echo "Inspecting commit message: $LAST_MSG"
+          # Find latest vX.Y.Z tag, or start from package.json (1.0.0)
+          LATEST_TAG=$(git tag -l "v[0-9]*.[0-9]*.[0-9]*" --sort=-v:refname | head -n 1)
+          if [ -z "$LATEST_TAG" ]; then
+            BASE_VER=$(node -p "require('./package.json').version")
+          else
+            BASE_VER="${LATEST_TAG#v}"
+          fi
+          echo "Base version: $BASE_VER"
 
-          if echo "$LAST_MSG" | grep -qE "^chore\(release\):"; then
-            echo "Already a release commit, skipping version bump."
-            exit 0
+          if [ "${{ github.event_name }}" = "push" ]; then
+            LAST_MSG=$(git log -1 --pretty=%B)
+            echo "Inspecting merged commit: $LAST_MSG"
+
+            BUMP="patch"
+            if echo "$LAST_MSG" | grep -qE "(BREAKING CHANGE|^[a-zA-Z]+(\([^)]+\))?!:)"; then
+              BUMP="major"
+            elif echo "$LAST_MSG" | grep -qE "(^feat(\([^)]+\))?:|from [^/]+/feat[-/])"; then
+              BUMP="minor"
+            fi
+
+            npm version "$BASE_VER" --no-git-tag-version --allow-same-version
+            npm version "$BUMP" --no-git-tag-version
+            NEW_VER=$(node -p "require('./package.json').version")
+
+            git tag -a "v${NEW_VER}" -m "Release v${NEW_VER}"
+            git push origin "v${NEW_VER}"
+            echo "Tagged and pushed v${NEW_VER}"
+          else
+            NEW_VER="$BASE_VER"
           fi
 
-          BUMP="patch"
-          if echo "$LAST_MSG" | grep -qE "(BREAKING CHANGE|^[a-zA-Z]+(\([^)]+\))?!:)"; then
-            BUMP="major"
-          elif echo "$LAST_MSG" | grep -qE "(^feat(\([^)]+\))?:|from [^/]+/feat[-/])"; then
-            BUMP="minor"
-          fi
-
-          echo "Bumping version ($BUMP)..."
-          npm version "$BUMP" --no-git-tag-version
-
-          NEW_VER=$(node -p "require('./package.json').version")
-          git add package.json
-          git commit -m "chore(release): v${NEW_VER} [skip ci]"
-          git tag -a "v${NEW_VER}" -m "Release v${NEW_VER}"
-          git push origin HEAD:main --follow-tags
+          echo "APP_VERSION=${NEW_VER}" >> "$GITHUB_ENV"
 
       - name: Install dependencies
         run: npm ci
