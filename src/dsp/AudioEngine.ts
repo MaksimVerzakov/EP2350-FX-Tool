@@ -1,5 +1,6 @@
 import { AnyEffect, PresetConfig } from '../types/config';
 import { createSyntheticAudioBuffer } from './synthSamples';
+import defaultSpeechUrl from '../assets/speech.mp3';
 
 export interface ModulationState {
   handlePos: number; // 0.0 to 1.0
@@ -47,7 +48,7 @@ export class DspAudioEngine {
 
       // Default sample: Clean spoken speech sample ("The quick brown fox jumps over the lazy dog")
       try {
-        const res = await fetch('/assets/speech.mp3');
+        const res = await fetch(defaultSpeechUrl);
         if (res.ok) {
           const arrayBuffer = await res.arrayBuffer();
           this.currentBuffer = await this.ctx.decodeAudioData(arrayBuffer);

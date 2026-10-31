@@ -4,21 +4,21 @@
 
 @font-face {
   font-family: 'TechnoType-bold';
-  src: url('/assets/Technotype-Bold.woff2') format('woff2');
+  src: url('../assets/Technotype-Bold.woff2') format('woff2');
   font-weight: bold;
   font-style: normal;
 }
 
 @font-face {
   font-family: 'TechnoType-medium';
-  src: url('/assets/Technotype-Medium.woff2') format('woff2');
+  src: url('../assets/Technotype-Medium.woff2') format('woff2');
   font-weight: 500;
   font-style: normal;
 }
 
 @font-face {
   font-family: 'TechnoType-regular';
-  src: url('/assets/Technotype-Regular.woff2') format('woff2');
+  src: url('../assets/Technotype-Regular.woff2') format('woff2');
   font-weight: normal;
   font-style: normal;
 }
@@ -51,7 +51,7 @@
 html {
   scrollbar-gutter: stable;
   overflow-y: scroll;
-  background-image: url('/assets/bg.png');
+  background-image: url('../assets/bg.png');
   background-repeat: repeat;
   background-position: center center;
   background-size: contain;
@@ -68,7 +68,7 @@ body {
 
 @media (min-width: 700px) {
   html {
-    background-image: url('/assets/bg_x2.png');
+    background-image: url('../assets/bg_x2.png');
   }
 }
 
