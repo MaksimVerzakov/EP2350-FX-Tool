@@ -1,5 +1,13 @@
 import { AnyEffect, PresetConfig } from '../types/config';
 import { createSyntheticAudioBuffer } from './synthSamples';
+import {
+  PitchShiftKernel,
+  computeLfoWave,
+  cutoffToHz,
+  makeDistortionCurve,
+  makeSoftClipCurve,
+  resolveModDepth
+} from './math';
 import defaultSpeechUrl from '../assets/speech.mp3';
 
 export interface ModulationState {
@@ -205,82 +213,18 @@ export class DspAudioEngine {
   }
 
   /**
-   * Sample-accurate 4-grain Hann-windowed circular buffer pitch shifter.
-   * Shifts pitch by `pitchRatio` (0.5x to 2.0x) at full audio sample rate (48kHz)
-   * while keeping playback speed/tempo strictly at 1.0x.
+   * Wrap the pure PitchShiftKernel (src/dsp/math.ts) in a ScriptProcessorNode.
+   * Shifts pitch while keeping playback speed strictly at 1.0x.
    */
   private createConstantSpeedPitchShifter(ctx: AudioContext, initialPitch: number) {
     const processor = ctx.createScriptProcessor(512, 1, 1);
-    const bufferSize = 16384; // Power of 2 (~340ms ring buffer)
-    const mask = bufferSize - 1;
-    const ringBuffer = new Float32Array(bufferSize);
-    let writeIdx = 0;
-
-    // ~42ms vocal grain window (2048 samples @ 48kHz)
-    const grainSize = 2048;
-    let phase = 0.0;
-    let currentPitch = Math.max(0.25, Math.min(4.0, initialPitch || 1.0));
-    let targetPitch = currentPitch;
-
-    // 4-point Hermite fractional sample interpolation for clean high-frequency transients
-    const readInterpolated = (delaySamples: number): number => {
-      const readPos = writeIdx - delaySamples + bufferSize;
-      const idx0 = Math.floor(readPos);
-      const frac = readPos - idx0;
-
-      const ym1 = ringBuffer[(idx0 - 1) & mask];
-      const y0 = ringBuffer[idx0 & mask];
-      const y1 = ringBuffer[(idx0 + 1) & mask];
-      const y2 = ringBuffer[(idx0 + 2) & mask];
-
-      const c0 = y0;
-      const c1 = 0.5 * (y1 - ym1);
-      const c2 = ym1 - 2.5 * y0 + 2.0 * y1 - 0.5 * y2;
-      const c3 = 0.5 * (y2 - ym1) + 1.5 * (y0 - y1);
-      return ((c3 * frac + c2) * frac + c1) * frac + c0;
-    };
-
+    const kernel = new PitchShiftKernel(initialPitch);
     processor.onaudioprocess = (e: AudioProcessingEvent) => {
-      const input = e.inputBuffer.getChannelData(0);
-      const output = e.outputBuffer.getChannelData(0);
-      const len = input.length;
-
-      for (let i = 0; i < len; i++) {
-        const x = input[i];
-        ringBuffer[writeIdx] = x;
-
-        // Per-sample exponential smoothing of pitch ratio
-        currentPitch += (targetPitch - currentPitch) * 0.0025;
-
-        // Advance master grain phase
-        const phaseStep = (1.0 - currentPitch) / grainSize;
-        phase += phaseStep;
-        phase -= Math.floor(phase);
-
-        // 4 overlapping Hann-windowed grains spaced by 0.25 cycle (sum of weights === 1.0 everywhere)
-        let wet = 0.0;
-        for (let g = 0; g < 4; g++) {
-          const p = phase + g * 0.25;
-          const gp = p - Math.floor(p);
-          const delaySamples = gp * grainSize + 4;
-          const win = 0.5 * (1.0 - Math.cos(2.0 * Math.PI * gp));
-          wet += win * readInterpolated(delaySamples);
-        }
-        wet *= 0.5; // Normalize 4 overlapping Hann windows (sum of 4 Hann windows = 2.0)
-
-        // Smoothly crossfade to direct pass-through when pitch ratio is ~1.0x
-        const shiftDist = Math.min(1.0, Math.abs(currentPitch - 1.0) / 0.015);
-        output[i] = x * (1.0 - shiftDist) + wet * shiftDist;
-
-        writeIdx = (writeIdx + 1) & mask;
-      }
+      kernel.process(e.inputBuffer.getChannelData(0), e.outputBuffer.getChannelData(0));
     };
-
     return {
       processor,
-      setPitch: (newPitch: number) => {
-        targetPitch = Math.max(0.25, Math.min(4.0, newPitch));
-      }
+      setPitch: (newPitch: number) => kernel.setPitch(newPitch)
     };
   }
 
@@ -422,7 +366,7 @@ export class DspAudioEngine {
         filter.type = 'lowpass';
         filter.Q.value = 2.0;
         const cutoff = toRatio(fx.cutoff, 1.0);
-        filter.frequency.value = 20 * Math.pow(1000, cutoff);
+        filter.frequency.value = cutoffToHz(cutoff);
         return { input: filter, output: filter, nodeRefs: { filter, rowIdx } };
       }
 
@@ -431,7 +375,7 @@ export class DspAudioEngine {
         filter.type = 'highpass';
         filter.Q.value = 2.0;
         const cutoff = toRatio(fx.cutoff, 0.0);
-        filter.frequency.value = 20 * Math.pow(1000, cutoff);
+        filter.frequency.value = cutoffToHz(cutoff);
         return { input: filter, output: filter, nodeRefs: { filter, rowIdx } };
       }
 
@@ -439,7 +383,7 @@ export class DspAudioEngine {
         const eq = ctx.createBiquadFilter();
         eq.type = 'peaking';
         const cutoff = typeof fx.CUTOFF === 'number' ? fx.CUTOFF : 0.5;
-        eq.frequency.value = 20 * Math.pow(1000, cutoff);
+        eq.frequency.value = cutoffToHz(cutoff);
         const q = typeof fx.Q === 'number' ? fx.Q : 0.7;
         eq.Q.value = Math.max(0.1, q * 10);
         const gain = typeof fx.GAIN === 'number' ? fx.GAIN : 0.0;
@@ -467,13 +411,13 @@ export class DspAudioEngine {
         wetGain.gain.value = mix;
 
         const amount = typeof fx.amount === 'number' ? fx.amount : 10.0;
-        shaper.curve = this.makeDistortionCurve(amount) as any;
+        shaper.curve = makeDistortionCurve(amount) as any;
         shaper.oversample = '4x';
 
         const lp = toRatio(fx['lowpass-cutoff'], 1.0);
-        lpTone.frequency.value = 20 * Math.pow(1000, lp);
+        lpTone.frequency.value = cutoffToHz(lp);
         const hp = toRatio(fx['highpass-cutoff'], 0.0);
-        hpTone.frequency.value = 20 * Math.pow(1000, hp);
+        hpTone.frequency.value = cutoffToHz(hp);
 
         inputGain.connect(dryGain);
         inputGain.connect(hpTone);
@@ -506,17 +450,17 @@ export class DspAudioEngine {
 
         // Soft limiter inside feedback loop so echo > 1.0 (SPACE ECHO) self-oscillates warmly without clipping
         const tapeLimiter = ctx.createWaveShaper();
-        tapeLimiter.curve = this.makeSoftClipCurve() as any;
+        tapeLimiter.curve = makeSoftClipCurve() as any;
 
         const lpFilter = ctx.createBiquadFilter();
         lpFilter.type = 'lowpass';
         const lp = toRatio(fx['lowpass-cutoff'], 1.0);
-        lpFilter.frequency.value = 20 * Math.pow(1000, lp);
+        lpFilter.frequency.value = cutoffToHz(lp);
 
         const hpFilter = ctx.createBiquadFilter();
         hpFilter.type = 'highpass';
         const hp = toRatio(fx['highpass-cutoff'], 0.0);
-        hpFilter.frequency.value = 20 * Math.pow(1000, hp);
+        hpFilter.frequency.value = cutoffToHz(hp);
 
         const dryGain = ctx.createGain();
         dryGain.gain.value = toRatio(fx['dry-level'], 1.0);
@@ -558,7 +502,7 @@ export class DspAudioEngine {
         const hpFilter = ctx.createBiquadFilter();
         hpFilter.type = 'highpass';
         const hp = toRatio(fx['highpass-cutoff'], 0.0);
-        hpFilter.frequency.value = 20 * Math.pow(1000, hp);
+        hpFilter.frequency.value = cutoffToHz(hp);
 
         const combTimes = [0.029, 0.037, 0.043, 0.051];
         const combBaseGains = [0.82, 0.78, 0.74, 0.7];
@@ -747,21 +691,6 @@ export class DspAudioEngine {
     }
   }
 
-  private computeLfoWave(shape: string, time: number, speed: number): number {
-    const phase = (time * speed) % 1.0;
-    if (shape === 'square') {
-      return phase < 0.5 ? 1 : -1;
-    } else if (shape === 'sawtooth') {
-      return 2 * (phase - Math.floor(phase + 0.5));
-    } else if (shape === 'random') {
-      // Sample-and-hold deterministic pseudo-random step per cycle
-      const stepIndex = Math.floor(time * speed);
-      const x = Math.sin(stepIndex * 12.9898 + 78.233) * 43758.5453;
-      return (x - Math.floor(x)) * 2 - 1;
-    }
-    return Math.sin(phase * 2 * Math.PI);
-  }
-
   private applyLiveModulation() {
     if (!this.preset || !this.ctx) return;
     const ctx = this.ctx;
@@ -776,7 +705,7 @@ export class DspAudioEngine {
       effectiveLfoSpeed = Math.max(0.1, effectiveLfoSpeed + this.modState.handlePos * (handle.depth || 10.0));
     }
 
-    const lfoWave = lfo ? this.computeLfoWave(lfo.shape || 'sine', ctx.currentTime, effectiveLfoSpeed) : 0;
+    const lfoWave = lfo ? computeLfoWave(lfo.shape || 'sine', ctx.currentTime, effectiveLfoSpeed) : 0;
 
     this.activeNodes.forEach(({ effectType, params, nodeRefs }) => {
       const rowIdx = nodeRefs.rowIdx;
@@ -784,19 +713,19 @@ export class DspAudioEngine {
       // Normalized [-1..1] deltas for [0..1] parameters
       let handleDelta = 0;
       if (handle && handle.target !== 'lfo' && handle.row === rowIdx) {
-        const depthRatio = Math.abs(handle.depth) > 1.5 ? handle.depth / 100 : handle.depth;
+        const depthRatio = resolveModDepth(effectType, handle.param, handle.depth);
         handleDelta = this.modState.handlePos * depthRatio;
       }
 
       let shakeDelta = 0;
       if (shake && shake.row === rowIdx) {
-        const depthRatio = Math.abs(shake.depth) > 1.5 ? shake.depth / 100 : shake.depth;
+        const depthRatio = resolveModDepth(effectType, shake.param, shake.depth);
         shakeDelta = this.modState.shakeAmount * depthRatio;
       }
 
       let lfoDelta = 0;
       if (lfo && lfo.target !== 'lfo' && lfo.row === rowIdx) {
-        const depthRatio = Math.abs(lfo.depth) > 1.5 ? lfo.depth / 100 : lfo.depth;
+        const depthRatio = resolveModDepth(effectType, lfo.param, lfo.depth);
         lfoDelta = lfoWave * depthRatio;
       }
 
@@ -811,7 +740,7 @@ export class DspAudioEngine {
         if (lfo && lfo.target !== 'lfo' && lfo.row === rowIdx && lfo.param === 'cutoff') moddedCutoff += lfoDelta;
         moddedCutoff = Math.max(0.0, Math.min(1.0, moddedCutoff));
 
-        const hz = 20 * Math.pow(1000, moddedCutoff);
+        const hz = cutoffToHz(moddedCutoff);
         if (nodeRefs.filter) {
           nodeRefs.filter.frequency.setTargetAtTime(hz, ctx.currentTime, 0.015);
         }
@@ -823,7 +752,7 @@ export class DspAudioEngine {
           if (shake && shake.row === rowIdx && shake.param === 'CUTOFF') moddedCutoff += shakeDelta;
           if (lfo && lfo.target !== 'lfo' && lfo.row === rowIdx && lfo.param === 'CUTOFF') moddedCutoff += lfoDelta;
           moddedCutoff = Math.max(0.0, Math.min(1.0, moddedCutoff));
-          nodeRefs.eq.frequency.setTargetAtTime(20 * Math.pow(1000, moddedCutoff), ctx.currentTime, 0.015);
+          nodeRefs.eq.frequency.setTargetAtTime(cutoffToHz(moddedCutoff), ctx.currentTime, 0.015);
 
           const q = typeof params.Q === 'number' ? params.Q : 0.7;
           nodeRefs.eq.Q.setTargetAtTime(Math.max(0.1, q * 10), ctx.currentTime, 0.015);
@@ -844,11 +773,11 @@ export class DspAudioEngine {
         }
         if (nodeRefs.lpTone) {
           const lp = toRatio(params['lowpass-cutoff'], 1.0);
-          nodeRefs.lpTone.frequency.setTargetAtTime(20 * Math.pow(1000, lp), ctx.currentTime, 0.015);
+          nodeRefs.lpTone.frequency.setTargetAtTime(cutoffToHz(lp), ctx.currentTime, 0.015);
         }
         if (nodeRefs.hpTone) {
           const hp = toRatio(params['highpass-cutoff'], 0.0);
-          nodeRefs.hpTone.frequency.setTargetAtTime(20 * Math.pow(1000, hp), ctx.currentTime, 0.015);
+          nodeRefs.hpTone.frequency.setTargetAtTime(cutoffToHz(hp), ctx.currentTime, 0.015);
         }
       } else if (effectType === 'DELAY') {
         if (nodeRefs.feedbackGain) {
@@ -884,11 +813,11 @@ export class DspAudioEngine {
         }
         if (nodeRefs.lpFilter) {
           const lp = toRatio(params['lowpass-cutoff'], 1.0);
-          nodeRefs.lpFilter.frequency.setTargetAtTime(20 * Math.pow(1000, lp), ctx.currentTime, 0.02);
+          nodeRefs.lpFilter.frequency.setTargetAtTime(cutoffToHz(lp), ctx.currentTime, 0.02);
         }
         if (nodeRefs.hpFilter) {
           const hp = toRatio(params['highpass-cutoff'], 0.0);
-          nodeRefs.hpFilter.frequency.setTargetAtTime(20 * Math.pow(1000, hp), ctx.currentTime, 0.02);
+          nodeRefs.hpFilter.frequency.setTargetAtTime(cutoffToHz(hp), ctx.currentTime, 0.02);
         }
       } else if (effectType === 'HARMONY') {
         const basePitch = typeof params.pitch === 'number' ? params.pitch : 1.0;
@@ -1009,29 +938,6 @@ export class DspAudioEngine {
         }
       }
     });
-  }
-
-  private makeDistortionCurve(amount: number): Float32Array {
-    // Even at amount = 0.0 (used in DEEP TRAP), base saturation k = 12 provides gritty overdrive when mix > 0
-    const k = 12 + Math.max(0, amount) * 4;
-    const n_samples = 44100;
-    const curve = new Float32Array(n_samples);
-    const deg = Math.PI / 180;
-    for (let i = 0; i < n_samples; ++i) {
-      const x = (i * 2) / n_samples - 1;
-      curve[i] = ((3 + k) * x * 20 * deg) / (Math.PI + k * Math.abs(x));
-    }
-    return curve;
-  }
-
-  private makeSoftClipCurve(): Float32Array {
-    const n_samples = 8192;
-    const curve = new Float32Array(n_samples);
-    for (let i = 0; i < n_samples; ++i) {
-      const x = (i * 2) / n_samples - 1;
-      curve[i] = Math.tanh(x * 1.4);
-    }
-    return curve;
   }
 }
 

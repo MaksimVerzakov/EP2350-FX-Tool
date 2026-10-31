@@ -1,4 +1,4 @@
-import { EffectMeta, EffectType } from '../types/config';
+import type { EffectMeta, EffectType } from '../types/config';
 
 export const EFFECTS_REGISTRY: Record<EffectType, EffectMeta> = {
   DELAY: {
@@ -512,6 +512,18 @@ export const getModDepthConfig = (effectType?: string, paramName?: string): ModD
       defaultVal: 0.5,
       isNormalizedPercent: false,
       displayScale: (v) => `${v > 0 ? '+' : ''}${v.toFixed(2)}x`
+    };
+  }
+
+  if (effectType === 'DELAY' && paramName === 'time') {
+    return {
+      min: -1.2,
+      max: 1.2,
+      step: 0.005,
+      unit: 's',
+      defaultVal: 0.2,
+      isNormalizedPercent: false,
+      displayScale: (v) => `${v > 0 ? '+' : ''}${Math.round(v * 1000)}ms`
     };
   }
 

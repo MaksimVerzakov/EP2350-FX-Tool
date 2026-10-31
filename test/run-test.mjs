@@ -1,392 +1,355 @@
 import assert from 'node:assert';
+import fs from 'node:fs';
+import path from 'node:path';
+import { stripTypeScriptTypes } from 'node:module';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
-// Implementation under test directly in ESM
-const SINGLE_INSTANCE_EFFECTS = new Set(['DELAY', 'REVERB', 'HARMONY', 'SSB']);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const ROOT_DIR = path.resolve(__dirname, '..');
+const TMP_TEST_BUILD = path.join(ROOT_DIR, '.tmp-test-build');
 
-function validatePackConfig(pack) {
-  const issues = [];
-  if (!pack.name || pack.name.trim().length === 0) {
-    issues.push({ type: 'warning', message: 'Pack name is empty.' });
-  }
-  if (!pack.presets || pack.presets.length === 0) {
-    issues.push({ type: 'error', message: 'At least one preset is required.' });
-  }
+/**
+ * Transpile TypeScript modules on the fly using Node 22+ built-in type stripper.
+ * Zero external bundlers or native binaries needed.
+ */
+function buildSourceModulesForTest() {
+  fs.rmSync(TMP_TEST_BUILD, { recursive: true, force: true });
+  fs.mkdirSync(TMP_TEST_BUILD, { recursive: true });
 
-  pack.presets.forEach((preset) => {
-    const seenEffects = new Set();
-    let hasSampleBlock = false;
+  const filesToCompile = [
+    'src/types/config.ts',
+    'src/constants/effectsRegistry.ts',
+    'src/constants/defaultPresets.ts',
+    'src/utils/parser.ts',
+    'src/utils/serializer.ts',
+    'src/dsp/math.ts'
+  ];
 
-    preset.list.forEach((effect, idx) => {
-      if (effect.effect === 'SAMPLE') hasSampleBlock = true;
-      if (SINGLE_INSTANCE_EFFECTS.has(effect.effect)) {
-        if (seenEffects.has(effect.effect)) {
-          issues.push({
-            type: 'error',
-            message: `Preset ${preset.pos}: Effect '${effect.effect}' can only be used once per chain.`
-          });
-        }
-        seenEffects.add(effect.effect);
+  for (const relPath of filesToCompile) {
+    const absIn = path.join(ROOT_DIR, relPath);
+    let source = fs.readFileSync(absIn, 'utf8');
+
+    // Handle vite ?raw imports in defaultPresets.ts
+    source = source.replace(
+      /import\s+([a-zA-Z0-9_]+)\s+from\s+['"]([^'"]+)\?raw['"]/g,
+      (match, varName, importPath) => {
+        const fullJsonPath = path.resolve(path.dirname(absIn), importPath);
+        const jsonContent = fs.readFileSync(fullJsonPath, 'utf8');
+        return `const ${varName} = ${JSON.stringify(jsonContent)};`;
       }
-    });
+    );
 
-    if (!hasSampleBlock) {
-      issues.push({
-        type: 'warning',
-        message: `Preset ${preset.pos}: Missing SAMPLE block.`
-      });
-    }
-  });
-  return issues;
-}
+    const stripped = stripTypeScriptTypes(source);
+    // Rewrite relative imports to .mjs
+    const rewritten = stripped.replace(
+      /from\s+['"](\.[^'"]+)['"]/g,
+      (_, spec) => `from '${spec}.mjs'`
+    );
 
-const PERCENT_PARAMS = new Set([
-  'echo', 'cross-feed', 'lowpass-cutoff', 'highpass-cutoff', 'wet-level', 'dry-level',
-  'mix', 'level', 'spring-mix'
-]);
-function isPercentParam(effect, param) {
-  if ((effect === 'LOWPASS' || effect === 'HIGHPASS') && param === 'cutoff') return false;
-  return PERCENT_PARAMS.has(param);
-}
-
-function serializeToConfigJson(pack) {
-  const rootObj = {
-    name: pack.name.trim() || 'UNTITLED PACK'
-  };
-
-  if (!pack.useBuiltInSamples && pack.samples && pack.samples.length > 0) {
-    rootObj.samples = pack.samples.map((s) => ({
-      pos: s.pos,
-      file: s.file,
-      playmode: s.playmode
-    }));
+    const absOut = path.join(TMP_TEST_BUILD, relPath.replace(/\.ts$/, '.mjs'));
+    fs.mkdirSync(path.dirname(absOut), { recursive: true });
+    fs.writeFileSync(absOut, rewritten, 'utf8');
   }
-
-  rootObj.presets = pack.presets.map((p) => {
-    const presetObj = { pos: p.pos };
-    if (p.name && p.name.trim()) presetObj.name = p.name.trim();
-    if (p.comment && p.comment.trim()) presetObj.comment = p.comment.trim();
-
-    presetObj.list = p.list.map((item) => {
-      const effectEntry = { effect: item.effect.toUpperCase() };
-      if (item.BUS) effectEntry.BUS = item.BUS;
-      Object.keys(item).forEach((key) => {
-        if (key !== 'id' && key !== 'effect' && key !== 'BUS' && typeof item[key] === 'number') {
-          const val = item[key];
-          if (isPercentParam(item.effect, key)) {
-            const jsonVal = val > 1 ? val / 100 : val;
-            effectEntry[key] = Math.round(jsonVal * 1000) / 1000;
-          } else {
-            effectEntry[key] = Math.round(val * 1000) / 1000;
-          }
-        }
-      });
-      return effectEntry;
-    });
-
-    if (p.handle) {
-      if (p.handle.target === 'lfo') {
-        presetObj.handle = { target: 'lfo', param: p.handle.param, depth: Math.round(p.handle.depth * 1000) / 1000 };
-      } else if (typeof p.handle.row === 'number') {
-        const raw = p.handle.depth;
-        const depth = Math.abs(raw) > 1 ? raw / 100 : raw;
-        presetObj.handle = { row: p.handle.row, param: p.handle.param, depth: Math.round(depth * 1000) / 1000 };
-      }
-    }
-    if (p.shake && typeof p.shake.row === 'number') {
-      const raw = p.shake.depth;
-      const depth = Math.abs(raw) > 1 ? raw / 100 : raw;
-      presetObj.shake = { row: p.shake.row, param: p.shake.param, depth: Math.round(depth * 1000) / 1000 };
-    }
-    if (p.lfo) {
-      const raw = p.lfo.depth;
-      const depth = (p.lfo.target !== 'lfo' && Math.abs(raw) > 1) ? raw / 100 : raw;
-      const lfo = { param: p.lfo.param, shape: p.lfo.shape, speed: p.lfo.speed, depth: Math.round(depth * 1000) / 1000 };
-      if (p.lfo.target === 'lfo') lfo.target = 'lfo';
-      else if (typeof p.lfo.row === 'number') lfo.row = p.lfo.row;
-      presetObj.lfo = lfo;
-    }
-    if (p.trigger && typeof p.trigger.row === 'number') {
-      presetObj.trigger = { row: p.trigger.row };
-    }
-    return presetObj;
-  });
-
-  return JSON.stringify(rootObj, null, 2);
 }
 
-function parseConfigJson(rawJson) {
-  const data = JSON.parse(rawJson);
-  const name = typeof data.name === 'string' ? data.name : 'IMPORTED PACK';
-  const useBuiltInSamples = !Array.isArray(data.samples) || data.samples.length === 0;
-  const presets = (data.presets || []).map((p, idx) => ({
-    id: `preset-${p.pos ?? idx}`,
-    pos: p.pos ?? idx,
-    name: p.name || '',
-    comment: p.comment || '',
-    list: (p.list || []).map((item, itemIdx) => {
-      const effect = (item.effect || 'LOWPASS').toUpperCase();
-      const entry = {
-        id: `fx-${itemIdx}`,
-        effect,
-        ...item
-      };
-      Object.keys(entry).forEach((key) => {
-        if (isPercentParam(effect, key) && typeof entry[key] === 'number') {
-          if (entry[key] <= 1.0) {
-            entry[key] = Math.round(entry[key] * 100);
-          }
-        }
-      });
-      return entry;
-    }),
-    handle: p.handle ? {
-      ...p.handle,
-      depth: (p.handle.target !== 'lfo' && typeof p.handle.depth === 'number' && Math.abs(p.handle.depth) <= 1.0)
-        ? Math.round(p.handle.depth * 100)
-        : p.handle.depth
-    } : undefined,
-    shake: p.shake ? {
-      ...p.shake,
-      depth: (typeof p.shake.depth === 'number' && Math.abs(p.shake.depth) <= 1.0)
-        ? Math.round(p.shake.depth * 100)
-        : p.shake.depth
-    } : undefined,
-    lfo: p.lfo ? {
-      ...p.lfo,
-      depth: (p.lfo.target !== 'lfo' && typeof p.lfo.depth === 'number' && Math.abs(p.lfo.depth) <= 1.0)
-        ? Math.round(p.lfo.depth * 100)
-        : p.lfo.depth
-    } : undefined,
-    trigger: p.trigger
-  }));
-  return { pack: { name, useBuiltInSamples, presets } };
+buildSourceModulesForTest();
+
+// Load modules
+const { EFFECTS_REGISTRY, isPercentParam, getModDepthConfig } = await import(
+  pathToFileURL(path.join(TMP_TEST_BUILD, 'src/constants/effectsRegistry.mjs')).href
+);
+const { OFFICIAL_TE_PACKS } = await import(
+  pathToFileURL(path.join(TMP_TEST_BUILD, 'src/constants/defaultPresets.mjs')).href
+);
+const { parseConfigJson } = await import(
+  pathToFileURL(path.join(TMP_TEST_BUILD, 'src/utils/parser.mjs')).href
+);
+const { serializeToConfigJson, validatePackConfig } = await import(
+  pathToFileURL(path.join(TMP_TEST_BUILD, 'src/utils/serializer.mjs')).href
+);
+const {
+  PitchShiftKernel,
+  computeLfoWave,
+  cutoffToHz,
+  hann,
+  makeDistortionCurve,
+  makeSoftClipCurve,
+  resolveModDepth
+} = await import(
+  pathToFileURL(path.join(TMP_TEST_BUILD, 'src/dsp/math.mjs')).href
+);
+
+// Clean up on exit
+process.on('exit', () => {
+  fs.rmSync(TMP_TEST_BUILD, { recursive: true, force: true });
+});
+
+console.log('=== RUNNING EP-2350 FULL COMPREHENSIVE TEST SUITE ===\n');
+
+// ---------------------------------------------------------------------------
+// SUITE 1: Official Teenage Engineering Preset Packs Lossless Round-Trip
+// ---------------------------------------------------------------------------
+assert.strictEqual(OFFICIAL_TE_PACKS.length, 3, 'Must have 3 official preset packs');
+const officialPackFiles = [
+  'packs/ep-2350_preset_pack-broken_radio/config.json',
+  'packs/ep-2350_preset_pack-dub/config.json',
+  'packs/ep-2350_preset_pack-mysterious/config.json'
+];
+
+for (const relPackPath of officialPackFiles) {
+  const fullPath = path.join(ROOT_DIR, relPackPath);
+  const rawJson = fs.readFileSync(fullPath, 'utf8');
+  const originalObj = JSON.parse(rawJson);
+
+  const parsedResult = parseConfigJson(rawJson);
+  assert.strictEqual(parsedResult.error, undefined, `Pack ${relPackPath} should parse without error`);
+  assert.ok(parsedResult.pack, `Pack ${relPackPath} must return a pack object`);
+  assert.strictEqual(parsedResult.pack.presets.length, 4, `Pack ${relPackPath} must have 4 presets`);
+
+  // Validate official pack produces zero validation errors
+  const validationIssues = validatePackConfig(parsedResult.pack);
+  const errors = validationIssues.filter((i) => i.type === 'error');
+  assert.strictEqual(errors.length, 0, `Official pack ${relPackPath} must have 0 validation errors`);
+
+  // Round-trip back to config.json and compare deeply with official TE hardware config
+  const reserializedJson = serializeToConfigJson(parsedResult.pack);
+  const reserializedObj = JSON.parse(reserializedJson);
+
+  assert.deepStrictEqual(
+    reserializedObj,
+    originalObj,
+    `Lossless round-trip failed for official pack: ${relPackPath}`
+  );
+  console.log(`✓ Suite 1: Official TE Pack round-trip verified (${originalObj.name})`);
 }
 
-console.log('=== RUNNING EP-2350 COMPLIANCE TESTS ===');
+// ---------------------------------------------------------------------------
+// SUITE 2: Effects Registry & Modulation Depth Unit Scaling
+// ---------------------------------------------------------------------------
+const expectedEffects = [
+  'DELAY', 'DIST', 'EQUALISER', 'HARMONY', 'LOWPASS',
+  'HIGHPASS', 'SAMPLE', 'REVERB', 'RING', 'SSB', 'BALANCE'
+];
+for (const fxName of expectedEffects) {
+  assert.ok(EFFECTS_REGISTRY[fxName], `EFFECTS_REGISTRY must define ${fxName}`);
+}
 
-// Test 1: Chapter 7.11 Bad Reception Spec
-const badReceptionPack = {
-  name: 'EP2350 PACK',
+const delayTimeParam = EFFECTS_REGISTRY.DELAY.params.find((p) => p.name === 'time');
+assert.strictEqual(delayTimeParam.max, 1.2, 'DELAY.time max must be 1.2s');
+
+// Native units
+assert.strictEqual(getModDepthConfig('SSB', 'frequency').isNormalizedPercent, false);
+assert.strictEqual(getModDepthConfig('SSB', 'frequency').unit, 'Hz');
+assert.strictEqual(getModDepthConfig('RING', 'frequency').isNormalizedPercent, false);
+assert.strictEqual(getModDepthConfig('HARMONY', 'pitch').isNormalizedPercent, false);
+assert.strictEqual(getModDepthConfig('HARMONY', 'pitch').unit, 'x');
+assert.strictEqual(getModDepthConfig('DELAY', 'time').isNormalizedPercent, false);
+assert.strictEqual(getModDepthConfig('DELAY', 'time').unit, 's');
+assert.strictEqual(getModDepthConfig('SAMPLE', 'pitch').isNormalizedPercent, false);
+assert.strictEqual(getModDepthConfig('SAMPLE', 'speed').isNormalizedPercent, false);
+assert.strictEqual(getModDepthConfig('DIST', 'amount').isNormalizedPercent, false);
+
+// Percentage units
+assert.strictEqual(getModDepthConfig('LOWPASS', 'cutoff').isNormalizedPercent, true);
+assert.strictEqual(getModDepthConfig('DIST', 'mix').isNormalizedPercent, true);
+assert.strictEqual(getModDepthConfig('DELAY', 'echo').isNormalizedPercent, true);
+assert.strictEqual(getModDepthConfig('REVERB', 'time').isNormalizedPercent, true);
+assert.strictEqual(getModDepthConfig('BALANCE', 'balance').isNormalizedPercent, true);
+
+assert.strictEqual(isPercentParam('LOWPASS', 'cutoff'), false);
+assert.strictEqual(isPercentParam('DIST', 'mix'), true);
+console.log('✓ Suite 2: Effects Registry & Modulation Depth units verified');
+
+// ---------------------------------------------------------------------------
+// SUITE 3: Validator Constraints & Out-of-Bounds Checks
+// ---------------------------------------------------------------------------
+const invalidPack = {
+  name: '   ',
   useBuiltInSamples: true,
+  samples: [],
   presets: [
     {
+      id: 'p0',
       pos: 0,
-      name: 'BAD RECEPTION',
-      comment: 'static noise that clears up when handle is pushed',
+      name: 'BROKEN CHAIN',
+      comment: '',
       list: [
-        { effect: 'DIST', amount: 10.0, mix: 0.5 },
-        { effect: 'LOWPASS', cutoff: 0.2 },
-        { effect: 'SAMPLE' }
+        { id: '1', effect: 'DELAY', time: 0.4 },
+        { id: '2', effect: 'DELAY', time: 0.2 },
+        { id: '3', effect: 'HARMONY', pitch: 1.2 },
+        { id: '4', effect: 'HARMONY', pitch: 0.8 }
       ],
-      handle: { row: 1, param: 'cutoff', depth: 0.8 },
-      shake: { row: 0, param: 'mix', depth: 0.5 },
-      trigger: { row: 2 }
+      handle: { row: 9, param: 'cutoff', depth: 50 },
+      shake: { row: -1, param: 'mix', depth: 50 },
+      lfo: { row: 8, param: 'cutoff', depth: 50, shape: 'sine', speed: 2 }
     }
   ]
 };
 
-const serialized = serializeToConfigJson(badReceptionPack);
-console.log('Serialized Bad Reception:');
-console.log(serialized);
+const issues = validatePackConfig(invalidPack);
+assert.ok(issues.some((i) => i.type === 'warning' && i.message.includes('Pack name is empty')));
+assert.ok(issues.some((i) => i.type === 'warning' && i.message.includes('Missing')));
+assert.ok(issues.some((i) => i.type === 'error' && i.message.includes("'DELAY' can only be used once")));
+assert.ok(issues.some((i) => i.type === 'error' && i.message.includes("'HARMONY' can only be used once")));
+assert.ok(issues.some((i) => i.type === 'error' && i.message.includes('Handle targets row 9')));
+assert.ok(issues.some((i) => i.type === 'error' && i.message.includes('Shake targets row -1')));
+assert.ok(issues.some((i) => i.type === 'error' && i.message.includes('LFO targets row 8')));
+console.log('✓ Suite 3: Validator constraints & out-of-bounds modulation checks verified');
 
-const parsed = JSON.parse(serialized);
-assert.strictEqual(parsed.samples, undefined, 'Chapter 7.5: Samples block must be omitted');
-assert.strictEqual(parsed.presets[0].list[0].effect, 'DIST');
-assert.strictEqual(parsed.presets[0].list[1].effect, 'LOWPASS');
-assert.strictEqual(parsed.presets[0].list[2].effect, 'SAMPLE');
-assert.deepStrictEqual(parsed.presets[0].handle, { row: 1, param: 'cutoff', depth: 0.8 });
-assert.deepStrictEqual(parsed.presets[0].shake, { row: 0, param: 'mix', depth: 0.5 });
-assert.deepStrictEqual(parsed.presets[0].trigger, { row: 2 });
-console.log('✓ Chapter 7.11 Bad Reception test passed!');
+// ---------------------------------------------------------------------------
+// SUITE 4: Parser Resilience, Custom Samples, Parallel Buses & Bipolar Depths
+// ---------------------------------------------------------------------------
+assert.ok(parseConfigJson('not-valid-json').error, 'Malformed JSON must return error');
+assert.ok(parseConfigJson('null').error, 'Non-object JSON root must return error');
 
-// Test 2: Single instance constraint check
-const duplicateChain = {
-  name: 'TEST',
-  useBuiltInSamples: true,
-  presets: [
-    {
-      pos: 0,
-      list: [{ effect: 'DELAY' }, { effect: 'DELAY' }, { effect: 'SAMPLE' }]
-    }
-  ]
-};
-const issues = validatePackConfig(duplicateChain);
-assert.ok(issues.some(i => i.type === 'error' && i.message.includes('DELAY')));
-console.log('✓ Single instance constraint check passed!');
-
-// Test 3: Round-trip check
-const roundTrip = parseConfigJson(serialized);
-assert.strictEqual(roundTrip.pack.name, 'EP2350 PACK');
-assert.strictEqual(roundTrip.pack.presets[0].name, 'BAD RECEPTION');
-console.log('✓ Round-trip serialization & parsing passed!');
-
-// Test 4: Chapter 7.10 Parallel Bus routing test
-const busRoutingPack = {
-  name: 'BUS TEST',
-  useBuiltInSamples: true,
-  presets: [
-    {
-      pos: 0,
-      name: 'PARALLEL DUB',
-      list: [
-        { effect: 'SAMPLE' },
-        { effect: 'DIST', amount: 15, mix: 0.8, BUS: 1 },
-        { effect: 'REVERB', time: 0.8, BUS: 2 }
-      ]
-    }
-  ]
-};
-const busSerialized = serializeToConfigJson(busRoutingPack);
-const busParsed = JSON.parse(busSerialized);
-assert.strictEqual(busParsed.presets[0].list[0].BUS, undefined, 'Serial effect must omit BUS');
-assert.strictEqual(busParsed.presets[0].list[1].BUS, 1, 'Bus 1 effect must serialize BUS: 1');
-assert.strictEqual(busParsed.presets[0].list[2].BUS, 2, 'Bus 2 effect must serialize BUS: 2');
-
-const busRoundTrip = parseConfigJson(busSerialized);
-assert.strictEqual(busRoundTrip.pack.presets[0].list[1].BUS, 1, 'Round-trip must preserve BUS: 1');
-// Test 5: Specification Document Dub Chamber (Page 1-2 & Page 15)
-const dubChamberPack = {
-  name: 'We count from zero',
-  useBuiltInSamples: false,
+const singlePresetRaw = JSON.stringify({
+  name: 'CUSTOM DUB',
   samples: [
-    { pos: 0, file: 'samples/loop.wav', playmode: 'startstop' },
-    { pos: 1, file: 'samples/whistle.wav', playmode: 'oneshot' },
-    { pos: 2, file: 'samples/horn.wav', playmode: 'hold' },
-    { pos: 3, file: 'samples/shout.wav', playmode: 'oneshot' }
+    { pos: 0, file: 'samples/siren.wav', playmode: 'oneshot' },
+    { pos: 1, file: 'samples/sub.wav', playmode: 'hold' }
   ],
   presets: [
     {
       pos: 0,
-      name: 'Dub Chamber',
+      name: 'PARALLEL BUS',
+      comment: 'bus 1 and bus 2 split',
       list: [
-        { effect: 'HARMONY', pitch: 2.0, BUS: 2 },
-        { effect: 'REVERB', time: 0.1, 'dry-level': 1.0 },
-        { effect: 'DELAY', time: 0.5, 'dry-level': 0.0, echo: 0.5, BUS: 1 },
-        { effect: 'SAMPLE', speed: 1.0 },
-        { effect: 'BALANCE', balance: 0.2, BUS: 1 }
+        { effect: 'HARMONY', pitch: 1.5, 'dry-level': 0.4, BUS: 2 },
+        { effect: 'DELAY', time: 0.5, echo: 0.6, BUS: 1 },
+        { effect: 'SAMPLE', speed: 1.0, pitch: -12 }
       ],
-      handle: { row: 1, param: 'time', depth: 0.6 },
-      shake: { row: 2, param: 'echo', depth: 1.0 },
-      lfo: { row: 3, param: 'echo', depth: 1.0, shape: 'random', speed: 4.0 },
-      trigger: { row: 3 }
+      handle: { target: 'lfo', param: 'speed', depth: -6.5 },
+      shake: { row: 1, param: 'echo', depth: -0.4 },
+      lfo: { row: 0, param: 'pitch', depth: -0.25, shape: 'sawtooth', speed: 3.5, phase: 0.5 },
+      trigger: { row: 2 }
     }
   ]
-};
+});
 
-const dubSerialized = serializeToConfigJson(dubChamberPack);
-const dubParsed = JSON.parse(dubSerialized);
+const customParsed = parseConfigJson(singlePresetRaw);
+assert.strictEqual(customParsed.error, undefined);
+assert.strictEqual(customParsed.pack.useBuiltInSamples, false);
+assert.strictEqual(customParsed.pack.samples.length, 2);
+assert.strictEqual(customParsed.pack.presets.length, 4, 'Missing slots 1..3 must be auto-populated');
+assert.strictEqual(customParsed.pack.presets[0].shake.depth, -40, 'Normalized -0.4 depth -> -40% in UI');
+assert.strictEqual(customParsed.pack.presets[0].lfo.depth, -0.25, 'HARMONY.pitch depth stays -0.25x');
 
-assert.strictEqual(dubParsed.name, 'We count from zero');
-assert.strictEqual(dubParsed.samples.length, 4);
-assert.strictEqual(dubParsed.presets[0].list[0].BUS, 2);
-assert.strictEqual(dubParsed.presets[0].list[0].effect, 'HARMONY');
-assert.strictEqual(dubParsed.presets[0].list[1].effect, 'REVERB');
-assert.strictEqual(dubParsed.presets[0].list[2].BUS, 1);
-assert.strictEqual(dubParsed.presets[0].list[4].effect, 'BALANCE');
-assert.strictEqual(dubParsed.presets[0].list[4].balance, 0.2);
-assert.strictEqual(dubParsed.presets[0].trigger.row, 3);
+const customReserialized = JSON.parse(serializeToConfigJson(customParsed.pack));
+assert.strictEqual(customReserialized.samples.length, 2);
+assert.strictEqual(customReserialized.presets[0].handle.target, 'lfo');
+assert.strictEqual(customReserialized.presets[0].handle.depth, -6.5);
+assert.strictEqual(customReserialized.presets[0].shake.depth, -0.4);
+assert.strictEqual(customReserialized.presets[0].lfo.depth, -0.25);
+assert.strictEqual(customReserialized.presets[0].lfo.phase, 0.5);
+console.log('✓ Suite 4: Parser resilience, custom samples, parallel buses & bipolar depths verified');
 
-const dubRoundTrip = parseConfigJson(dubSerialized);
-assert.strictEqual(dubRoundTrip.pack.presets[0].list[4].effect, 'BALANCE');
-assert.strictEqual(dubRoundTrip.pack.presets[0].list[4].balance, 0.2);
-console.log('✓ Specification Document "Dub Chamber" with BALANCE test passed!');
+// ---------------------------------------------------------------------------
+// SUITE 5: Pure DSP Math Functions (src/dsp/math.ts)
+// ---------------------------------------------------------------------------
+// 5a. Cutoff mapping
+assert.strictEqual(cutoffToHz(0), 20);
+assert.ok(Math.abs(cutoffToHz(1) - 20000) < 1e-4);
+assert.ok(Math.abs(cutoffToHz(0.5) - 20 * Math.sqrt(1000)) < 1e-4);
 
-// Test 6: Teenage Engineering EP Sidekick 4-Knob Color Discipline & Multi-Row Delay
-const EP_SIDEKICK_KNOB_COLORS = ['#f15a22', '#e4e3df', '#989fa5', '#231f20'];
-assert.strictEqual(EP_SIDEKICK_KNOB_COLORS.length, 4);
-assert.strictEqual(EP_SIDEKICK_KNOB_COLORS[0], '#f15a22'); // Orange (Gain)
-assert.strictEqual(EP_SIDEKICK_KNOB_COLORS[1], '#e4e3df'); // Cream (High)
-assert.strictEqual(EP_SIDEKICK_KNOB_COLORS[2], '#989fa5'); // Gray (Mid)
-assert.strictEqual(EP_SIDEKICK_KNOB_COLORS[3], '#231f20'); // Black (Low)
+// 5b. resolveModDepth (Verifies bug fix where 1% was misidentified as 100%)
+assert.ok(Math.abs(resolveModDepth('LOWPASS', 'cutoff', 1) - 0.01) < 1e-6, '1% cutoff depth must equal 0.01 ratio');
+assert.strictEqual(resolveModDepth('LOWPASS', 'cutoff', 50), 0.5);
+assert.strictEqual(resolveModDepth('DIST', 'mix', -100), -1);
+assert.strictEqual(resolveModDepth('SSB', 'frequency', 1000), 1000);
+assert.strictEqual(resolveModDepth('DELAY', 'time', 0.005), 0.005);
+assert.strictEqual(resolveModDepth('HARMONY', 'pitch', -0.5), -0.5);
 
-// 5th knob repeats color 1
-assert.strictEqual(EP_SIDEKICK_KNOB_COLORS[4 % 4], '#f15a22');
-// Delay row 2 repeats colors 1-4
-for (let i = 0; i < 8; i++) {
-  assert.strictEqual(EP_SIDEKICK_KNOB_COLORS[i % 4], EP_SIDEKICK_KNOB_COLORS[i % 4]);
+// 5c. LFO shapes
+assert.ok(Math.abs(computeLfoWave('sine', 0, 1) - 0) < 1e-6);
+assert.ok(Math.abs(computeLfoWave('sine', 0.25, 1) - 1) < 1e-6);
+assert.strictEqual(computeLfoWave('square', 0.1, 10), 1);
+assert.strictEqual(computeLfoWave('square', 0.06, 10), -1);
+assert.ok(Math.abs(computeLfoWave('sawtooth', 0.25, 1) - 0.5) < 1e-6);
+const randVal = computeLfoWave('random', 1.2, 2);
+assert.strictEqual(randVal, computeLfoWave('random', 1.4, 2));
+
+// 5d. Waveshaper curves
+const distCurve = makeDistortionCurve(0, 1000);
+// i=500 is exactly x=0
+assert.strictEqual(distCurve[500], 0, 'Zero-crossing at x=0 must be exactly 0');
+assert.ok(distCurve[750] / 0.5 > distCurve[999] / 1.0, 'amount: 0 must have warm saturation curve');
+const clipCurve = makeSoftClipCurve(512);
+assert.ok(Math.max(...clipCurve) <= Math.tanh(1.4) + 1e-6);
+
+// 5e. Hann window partition of unity
+for (let p = 0; p < 1; p += 0.05) {
+  assert.ok(Math.abs(hann(p) + hann((p + 0.5) % 1) - 1.0) < 1e-12);
 }
-// Test 7: Percentage standard scaling (0..100% in UI -> 0.0..1.0 in JSON -> 0..100% on parse)
-const percentTestPack = {
-  name: 'PERCENT TEST',
-  useBuiltInSamples: true,
-  presets: [
-    {
-      pos: 0,
-      name: 'PERCENT PRESET',
-      list: [
-        { effect: 'DIST', amount: 12, mix: 50 },
-        { effect: 'DELAY', time: 0.5, echo: 45, 'wet-level': 80, 'dry-level': 100 }
-      ],
-      handle: { row: 0, param: 'mix', depth: 80 },
-      shake: { row: 1, param: 'echo', depth: 50 },
-      lfo: { row: 1, param: 'echo', depth: 25, shape: 'sine', speed: 2.5 }
+console.log('✓ Suite 5: Pure DSP Math functions verified (cutoff, resolveModDepth, LFO shapes, waveshapers)');
+
+// ---------------------------------------------------------------------------
+// SUITE 6: PitchShiftKernel Constant Speed & Accurate Pitch Shifting
+// ---------------------------------------------------------------------------
+const sampleRate = 48000;
+const durationSamples = 48000;
+const baseFreq = 220;
+const sine220 = new Float32Array(durationSamples);
+for (let i = 0; i < durationSamples; i++) {
+  sine220[i] = Math.sin((2 * Math.PI * baseFreq * i) / sampleRate);
+}
+
+function runShifter(signal, pitch) {
+  const kernel = new PitchShiftKernel(pitch);
+  const out = new Float32Array(signal.length);
+  const blockSize = 512;
+  for (let i = 0; i < signal.length; i += blockSize) {
+    kernel.process(signal.subarray(i, i + blockSize), out.subarray(i, i + blockSize));
+  }
+  return out;
+}
+
+// Bit-transparent at unity
+const out1x = runShifter(sine220, 1.0);
+assert.strictEqual(out1x.length, durationSamples);
+for (let i = 0; i < durationSamples; i++) {
+  assert.ok(Math.abs(out1x[i] - sine220[i]) < 1e-6, 'Unity pitch must be bit-transparent');
+}
+
+function estimateFundamentalHz(signal, sr) {
+  const windowLen = 1024;
+  const minLag = Math.floor(sr / 800);
+  const maxLag = Math.floor(sr / 60);
+  const acc = new Float64Array(maxLag + 1);
+  for (let f = Math.floor(sr * 0.2); f + windowLen + maxLag < signal.length; f += 512) {
+    for (let lag = minLag; lag <= maxLag; lag++) {
+      let s = 0;
+      for (let i = 0; i < windowLen; i++) s += signal[f + i] * signal[f + i + lag];
+      acc[lag] += s;
     }
-  ]
-};
-
-const percentSerialized = serializeToConfigJson(percentTestPack);
-const percentParsedJson = JSON.parse(percentSerialized);
-
-assert.strictEqual(percentParsedJson.presets[0].list[0].mix, 0.5, 'DIST mix 50 must serialize to 0.5');
-assert.strictEqual(percentParsedJson.presets[0].list[1].echo, 0.45, 'DELAY echo 45 must serialize to 0.45');
-assert.strictEqual(percentParsedJson.presets[0].list[1]['wet-level'], 0.8, 'DELAY wet-level 80 must serialize to 0.8');
-assert.strictEqual(percentParsedJson.presets[0].list[1]['dry-level'], 1.0, 'DELAY dry-level 100 must serialize to 1.0');
-assert.strictEqual(percentParsedJson.presets[0].handle.depth, 0.8, 'Handle depth 80 must serialize to 0.8');
-assert.strictEqual(percentParsedJson.presets[0].shake.depth, 0.5, 'Shake depth 50 must serialize to 0.5');
-assert.strictEqual(percentParsedJson.presets[0].lfo.depth, 0.25, 'LFO depth 25 must serialize to 0.25');
-
-const percentRoundTrip = parseConfigJson(percentSerialized);
-assert.strictEqual(percentRoundTrip.pack.presets[0].list[0].mix, 50, 'Parsed DIST mix must be 50');
-assert.strictEqual(percentRoundTrip.pack.presets[0].list[1].echo, 45, 'Parsed DELAY echo must be 45');
-assert.strictEqual(percentRoundTrip.pack.presets[0].list[1]['wet-level'], 80, 'Parsed DELAY wet-level must be 80');
-assert.strictEqual(percentRoundTrip.pack.presets[0].list[1]['dry-level'], 100, 'Parsed DELAY dry-level must be 100');
-assert.strictEqual(percentRoundTrip.pack.presets[0].handle.depth, 80, 'Parsed Handle depth must be 80');
-assert.strictEqual(percentRoundTrip.pack.presets[0].shake.depth, 50, 'Parsed Shake depth must be 50');
-assert.strictEqual(percentRoundTrip.pack.presets[0].lfo.depth, 25, 'Parsed LFO depth must be 25');
-console.log('✓ Standard audio percentage scaling & JSON round-trip test passed!');
-
-// Test 8: Bipolar modulation depth (negative and positive values)
-const bipolarTestPack = {
-  name: 'BIPOLAR TEST',
-  useBuiltInSamples: true,
-  presets: [
-    {
-      pos: 0,
-      name: 'INVERTED SWEEP',
-      list: [
-        { effect: 'LOWPASS', cutoff: 80 },
-        { effect: 'DIST', amount: 10, mix: 60 }
-      ],
-      handle: { row: 0, param: 'cutoff', depth: -75 },
-      shake: { row: 1, param: 'mix', depth: -40 },
-      lfo: { row: 0, param: 'cutoff', depth: -50, shape: 'sine', speed: 1.5 }
-    },
-    {
-      pos: 1,
-      name: 'LFO ACCEL / DECEL',
-      list: [{ effect: 'CHORUS' }],
-      handle: { target: 'lfo', param: 'speed', depth: -8.5 },
-      lfo: { row: 0, param: 'depth', depth: 90, shape: 'sawtooth', speed: 4.0 }
+  }
+  let bestLag = minLag;
+  let inPeak = false;
+  let maxVal = -Infinity;
+  for (let lag = minLag; lag <= maxLag; lag++) {
+    if (!inPeak && acc[lag] < 0 && acc[lag + 1] >= 0) inPeak = true;
+    if (inPeak) {
+      if (acc[lag] > maxVal) {
+        maxVal = acc[lag];
+        bestLag = lag;
+      } else if (acc[lag] < 0) break;
     }
-  ]
-};
+  }
+  return sr / bestLag;
+}
 
-const bipolarSerialized = serializeToConfigJson(bipolarTestPack);
-const bipolarParsedJson = JSON.parse(bipolarSerialized);
+const out2x = runShifter(sine220, 2.0);
+const outHalf = runShifter(sine220, 0.5);
+assert.strictEqual(out2x.length, durationSamples, 'Duration must remain 1.0x at 2.0x pitch');
+assert.strictEqual(outHalf.length, durationSamples, 'Duration must remain 1.0x at 0.5x pitch');
 
-assert.strictEqual(bipolarParsedJson.presets[0].handle.depth, -0.75, 'Negative handle depth -75 must serialize to -0.75');
-assert.strictEqual(bipolarParsedJson.presets[0].shake.depth, -0.4, 'Negative shake depth -40 must serialize to -0.4');
-assert.strictEqual(bipolarParsedJson.presets[0].lfo.depth, -0.5, 'Negative lfo depth -50 must serialize to -0.5');
-assert.strictEqual(bipolarParsedJson.presets[1].handle.depth, -8.5, 'Negative LFO speed handle depth must serialize to -8.5');
+const hz2x = estimateFundamentalHz(out2x, sampleRate);
+const hzHalf = estimateFundamentalHz(outHalf, sampleRate);
 
-const bipolarRoundTrip = parseConfigJson(bipolarSerialized);
-assert.strictEqual(bipolarRoundTrip.pack.presets[0].handle.depth, -75, 'Parsed negative handle depth must be -75%');
-assert.strictEqual(bipolarRoundTrip.pack.presets[0].shake.depth, -40, 'Parsed negative shake depth must be -40%');
-assert.strictEqual(bipolarRoundTrip.pack.presets[0].lfo.depth, -50, 'Parsed negative lfo depth must be -50%');
-assert.strictEqual(bipolarRoundTrip.pack.presets[1].handle.depth, -8.5, 'Parsed negative LFO speed depth must be -8.5 Hz');
-console.log('✓ Chapter 7 & Guide Bipolar modulation depth (negative and positive) test passed!');
+assert.ok(Math.abs(hz2x - 440) < 10, `2.0x pitch of 220Hz should be ~440Hz (got ${hz2x.toFixed(1)}Hz)`);
+assert.ok(Math.abs(hzHalf - 110) < 5, `0.5x pitch of 220Hz should be ~110Hz (got ${hzHalf.toFixed(1)}Hz)`);
+console.log(
+  `✓ Suite 6: PitchShiftKernel verified (220Hz -> 0.5x=${hzHalf.toFixed(1)}Hz, 2.0x=${hz2x.toFixed(1)}Hz at constant speed)`
+);
 
-console.log('=== ALL AUTOMATED COMPLIANCE TESTS PASSED (100%) ===');
-
-
-
+console.log('\n=== ALL 6 PRODUCTION TEST SUITES PASSED (100%) ===');
