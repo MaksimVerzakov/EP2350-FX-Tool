@@ -24,8 +24,8 @@ interface PresetLedgerProps {
 // From EP-136 hardware overview: GAIN (Orange), HIGH (Cream), MID (Slate Gray), LOW (Black)
 // For effects with 5 knobs (like REVERB), knob 5 repeats color 1 (#f15a22).
 const EP_SIDEKICK_KNOB_COLORS = ['#f15a22', '#e4e3df', '#989fa5', '#231f20'];
-// Original EP-2350 Ting 4-Knob Palette (Ting Orange, Warm Sand, Warm Stone, Deep Forest Green)
-const TING_KNOB_COLORS = ['#ff681d', '#dbd0b9', '#b2aca1', '#00503a'];
+// Original EP-2350 Ting 4-Knob Palette (Orange, Warm Sand, Warm Stone, Deep Forest Green)
+const TING_KNOB_COLORS = ['#f15a22', '#dbd0b9', '#b2aca1', '#00503a'];
 
 export const PresetLedger: React.FC<PresetLedgerProps> = ({
   preset,
@@ -36,7 +36,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
 }) => {
   const isTing = theme === 'ting';
   const knobColors = isTing ? TING_KNOB_COLORS : EP_SIDEKICK_KNOB_COLORS;
-  const primaryOrange = isTing ? '#ff681d' : '#f15a22';
+  const primaryOrange = '#f15a22';
   // Dual-Bus Active Tab: Bus 1 (Primary) or Bus 2 (Parallel)
   const [activeBus, setActiveBus] = useState<1 | 2>(1);
 
@@ -585,11 +585,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
         >
           {/* Sequential Step Counter & Effect Name + Modulation Badges */}
           <div className="flex items-center gap-2 min-w-0">
-            <span
-              className={`font-mono text-[10px] font-bold ${
-                isTing ? 'text-[#ff681d]' : 'text-[#f15a22]'
-              }`}
-            >
+            <span className="font-mono text-[10px] font-bold text-[#f15a22]">
               {(busPosition + 1).toString().padStart(2, '0')}.
             </span>
             <span
@@ -604,9 +600,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
               <div className="flex items-center gap-1 shrink-0 ml-1">
                 {isHandleTarget && (
                   <span
-                    className={`text-[7.5px] font-mono font-bold ${
-                      isTing ? 'bg-[#ff681d]' : 'bg-[#f15a22]'
-                    } text-white px-1.5 py-0.5 rounded-[1px] uppercase tracking-tight`}
+                    className="text-[7.5px] font-mono font-bold bg-[#f15a22] text-white px-1.5 py-0.5 rounded-[1px] uppercase tracking-tight"
                     title={`Handle modulates ${preset.handle?.param}`}
                   >
                     HNDL: {preset.handle?.param}
@@ -831,7 +825,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
           {/* Preset Badge with Up/Down Controls */}
           <div
             className={`flex items-center ${
-              isTing ? 'bg-[#ff681d] border-white/40' : 'bg-black/40 border-white/30'
+              isTing ? 'bg-[#f15a22] border-white/40' : 'bg-black/40 border-white/30'
             } border rounded-[0px] font-mono shadow-[1px_1px_0px_rgba(0,0,0,0.5)]`}
           >
             <span className="px-2.5 py-1 font-bold text-xs tracking-wider uppercase text-white">
@@ -952,9 +946,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
 
               {/* Teenage Engineering Orange Switch Cap with 45° Tactile Facet */}
               <div
-                className={`w-6 h-5 ${
-                  isTing ? 'bg-[#ff681d]' : 'bg-[#f15a22]'
-                } rounded-[1px] border border-[#000000] shadow-[2px_2px_0px_#000000,inset_0_1px_0_rgba(255,255,255,0.4)] flex items-center justify-center gap-[2px] transition-transform duration-200 ease-out z-10 ${
+                className={`w-6 h-5 bg-[#f15a22] rounded-[1px] border border-[#000000] shadow-[2px_2px_0px_#000000,inset_0_1px_0_rgba(255,255,255,0.4)] flex items-center justify-center gap-[2px] transition-transform duration-200 ease-out z-10 ${
                   activeBus === 1 ? 'translate-x-0' : 'translate-x-[26px]'
                 }`}
               >
@@ -1048,7 +1040,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
               onClick={(e) => openAddMenu(e, undefined, 'empty')}
               className={`px-4 py-1.5 text-[10px] font-mono font-bold text-white ${
                 isTing
-                  ? 'bg-[#00503a] hover:bg-[#ff681d]'
+                  ? 'bg-[#00503a] hover:bg-[#f15a22]'
                   : 'bg-[#141617] hover:bg-[#f15a22]'
               } rounded-[1px] flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs`}
             >
@@ -1129,11 +1121,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
               } pb-1 mb-1`}
             >
               <div className="flex items-baseline gap-2">
-                <span
-                  className={`text-[9.5px] font-mono font-bold uppercase tracking-wider ${
-                    isTing ? 'text-[#ff681d]' : 'text-[#f15a22]'
-                  }`}
-                >
+                <span className="text-[9.5px] font-mono font-bold uppercase tracking-wider text-[#f15a22]">
                   ADD EFFECT (BUS {activeBus})
                 </span>
                 <span className="text-[8px] font-mono text-[#73787a]">
@@ -1165,11 +1153,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                       title="The SAMPLE primitive is restricted to Bus 1 in firmware"
                     >
                       <span>{meta.displayName}</span>
-                      <span
-                        className={`text-[7.5px] italic ${
-                          isTing ? 'text-[#ff681d]' : 'text-[#f15a22]'
-                        }`}
-                      >
+                      <span className="text-[7.5px] italic text-[#f15a22]">
                         BUS 1 ONLY
                       </span>
                     </div>
@@ -1197,7 +1181,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                     onClick={() => handleAddEffect(key as EffectType, addMenuTarget.insertIndex)}
                     className={`px-2 py-1 text-[9.5px] font-mono font-bold ${
                       isTing
-                        ? 'text-[#00503a] hover:bg-[#ff681d]'
+                        ? 'text-[#00503a] hover:bg-[#f15a22]'
                         : 'text-[#141617] hover:bg-[#f15a22]'
                     } hover:text-white flex items-center justify-between text-left transition-colors cursor-pointer rounded-[1px]`}
                   >
@@ -1252,7 +1236,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
           : 'border border-[#141617] bg-white p-2 flex flex-col justify-between rounded-[0px] shadow-[1px_1px_0px_#141617]';
         const modHeaderBorder = isTing ? 'border-[#d8ceba]' : 'border-[#eceeed]';
         const modSelectClass = isTing
-          ? 'bg-[#ffffff] border border-[#00503a] text-[#00503a] text-[8.5px] font-mono px-1 py-0.5 rounded-[1px] outline-none shadow-[1px_1px_0px_#003828] focus:border-[#ff681d] cursor-pointer truncate w-full disabled:opacity-40 disabled:pointer-events-none'
+          ? 'bg-[#ffffff] border border-[#00503a] text-[#00503a] text-[8.5px] font-mono px-1 py-0.5 rounded-[1px] outline-none shadow-[1px_1px_0px_#003828] focus:border-[#f15a22] cursor-pointer truncate w-full disabled:opacity-40 disabled:pointer-events-none'
           : 'bg-[#ffffff] border border-[#141617] text-[#141617] text-[8.5px] font-mono px-1 py-0.5 rounded-[1px] outline-none shadow-[1px_1px_0px_#141617] focus:border-[#f15a22] cursor-pointer truncate w-full disabled:opacity-40 disabled:pointer-events-none';
 
         return (
@@ -1272,9 +1256,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                     <span
                       className={`w-1.5 h-1.5 rounded-full transition-colors ${
                         preset.handle
-                          ? isTing
-                            ? 'bg-[#ff681d] shadow-[0_0_4px_#ff681d]'
-                            : 'bg-[#f15a22] shadow-[0_0_4px_#f15a22]'
+                          ? 'bg-[#f15a22] shadow-[0_0_4px_#f15a22]'
                           : 'bg-[#989fa5]'
                       }`}
                     />
@@ -1291,9 +1273,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                     <span
                       className={`text-[7px] font-mono font-bold uppercase transition-colors ${
                         preset.handle
-                          ? isTing
-                            ? 'text-[#ff681d]'
-                            : 'text-[#f15a22]'
+                          ? 'text-[#f15a22]'
                           : 'text-[#8a9092]'
                       }`}
                     >
@@ -1321,9 +1301,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                           isTing ? 'border-[#00281c]' : 'border-[#141617]'
                         } transition-transform duration-150 ${
                           preset.handle
-                            ? `translate-x-[13px] ${
-                                isTing ? 'bg-[#ff681d]' : 'bg-[#f15a22]'
-                              } shadow-[1px_1px_0px_#000000]`
+                            ? 'translate-x-[13px] bg-[#f15a22] shadow-[1px_1px_0px_#000000]'
                             : 'translate-x-0 bg-[#ffffff]'
                         }`}
                       />
@@ -1426,9 +1404,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                     <span
                       className={`w-1.5 h-1.5 rounded-full transition-colors ${
                         preset.shake
-                          ? isTing
-                            ? 'bg-[#ff681d] shadow-[0_0_4px_#ff681d]'
-                            : 'bg-[#f15a22] shadow-[0_0_4px_#f15a22]'
+                          ? 'bg-[#f15a22] shadow-[0_0_4px_#f15a22]'
                           : 'bg-[#989fa5]'
                       }`}
                     />
@@ -1445,9 +1421,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                     <span
                       className={`text-[7px] font-mono font-bold uppercase transition-colors ${
                         preset.shake
-                          ? isTing
-                            ? 'text-[#ff681d]'
-                            : 'text-[#f15a22]'
+                          ? 'text-[#f15a22]'
                           : 'text-[#8a9092]'
                       }`}
                     >
@@ -1475,9 +1449,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                           isTing ? 'border-[#00281c]' : 'border-[#141617]'
                         } transition-transform duration-150 ${
                           preset.shake
-                            ? `translate-x-[13px] ${
-                                isTing ? 'bg-[#ff681d]' : 'bg-[#f15a22]'
-                              } shadow-[1px_1px_0px_#000000]`
+                            ? 'translate-x-[13px] bg-[#f15a22] shadow-[1px_1px_0px_#000000]'
                             : 'translate-x-0 bg-[#ffffff]'
                         }`}
                       />
@@ -1565,9 +1537,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                     <span
                       className={`w-1.5 h-1.5 rounded-full transition-colors ${
                         preset.lfo
-                          ? isTing
-                            ? 'bg-[#ff681d] shadow-[0_0_4px_#ff681d]'
-                            : 'bg-[#f15a22] shadow-[0_0_4px_#f15a22]'
+                          ? 'bg-[#f15a22] shadow-[0_0_4px_#f15a22]'
                           : 'bg-[#989fa5]'
                       }`}
                     />
@@ -1584,9 +1554,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                     <span
                       className={`text-[7px] font-mono font-bold uppercase transition-colors ${
                         preset.lfo
-                          ? isTing
-                            ? 'text-[#ff681d]'
-                            : 'text-[#f15a22]'
+                          ? 'text-[#f15a22]'
                           : 'text-[#8a9092]'
                       }`}
                     >
@@ -1614,9 +1582,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                           isTing ? 'border-[#00281c]' : 'border-[#141617]'
                         } transition-transform duration-150 ${
                           preset.lfo
-                            ? `translate-x-[13px] ${
-                                isTing ? 'bg-[#ff681d]' : 'bg-[#f15a22]'
-                              } shadow-[1px_1px_0px_#000000]`
+                            ? 'translate-x-[13px] bg-[#f15a22] shadow-[1px_1px_0px_#000000]'
                             : 'translate-x-0 bg-[#ffffff]'
                         }`}
                       />

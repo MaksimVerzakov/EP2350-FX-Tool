@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { execSync } from 'node:child_process';
-import pkg from './package.json';
+import pkg from './package.json' with { type: 'json' };
 
 function resolveAppVersion(): string {
   if (process.env.APP_VERSION) {
@@ -28,6 +28,9 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    open: true
+    open: true,
+    watch: {
+      ignored: ['**/.worktrees/**']
+    }
   }
 });

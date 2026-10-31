@@ -58,135 +58,173 @@ export const TopBanner: React.FC<TopBannerProps> = ({
         isTing ? 'border-[#00503a]/30' : 'border-[#dfe2e0]'
       }`}
     >
-      {/* 1. Iconic TE Modular Badge */}
-      <div className="flex flex-col items-start gap-1">
-        <div
-          className={`flex items-stretch border ${
-            isTing
-              ? 'border-[#00503a] shadow-[2px_2px_0px_#003828]'
-              : 'border-[#141617] shadow-[2px_2px_0px_#141617]'
-          }`}
-        >
-          {/* Orange EP Block */}
-          <div
-            className={`w-12 h-10 flex items-center justify-center relative border-r ${
-              isTing
-                ? 'bg-[#ff681d] border-[#00503a]'
-                : 'bg-[#f15a22] border-[#141617]'
-            }`}
+      {/* 1. Iconic TE Modular Badge with Integrated [TING] [FX] Theme Switcher */}
+      <div className="flex flex-col items-start">
+        <div className="relative pr-[5px] pb-[5px]">
+          {/* 45° Axonometric Extruded 3D Bevels (Bottom & Right) */}
+          <svg
+            className="absolute inset-0 w-[241px] h-[71px] pointer-events-none"
+            viewBox="0 0 241 71"
+            fill="none"
           >
-            <span
-              className={`w-1.5 h-1.5 rounded-full absolute top-1.5 left-1.5 ${
-                isTing ? 'bg-[#00503a]' : 'bg-[#141617]'
-              }`}
+            {/* Bottom bevel under [EP] */}
+            <polygon
+              points="0.5,65.5 116,65.5 121,70.5 5.5,70.5"
+              fill="#f15a22"
+              stroke="#141617"
+              strokeWidth="0.9"
+              strokeLinejoin="round"
             />
-            <span
-              className={`w-1.5 h-1.5 rounded-full absolute bottom-1.5 left-1.5 ${
-                isTing ? 'bg-[#00503a]' : 'bg-[#141617]'
-              }`}
+            {/* Bottom bevel under [TOOL] */}
+            <polygon
+              points="116,65.5 235.5,65.5 240.5,70.5 121,70.5"
+              fill={isTing ? '#dbd0b9' : '#d8dad9'}
+              stroke="#141617"
+              strokeWidth="0.9"
+              strokeLinejoin="round"
             />
-            <span className="text-white font-mono font-bold text-lg tracking-tighter">
-              EP
-            </span>
-          </div>
+            {/* Right bevel beside [FX] */}
+            <polygon
+              points="235.5,0.5 240.5,5.5 240.5,29 235.5,24"
+              fill="#000000"
+              stroke="#141617"
+              strokeWidth="0.9"
+              strokeLinejoin="round"
+            />
+            {/* Right bevel beside [TOOL] */}
+            <polygon
+              points="235.5,24 240.5,29 240.5,70.5 235.5,65.5"
+              fill={isTing ? '#dbd0b9' : '#d8dad9'}
+              stroke="#141617"
+              strokeWidth="0.9"
+              strokeLinejoin="round"
+            />
+          </svg>
 
-          {/* Tool Block */}
-          <div
-            className={`px-3 py-1 flex flex-col justify-center relative ${
-              isTing ? 'bg-[#e8e9e4]' : 'bg-[#ffffff]'
-            }`}
-          >
-            <span
-              className={`w-1.5 h-1.5 rounded-full absolute top-1.5 right-1.5 ${
-                isTing ? 'bg-[#00503a]' : 'bg-[#141617]'
-              }`}
-            />
-            <span
-              className={`w-1.5 h-1.5 rounded-full absolute bottom-1.5 right-1.5 ${
-                isTing ? 'bg-[#00503a]' : 'bg-[#141617]'
-              }`}
-            />
-            <span
-              className={`text-[11px] font-bold tracking-widest leading-none uppercase ${
-                isTing ? 'text-[#00503a]' : 'text-[#141617]'
-              }`}
-            >
-              {isTing ? 'TING FX TOOL' : 'FX TOOL'}
-            </span>
-            <span
-              className={`text-[8px] font-mono tracking-wider leading-none mt-1 ${
-                isTing ? 'text-[#4b6b5d]' : 'text-[#73787a]'
-              }`}
-            >
-              EP–2350 COMPANION
-            </span>
+          {/* Front Modular Blocks (236px x 66px) */}
+          <div className="relative z-10 flex w-[236px] h-[66px] border border-[#141617]">
+            {/* Left [EP] Block (2 rows tall) */}
+            <div className="w-[116px] h-full flex items-center justify-center relative border-r border-[#141617] bg-[#f15a22]">
+              {/* 4 Corner Modular Circles */}
+              <span className="w-[11px] h-[11px] rounded-full border border-[#141617]/55 absolute top-[7px] left-[7px]" />
+              <span className="w-[11px] h-[11px] rounded-full border border-[#141617]/55 absolute top-[7px] right-[7px]" />
+              <span className="w-[11px] h-[11px] rounded-full border border-[#141617]/55 absolute bottom-[7px] left-[7px]" />
+              <span className="w-[11px] h-[11px] rounded-full border border-[#141617]/55 absolute bottom-[7px] right-[7px]" />
+
+              <span className="font-te-regular text-[44px] leading-none tracking-tight text-[#e5e6e6] [-webkit-text-stroke:0.8px_#141617] translate-y-[1px]">
+                EP
+              </span>
+            </div>
+
+            {/* Right 2-Row Stack: Top = [TING][FX], Bottom = [TOOL] */}
+            <div className="w-[120px] h-full flex flex-col">
+              {/* Row 1: [TING] and [FX] Theme Picker Blocks */}
+              <div
+                className="h-[24px] grid grid-cols-2 border-b border-[#141617]"
+                role="group"
+                aria-label="Theme selector"
+              >
+                {/* [TING] Block (Green) */}
+                <button
+                  type="button"
+                  onClick={() => onChangeTheme('ting')}
+                  className="bg-[#00503a] hover:bg-[#006348] border-r border-[#141617] relative flex items-center justify-center cursor-pointer transition-colors group focus:outline-none"
+                  title="Switch to TING theme (Original EP–2350)"
+                  aria-pressed={isTing}
+                >
+                  <span
+                    className={`w-[11px] h-[11px] rounded-full border absolute left-[7px] top-[7px] transition-all shrink-0 ${
+                      isTing
+                        ? 'bg-[#f15a22] border-[#141617]'
+                        : 'border-white/40 group-hover:border-white/70'
+                    }`}
+                  />
+                  <span
+                    className={`font-te-regular text-[10px] tracking-wider uppercase leading-none pl-3.5 transition-colors ${
+                      isTing ? 'text-white font-bold' : 'text-white/75 group-hover:text-white'
+                    }`}
+                  >
+                    TING
+                  </span>
+                </button>
+
+                {/* [FX] Block (Black) */}
+                <button
+                  type="button"
+                  onClick={() => onChangeTheme('fx')}
+                  className="bg-[#141617] hover:bg-[#272a2c] relative flex items-center justify-center cursor-pointer transition-colors group focus:outline-none"
+                  title="Switch to FX theme (EP–2350 FX)"
+                  aria-pressed={!isTing}
+                >
+                  <span
+                    className={`font-te-regular text-[10px] tracking-wider uppercase leading-none pr-3.5 transition-colors ${
+                      !isTing ? 'text-white font-bold' : 'text-white/75 group-hover:text-white'
+                    }`}
+                  >
+                    FX
+                  </span>
+                  <span
+                    className={`w-[11px] h-[11px] rounded-full border absolute right-[7px] top-[7px] transition-all shrink-0 ${
+                      !isTing
+                        ? 'bg-[#f15a22] border-[#141617]'
+                        : 'border-white/40 group-hover:border-white/70'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Row 2: [TOOL] Block */}
+              <div
+                className={`flex-1 flex items-center justify-center relative transition-colors ${
+                  isTing ? 'bg-[#e8e9e4]' : 'bg-[#e5e6e6]'
+                }`}
+              >
+                {/* 4 Corner Modular Circles */}
+                <span
+                  className={`w-[11px] h-[11px] rounded-full border absolute top-[7px] left-[7px] ${
+                    isTing ? 'border-[#00503a]/40' : 'border-[#141617]/40'
+                  }`}
+                />
+                <span
+                  className={`w-[11px] h-[11px] rounded-full border absolute top-[7px] right-[7px] ${
+                    isTing ? 'border-[#00503a]/40' : 'border-[#141617]/40'
+                  }`}
+                />
+                <span
+                  className={`w-[11px] h-[11px] rounded-full border absolute bottom-[7px] left-[7px] ${
+                    isTing ? 'border-[#00503a]/40' : 'border-[#141617]/40'
+                  }`}
+                />
+                <span
+                  className={`w-[11px] h-[11px] rounded-full border absolute bottom-[7px] right-[7px] ${
+                    isTing ? 'border-[#00503a]/40' : 'border-[#141617]/40'
+                  }`}
+                />
+
+                <span
+                  className={`font-te-regular text-[13px] tracking-wider uppercase leading-none ${
+                    isTing ? 'text-[#00503a]' : 'text-[#141617]'
+                  }`}
+                >
+                  TOOL
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
+        {/* Version Number Below [EP] Block */}
         <span
-          className={`w-12 text-center text-[10px] font-mono leading-none mt-0.5 ${
-            isTing ? 'text-[#00503a]/75' : 'text-[#73787a]'
+          className={`w-[116px] text-center mt-1 text-[10px] font-mono leading-none uppercase tracking-wider ${
+            isTing ? 'text-[#00503a]' : 'text-[#141617]'
           }`}
         >
-          v {typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0'}
+          V {typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0'}
         </span>
       </div>
 
-      {/* 2. Theme Selector, Pack Name Combo Input & Actions */}
+      {/* 2. Pack Name Combo Input & Actions */}
       <div className="flex flex-wrap items-center justify-center gap-3">
-        {/* Hardware Theme Selector (FX / TING) */}
-        <div
-          className={`flex items-center pl-2 pr-1 py-1 border ${
-            isTing
-              ? 'bg-[#e8e9e4] border-[#00503a] shadow-[1px_1px_0px_#003828]'
-              : 'bg-[#ffffff] border-[#141617] shadow-[1px_1px_0px_#141617]'
-          }`}
-          role="group"
-          aria-label="Theme selector"
-        >
-          <span
-            className={`text-[9px] font-mono font-bold mr-1.5 uppercase ${
-              isTing ? 'text-[#00503a]' : 'text-[#73787a]'
-            }`}
-          >
-            THEME:
-          </span>
-          <div
-            className={`flex items-stretch border p-0.5 gap-0.5 ${
-              isTing
-                ? 'bg-[#dbd0b9] border-[#00503a]'
-                : 'bg-[#e5e6e6] border-[#141617]'
-            }`}
-          >
-            <button
-              type="button"
-              onClick={() => onChangeTheme('fx')}
-              className={`px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer ${
-                !isTing
-                  ? 'bg-[#141617] text-white shadow-[1px_1px_0px_#000000]'
-                  : 'text-[#00503a]/70 hover:text-[#00503a] hover:bg-white/40'
-              }`}
-              title="FX Theme (EP–2350 FX Grey & Orange)"
-            >
-              <span className="w-2 h-2 rounded-full bg-[#818e95] border border-black/60 shrink-0" />
-              <span>FX</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => onChangeTheme('ting')}
-              className={`px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer ${
-                isTing
-                  ? 'bg-[#00503a] text-[#e8e9e4] shadow-[1px_1px_0px_#00291d]'
-                  : 'text-[#141617]/70 hover:text-[#141617] hover:bg-white/60'
-              }`}
-              title="Ting Theme (Original EP–2350 Ting Sand, Green & Orange)"
-            >
-              <span className="w-2 h-2 rounded-full bg-[#ff681d] border border-[#00503a] shrink-0" />
-              <span>TING</span>
-            </button>
-          </div>
-        </div>
 
         {/* Pack Selector */}
         <div ref={dropdownRef} className="relative">
@@ -213,11 +251,7 @@ export const TopBanner: React.FC<TopBannerProps> = ({
                 type="text"
                 value={packName}
                 onChange={(e) => onUpdatePackName(e.target.value.toUpperCase())}
-                className={`text-white px-2 py-0.5 font-mono text-[11px] font-bold tracking-wider uppercase border-0 focus:outline-none focus:ring-1 w-[165px] ${
-                  isTing
-                    ? 'bg-[#00503a] focus:ring-[#ff681d]'
-                    : 'bg-[#141617] focus:ring-[#f15a22]'
-                }`}
+                className="text-white px-2 py-0.5 font-mono text-[11px] font-bold tracking-wider uppercase border-0 focus:outline-none focus:ring-1 w-[165px] bg-[#141617] focus:ring-[#f15a22]"
                 placeholder="PACK NAME"
                 maxLength={24}
               />
@@ -226,7 +260,7 @@ export const TopBanner: React.FC<TopBannerProps> = ({
                 onClick={() => setDropdownOpen((prev) => !prev)}
                 className={`px-1.5 text-white border-l border-white/20 flex items-center justify-center transition-colors cursor-pointer ${
                   isTing
-                    ? 'bg-[#003d2c] hover:bg-[#ff681d]'
+                    ? 'bg-[#003d2c] hover:bg-[#f15a22]'
                     : 'bg-[#232628] hover:bg-[#f15a22]'
                 }`}
                 title="Select an official Teenage Engineering preset pack"
@@ -255,11 +289,7 @@ export const TopBanner: React.FC<TopBannerProps> = ({
                   isTing ? 'border-[#00503a]/20' : 'border-[#e2e4e2]'
                 }`}
               >
-                <span
-                  className={`font-mono text-[9px] font-bold uppercase tracking-wider ${
-                    isTing ? 'text-[#ff681d]' : 'text-[#f15a22]'
-                  }`}
-                >
+                <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-[#f15a22]">
                   OFFICIAL TE PRESET PACKS
                 </span>
                 <span
@@ -287,7 +317,7 @@ export const TopBanner: React.FC<TopBannerProps> = ({
                           ? 'bg-[#00503a] text-white'
                           : 'bg-[#141617] text-white'
                         : isTing
-                        ? 'hover:bg-[#ff681d] hover:text-white text-[#00503a]'
+                        ? 'hover:bg-[#f15a22] hover:text-white text-[#00503a]'
                         : 'hover:bg-[#f15a22] hover:text-white text-[#141617]'
                     }`}
                   >
@@ -296,11 +326,7 @@ export const TopBanner: React.FC<TopBannerProps> = ({
                         {item.name}
                       </span>
                       {isSelected && (
-                        <Check
-                          className={`w-3 h-3 group-hover:text-white shrink-0 ${
-                            isTing ? 'text-[#ff681d]' : 'text-[#f15a22]'
-                          }`}
-                        />
+                        <Check className="w-3 h-3 group-hover:text-white shrink-0 text-[#f15a22]" />
                       )}
                     </div>
                     <span

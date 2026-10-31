@@ -17,3 +17,5 @@ dist-ssr
 *.local
 .vscode/
 .idea/
+.worktrees/
+.bin/

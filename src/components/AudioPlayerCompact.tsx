@@ -78,9 +78,7 @@ export const AudioPlayerCompact: React.FC<AudioPlayerCompactProps> = ({ theme = 
             isTing ? 'border-[#00281c]' : 'border-[#000000]'
           } ${
             isPlaying
-              ? `${
-                  isTing ? 'bg-[#ff681d]' : 'bg-[#f15a22]'
-                } text-white translate-x-[2px] translate-y-[2px] shadow-none`
+              ? 'bg-[#f15a22] text-white translate-x-[2px] translate-y-[2px] shadow-none'
               : `${
                   isTing
                     ? 'bg-[#00503a] hover:bg-[#00664a] shadow-[2px_2px_0px_#00281c]'

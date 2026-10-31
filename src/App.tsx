@@ -185,18 +185,14 @@ export const App: React.FC = () => {
                 theme === 'ting' ? 'border-[#d8ceba]' : 'border-[#e2e4e2]'
               } pb-2.5`}
             >
-              <span
-                className={`font-bold text-xs uppercase tracking-wider ${
-                  theme === 'ting' ? 'text-[#ff681d]' : 'text-[#f15a22]'
-                }`}
-              >
+              <span className="font-bold text-xs uppercase tracking-wider text-[#f15a22]">
                 EP–2350 HARDWARE SETUP & GUIDE
               </span>
               <button
                 onClick={() => setShowHelpModal(false)}
                 className={`p-1 ${
                   theme === 'ting'
-                    ? 'text-[#00503a] hover:text-[#ff681d]'
+                    ? 'text-[#00503a] hover:text-[#f15a22]'
                     : 'text-[#141617] hover:text-[#f15a22]'
                 }`}
               >
