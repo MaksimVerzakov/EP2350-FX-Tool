@@ -128,7 +128,7 @@ export const TopBanner: React.FC<TopBannerProps> = ({
             isTing ? 'text-[#00503a]/75' : 'text-[#73787a]'
           }`}
         >
-          v 1.0.0
+          v {typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0'}
         </span>
       </div>
 

@@ -1,0 +1,17 @@
+# Agent Rules
+
+1. **Worktree Isolation**:
+   - When starting a new conversation or task that modifies files in this repository, always create and work inside an isolated `git worktree` under `.worktrees/<branch-name>` (or a `share`/`branch` subagent workspace) so uncommitted changes from other tasks are never mixed on `main`.
+
+2. **Branch & Pull Request Workflow (Never Push to `main`)**:
+   - **NEVER commit or push directly to `main`**.
+   - Always create a descriptive branch using prefixes:
+     - `feat/<short-name>` for new features (triggers a **minor** version bump `x.Y.0` on merge)
+     - `fix/<short-name>` for bug fixes or DSP/UI adjustments (triggers a **patch** version bump `x.y.Z` on merge)
+     - `chore/<short-name>` or `docs/<short-name>` for maintenance/tooling
+   - Push the branch to `origin` (`git push -u origin <branch-name>`) and provide the Pull Request creation URL (`https://github.com/MaksimVerzakov/EP2350-FX-Tool/pull/new/<branch-name>`).
+
+3. **Conventional Commits & Semantic Versioning (SemVer)**:
+   - Use Conventional Commit messages (`feat: ...`, `fix: ...`, `feat!: ...` / `BREAKING CHANGE: ...`, `chore: ...`).
+   - Do **not** hardcode version strings in UI components. The single source of truth is `"version"` in `package.json`, injected at build time via `__APP_VERSION__`.
+   - When a PR is merged into `main`, `.github/workflows/deploy.yml` automatically bumps `package.json` (`major`, `minor`, or `patch` based on commit/PR prefix), tags `vX.Y.Z`, pushes the release commit, and deploys the updated build to GitHub Pages.
