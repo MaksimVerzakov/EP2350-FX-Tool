@@ -113,7 +113,7 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center px-4 py-4 md:px-8 md:py-6 select-none font-sans">
-      <div className="max-w-[1070px] w-full flex flex-col gap-6 mx-auto">
+      <div className="max-w-[1067px] w-full flex flex-col gap-6 mx-auto">
         
         {/* 1. TOP BANNER (Modular Badge & Action Buttons) */}
         <TopBanner
@@ -127,10 +127,10 @@ export const App: React.FC = () => {
         />
 
         {/* 2. MAIN TWO-COLUMN WORKBENCH DESK */}
-        <div className="flex flex-col lg:flex-row items-center lg:items-start justify-center gap-8 w-full">
+        <div className="flex flex-col lg:flex-row items-center lg:items-start justify-between gap-8 w-full">
           
           {/* LEFT COLUMN: Hardware Mic Device + Compact Audition Player */}
-          <div className="w-[275px] shrink-0 flex flex-col items-center h-[624px] justify-between">
+          <div className="w-[275px] shrink-0 flex flex-col items-start h-[624px] justify-between">
             <MicDevice
               activeSlot={activeSlot}
               onSelectSlot={setActiveSlot}
@@ -140,7 +140,7 @@ export const App: React.FC = () => {
               theme={theme}
             />
 
-            <AudioPlayerCompact theme={theme} className="-mt-[7px]" />
+            <AudioPlayerCompact theme={theme} className="-mt-[12px]" />
           </div>
 
           {/* RIGHT COLUMN: Preset Details Ledger Sheet */}
