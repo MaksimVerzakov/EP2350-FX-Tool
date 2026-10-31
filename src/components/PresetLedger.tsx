@@ -805,10 +805,20 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
             value={preset.name || ''}
             onChange={(e) => onUpdatePreset({ ...preset, name: e.target.value.toUpperCase() })}
             placeholder="PRESET NAME"
-            className="bg-black text-white placeholder:text-white/40 px-2.5 py-1 font-mono text-xs font-bold tracking-wider uppercase border border-white/30 focus:outline-none focus:border-white w-[200px]"
+            className="bg-black text-white placeholder:text-white/40 px-2.5 py-1 font-mono text-xs font-bold tracking-wider uppercase border border-white/30 focus:outline-none focus:border-white w-[180px] shrink-0"
             maxLength={20}
           />
         </div>
+
+        {/* Preset Comment / Performance Notes (from TE config.json) */}
+        <input
+          type="text"
+          value={preset.comment || ''}
+          onChange={(e) => onUpdatePreset({ ...preset, comment: e.target.value })}
+          placeholder="PRESET NOTES / COMMENT..."
+          title={preset.comment || 'Preset comment / performance notes'}
+          className="bg-black/25 text-white/95 placeholder:text-white/45 px-2.5 py-1 font-mono text-[10px] tracking-wide border border-white/25 focus:outline-none focus:bg-black/50 focus:border-white flex-1 min-w-[140px] truncate"
+        />
       </div>
 
       {/* 2. DUAL PARALLEL BUS PHYSICAL SWITCH BAR */}

@@ -11,7 +11,7 @@ export const EFFECTS_REGISTRY: Record<EffectType, EffectMeta> = {
         name: 'time',
         label: 'TIME',
         min: 0.0,
-        max: 1.1,
+        max: 1.2,
         step: 0.01,
         defaultVal: 0.35,
         unit: 's',
