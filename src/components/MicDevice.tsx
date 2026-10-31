@@ -544,32 +544,7 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
             )}
           </g>
 
-          {/* 6. CORRUGATED STRAIN RELIEF & CONNECTOR (Bottom with 45° Extrusion) */}
-          {/* Connector Right Bevel Panel (dx = +4.5, dy = +4.5) */}
-          <polygon
-            points="414.743 334.555 419.243 339.055 419.243 407.872 414.743 403.372"
-            fill={isTing ? '#b84309' : '#586166'}
-            stroke="#000"
-            strokeWidth="1.0"
-            strokeMiterlimit="10"
-          />
-
-          <path
-            fill={isTing ? '#FF681D' : '#818E95'}
-            stroke="#000"
-            strokeWidth="1.2"
-            strokeMiterlimit="10"
-            d="M414.743 380.066h-30.379v7.85h30.379zM414.743 364.866h-30.379v7.606h30.379zM414.743 334.555h-30.379v7.537h30.379zM414.743 349.686h-30.379v7.584h30.379z"
-          />
-          <path
-            fill={isTing ? '#FF681D' : '#818E95'}
-            stroke="#000"
-            strokeWidth="1.2"
-            strokeMiterlimit="10"
-            d="M405.237 342.093h-11.393v7.595h11.393zM405.237 357.271h-11.393v7.595h11.393zM405.237 372.466h-11.393v7.594h11.393zM414.403 395.521h-30.379v7.851h30.379zM405.237 387.92h-11.393v7.594h11.393z"
-          />
-
-          {/* 7. REINFORCED RUBBER CABLE SEGMENT (Hanging Down) */}
+          {/* 6. REINFORCED RUBBER CABLE SEGMENT (Hanging Down, Tucked Inside Strain Relief) */}
           {/* Cable 45° Drop Shadow Facet */}
           <path
             stroke="#141617"
@@ -588,6 +563,90 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
             strokeWidth="1.2"
             strokeMiterlimit="10"
             d="M420.295 510.223c5.516-.966 5.987-8.759.601-10.406-9.892-2.092-27.87-3.097-33.629-3.374-.836-.04-1.316-.944-.898-1.671 12.004-20.912 17.838-45.201 18.244-69.249-.006-.243.144-22.135.148-22.382h-10.874l.075 21.819v-.332c.304 17.825-3.899 36.651-10.996 52.973-2.72 7.395-8.888 14.338-9.232 22.35v.185c0 6.587 9.616 6.389 19.533 7.291 9.918.901 18.568 1.658 27.548 2.601"
+          />
+
+          {/* 7. CORRUGATED STRAIN RELIEF & CONNECTOR (Accordion Bellows with Per-Rib 45° Extrusion) */}
+          {(() => {
+            const d = 3.2;
+            const sideBevelFill = isTing ? '#c8490b' : '#586166';
+            const bottomBevelFill = isTing ? '#963506' : '#464d52';
+            const neckBevelFill = isTing ? '#963506' : '#4a5257';
+
+            const wideRibs = [
+              { x1: 384.364, x2: 414.743, y1: 334.555, y2: 342.092, neckLeft: 393.844, neckRight: 405.237 },
+              { x1: 384.364, x2: 414.743, y1: 349.686, y2: 357.270, neckLeft: 393.844, neckRight: 405.237 },
+              { x1: 384.364, x2: 414.743, y1: 364.866, y2: 372.472, neckLeft: 393.844, neckRight: 405.237 },
+              { x1: 384.364, x2: 414.743, y1: 380.066, y2: 387.916, neckLeft: 393.844, neckRight: 405.237 },
+              { x1: 384.024, x2: 414.403, y1: 395.521, y2: 403.372, neckLeft: 393.816, neckRight: 404.690 }
+            ];
+
+            const narrowNecks = [
+              { x1: 393.844, x2: 405.237, y1: 342.093, y2: 349.688 },
+              { x1: 393.844, x2: 405.237, y1: 357.271, y2: 364.866 },
+              { x1: 393.844, x2: 405.237, y1: 372.466, y2: 380.060 },
+              { x1: 393.844, x2: 405.237, y1: 387.920, y2: 395.514 }
+            ];
+
+            return (
+              <g>
+                {/* Recessed Neck Right 45° Bevels */}
+                {narrowNecks.map((neck, i) => (
+                  <polygon
+                    key={`neck-bevel-${i}`}
+                    points={`${neck.x2} ${neck.y1} ${neck.x2 + d} ${neck.y1 + d} ${neck.x2 + d} ${neck.y2} ${neck.x2} ${neck.y2}`}
+                    fill={neckBevelFill}
+                    stroke="#000"
+                    strokeWidth="0.9"
+                    strokeLinejoin="round"
+                  />
+                ))}
+
+                {/* Per-Rib 45° Right & Bottom Overhang Bevels */}
+                {wideRibs.map((rib, i) => (
+                  <g key={`rib-bevels-${i}`}>
+                    {/* Left overhang bottom bevel */}
+                    <polygon
+                      points={`${rib.x1} ${rib.y2} ${rib.neckLeft} ${rib.y2} ${rib.neckLeft} ${rib.y2 + d} ${rib.x1 + d} ${rib.y2 + d}`}
+                      fill={bottomBevelFill}
+                      stroke="#000"
+                      strokeWidth="0.9"
+                      strokeLinejoin="round"
+                    />
+                    {/* Right overhang bottom bevel */}
+                    <polygon
+                      points={`${rib.neckRight} ${rib.y2} ${rib.x2} ${rib.y2} ${rib.x2 + d} ${rib.y2 + d} ${rib.neckRight + d} ${rib.y2 + d}`}
+                      fill={bottomBevelFill}
+                      stroke="#000"
+                      strokeWidth="0.9"
+                      strokeLinejoin="round"
+                    />
+                    {/* Rib right side bevel */}
+                    <polygon
+                      points={`${rib.x2} ${rib.y1} ${rib.x2 + d} ${rib.y1 + d} ${rib.x2 + d} ${rib.y2 + d} ${rib.x2} ${rib.y2}`}
+                      fill={sideBevelFill}
+                      stroke="#000"
+                      strokeWidth="0.9"
+                      strokeLinejoin="round"
+                    />
+                  </g>
+                ))}
+              </g>
+            );
+          })()}
+
+          <path
+            fill={isTing ? '#FF681D' : '#818E95'}
+            stroke="#000"
+            strokeWidth="1.2"
+            strokeMiterlimit="10"
+            d="M414.743 380.066h-30.379v7.85h30.379zM414.743 364.866h-30.379v7.606h30.379zM414.743 334.555h-30.379v7.537h30.379zM414.743 349.686h-30.379v7.584h30.379z"
+          />
+          <path
+            fill={isTing ? '#FF681D' : '#818E95'}
+            stroke="#000"
+            strokeWidth="1.2"
+            strokeMiterlimit="10"
+            d="M405.237 342.093h-11.393v7.595h11.393zM405.237 357.271h-11.393v7.595h11.393zM405.237 372.466h-11.393v7.594h11.393zM414.403 395.521h-30.379v7.851h30.379zM405.237 387.92h-11.393v7.594h11.393z"
           />
 
           {/* Flexible Corrugated Bellows */}
