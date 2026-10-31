@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { INITIAL_PACK } from './constants/defaultPresets';
+import { INITIAL_PACK, OfficialPackPreset } from './constants/defaultPresets';
 import { PackConfig, PresetConfig } from './types/config';
 import { audioEngine } from './dsp/AudioEngine';
 import { serializeToConfigJson } from './utils/serializer';
@@ -70,6 +70,14 @@ export const App: React.FC = () => {
     });
   };
 
+  const handleSelectDefaultPack = (presetPack: OfficialPackPreset) => {
+    const parsed = parseConfigJson(presetPack.rawJson);
+    if (parsed.pack) {
+      setPack(parsed.pack);
+      setActiveSlot(0);
+    }
+  };
+
   const handleImportJson = (rawJson: string) => {
     const parsed = parseConfigJson(rawJson);
     if (parsed.pack) {
@@ -102,6 +110,7 @@ export const App: React.FC = () => {
         <TopBanner
           packName={pack.name}
           onUpdatePackName={(name) => setPack({ ...pack, name })}
+          onSelectDefaultPack={handleSelectDefaultPack}
           onImportJson={handleImportJson}
           onExportJson={handleExportJson}
         />

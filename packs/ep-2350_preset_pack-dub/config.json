@@ -1,0 +1,144 @@
+{
+  "name": "DUB PACK",
+  "presets": [
+    {
+      "pos": 0,
+      "name": "SPACE ECHO",
+      "comment": "classic dub delay. handle increases feedback to self-oscillation.",
+      "list": [
+        {
+          "effect": "DELAY",
+          "time": 0.9,
+          "echo": 0.6,
+          "wet-level": 0.5,
+          "highpass-cutoff": 0.1
+        },
+        {
+          "effect": "REVERB",
+          "time": 0.5,
+          "dry-level": 1.0
+        },
+        {
+          "effect": "SAMPLE"
+        }
+      ],
+      "handle": {
+        "row": 0,
+        "param": "echo",
+        "depth": 0.69
+      },
+      "shake": {
+        "row": 1,
+        "param": "wet-level",
+        "depth": 0.5
+      },
+      "trigger": {
+        "row": 2
+      }
+    },
+    {
+      "pos": 1,
+      "name": "KING TUBBY HPF",
+      "comment": "highpass filter sweep on the echo chain.",
+      "list": [
+        {
+          "effect": "HIGHPASS",
+          "cutoff": 0.0
+        },
+        {
+          "effect": "DELAY",
+          "time": 0.5,
+          "echo": 0.6,
+          "wet-level": 0.6
+        },
+        {
+          "effect": "SAMPLE"
+        }
+      ],
+      "handle": {
+        "row": 0,
+        "param": "cutoff",
+        "depth": 1.0
+      },
+      "lfo": {
+        "row": 1,
+        "param": "time",
+        "depth": 0.05,
+        "shape": "sine",
+        "speed": 0.2
+      },
+      "trigger": {
+        "row": 2
+      }
+    },
+    {
+      "pos": 2,
+      "name": "SPRING TANK",
+      "comment": "vintage spring reverb. shake to 'kick' the amp.",
+      "list": [
+        {
+          "effect": "REVERB",
+          "time": 0.8,
+          "spring-mix": 0.8,
+          "wet-level": 0.5,
+          "dry-level": 0.8
+        },
+        {
+          "effect": "DIST",
+          "amount": 2.0,
+          "mix": 0.2
+        },
+        {
+          "effect": "SAMPLE"
+        }
+      ],
+      "handle": {
+        "row": 0,
+        "param": "time",
+        "depth": 0.1
+      },
+      "shake": {
+        "row": 0,
+        "param": "spring-mix",
+        "depth": 0.2
+      },
+      "trigger": {
+        "row": 2
+      }
+    },
+    {
+      "pos": 3,
+      "name": "RIDDIM WARP",
+      "comment": "pitch down + heavy delay.",
+      "list": [
+        {
+          "effect": "HARMONY",
+          "pitch": 0.7,
+          "dry-level": 0.4
+        },
+        {
+          "effect": "DELAY",
+          "time": 0.5,
+          "echo": 0.5,
+          "cross-feed": 0.1
+        },
+        {
+          "effect": "SAMPLE"
+        }
+      ],
+      "handle": {
+        "row": 1,
+        "param": "time",
+        "depth": 0.5
+      },
+      "shake": {
+        "row": 0,
+        "param": "pitch",
+        "depth": -0.2
+      },
+      "trigger": {
+        "row": 2
+      }
+    }
+  ]
+}

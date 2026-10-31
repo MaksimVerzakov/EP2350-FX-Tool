@@ -607,6 +607,39 @@ export class DspAudioEngine {
           const echo = Math.max(0.0, Math.min(0.95, baseEcho + delta));
           nodeRefs.feedbackGain.gain.setTargetAtTime(echo, ctx.currentTime, 0.02);
         }
+        if (nodeRefs.delayNode) {
+          const baseTime = typeof params.time === 'number' ? params.time : 0.35;
+          let delta = 0;
+          if (handle && handle.target !== 'lfo' && handle.row === rowIdx && handle.param === 'time') delta += handleDelta;
+          if (shake && shake.row === rowIdx && shake.param === 'time') delta += shakeDelta;
+          if (lfo && lfo.target !== 'lfo' && lfo.row === rowIdx && lfo.param === 'time') delta += lfoDelta;
+          const dTime = Math.max(0.01, Math.min(1.2, baseTime + delta));
+          nodeRefs.delayNode.delayTime.setTargetAtTime(dTime, ctx.currentTime, 0.02);
+        }
+      } else if (effectType === 'HARMONY') {
+        if (this.sourceNode) {
+          const basePitch = typeof params.pitch === 'number' ? params.pitch : 1.0;
+          let moddedPitch = basePitch;
+          if (handle && handle.target !== 'lfo' && handle.row === rowIdx && handle.param === 'pitch') {
+            const rawDepth = typeof handle.depth === 'number' ? handle.depth : 0.5;
+            moddedPitch += this.modState.handlePos * rawDepth;
+          }
+          if (shake && shake.row === rowIdx && shake.param === 'pitch') {
+            const rawDepth = typeof shake.depth === 'number' ? shake.depth : 0.2;
+            moddedPitch += this.modState.shakeAmount * rawDepth;
+          }
+          if (lfo && lfo.target !== 'lfo' && lfo.row === rowIdx && lfo.param === 'pitch') {
+            const rawDepth = typeof lfo.depth === 'number' ? lfo.depth : 0.1;
+            const phase = (ctx.currentTime * effectiveLfoSpeed) % 1.0;
+            const lfoWave = Math.sin(phase * 2 * Math.PI);
+            moddedPitch += lfoWave * rawDepth;
+          }
+          this.sourceNode.playbackRate.setTargetAtTime(
+            Math.max(0.25, Math.min(3.0, moddedPitch)),
+            ctx.currentTime,
+            0.02
+          );
+        }
       } else if (effectType === 'RING' || effectType === 'SSB') {
         if (nodeRefs.osc) {
           const baseFreq = typeof params.frequency === 'number' ? params.frequency : (effectType === 'RING' ? 440.0 : 0.0);
