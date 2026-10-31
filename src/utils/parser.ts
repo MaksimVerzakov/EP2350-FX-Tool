@@ -1,4 +1,4 @@
-import { AnyEffect, EffectType, PackConfig, PresetConfig, SampleSlotConfig } from '../types/config';
+import type { AnyEffect, EffectType, PackConfig, PresetConfig, SampleSlotConfig } from '../types/config';
 import { isPercentParam, getModDepthConfig } from '../constants/effectsRegistry';
 
 export function parseConfigJson(rawJson: string): { pack?: PackConfig; error?: string } {
@@ -77,7 +77,7 @@ export function parseConfigJson(rawJson: string): { pack?: PackConfig; error?: s
           const depthCfg = getModDepthConfig(targetFx?.effect, param);
           let depth = typeof p.handle.depth === 'number' ? p.handle.depth : (isLfo ? 10.0 : depthCfg.defaultVal);
           if (!isLfo && depthCfg.isNormalizedPercent && Math.abs(depth) <= 1.0) {
-            depth = Math.round(depth * 100);
+            depth = Math.round(depth * 1000) / 10;
           }
           preset.handle = {
             target: p.handle.target,
@@ -94,7 +94,7 @@ export function parseConfigJson(rawJson: string): { pack?: PackConfig; error?: s
           const depthCfg = getModDepthConfig(targetFx?.effect, param);
           let depth = typeof p.shake.depth === 'number' ? p.shake.depth : depthCfg.defaultVal;
           if (depthCfg.isNormalizedPercent && Math.abs(depth) <= 1.0) {
-            depth = Math.round(depth * 100);
+            depth = Math.round(depth * 1000) / 10;
           }
           preset.shake = {
             row,
@@ -111,7 +111,7 @@ export function parseConfigJson(rawJson: string): { pack?: PackConfig; error?: s
           const depthCfg = getModDepthConfig(targetFx?.effect, param);
           let depth = typeof p.lfo.depth === 'number' ? p.lfo.depth : (isLfo ? 1.0 : depthCfg.defaultVal);
           if (!isLfo && depthCfg.isNormalizedPercent && Math.abs(depth) <= 1.0) {
-            depth = Math.round(depth * 100);
+            depth = Math.round(depth * 1000) / 10;
           }
           preset.lfo = {
             target: p.lfo.target,
@@ -120,7 +120,7 @@ export function parseConfigJson(rawJson: string): { pack?: PackConfig; error?: s
             depth,
             shape: ['sine', 'square', 'sawtooth', 'random'].includes(p.lfo.shape) ? p.lfo.shape : 'sine',
             speed: typeof p.lfo.speed === 'number' ? p.lfo.speed : 2.0,
-            phase: typeof p.lfo.phase === 'number' ? p.lfo.phase : 0
+            ...(typeof p.lfo.phase === 'number' ? { phase: p.lfo.phase } : {})
           };
         }
 
