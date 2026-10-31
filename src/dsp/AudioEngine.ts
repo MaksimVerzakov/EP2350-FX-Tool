@@ -13,6 +13,8 @@ export class DspAudioEngine {
   private isRunning: boolean = false;
   private currentBuffer: AudioBuffer | null = null;
   private sourceNode: AudioBufferSourceNode | null = null;
+  private sourceHub: GainNode | null = null;
+  private busSummer: GainNode | null = null;
   private gainMaster: GainNode | null = null;
   private analyserNode: AnalyserNode | null = null;
   private loopSource: boolean = true;
@@ -88,8 +90,26 @@ export class DspAudioEngine {
   }
 
   public updatePreset(preset: PresetConfig) {
+    const prevTopology = this.activeNodes
+      .map((n) => `${n.effectType}:${n.params.BUS || 1}:${n.nodeRefs.rowIdx}`)
+      .join('|');
+    const nextTopology = (preset.list || [])
+      .map((fx, idx) => `${fx.effect}:${fx.BUS || 1}:${idx}`)
+      .join('|');
+
     this.preset = preset;
-    if (this.isRunning) {
+    if (!this.isRunning) return;
+
+    if (prevTopology === nextTopology && this.activeNodes.length === preset.list.length) {
+      // Update parameters in place without tearing down nodes or restarting audio
+      this.activeNodes.forEach((node) => {
+        const updatedFx = preset.list[node.nodeRefs.rowIdx];
+        if (updatedFx) {
+          node.params = { ...updatedFx };
+        }
+      });
+      this.applyLiveModulation();
+    } else {
       this.rebuildChain();
     }
   }
@@ -138,15 +158,148 @@ export class DspAudioEngine {
 
   public async start() {
     await this.init();
-    if (!this.ctx) return;
+    if (!this.ctx || !this.currentBuffer) return;
     this.isRunning = true;
+
+    if (this.sourceNode) {
+      try {
+        this.sourceNode.stop();
+        this.sourceNode.disconnect();
+      } catch (e) {}
+    }
+    if (this.sourceHub) {
+      try {
+        this.sourceHub.disconnect();
+      } catch (e) {}
+    }
+
+    this.sourceNode = this.ctx.createBufferSource();
+    this.sourceNode.buffer = this.currentBuffer;
+    this.sourceNode.loop = this.loopSource;
+
+    this.sourceHub = this.ctx.createGain();
+    this.sourceHub.gain.value = 1.0;
+    this.sourceNode.connect(this.sourceHub);
+
     this.rebuildChain();
+    this.sourceNode.start(0);
     this.startModulationLoop();
+  }
+
+  private cleanupActiveNodes() {
+    this.activeNodes.forEach(({ nodeRefs }) => {
+      if (nodeRefs.osc) {
+        try {
+          nodeRefs.osc.stop();
+          nodeRefs.osc.disconnect();
+        } catch (e) {}
+      }
+      if (nodeRefs.pitchShifter?.processor) {
+        try {
+          nodeRefs.pitchShifter.processor.onaudioprocess = null;
+          nodeRefs.pitchShifter.processor.disconnect();
+        } catch (e) {}
+      }
+    });
+    this.activeNodes = [];
+  }
+
+  /**
+   * Sample-accurate 4-grain Hann-windowed circular buffer pitch shifter.
+   * Shifts pitch by `pitchRatio` (0.5x to 2.0x) at full audio sample rate (48kHz)
+   * while keeping playback speed/tempo strictly at 1.0x.
+   */
+  private createConstantSpeedPitchShifter(ctx: AudioContext, initialPitch: number) {
+    const processor = ctx.createScriptProcessor(512, 1, 1);
+    const bufferSize = 16384; // Power of 2 (~340ms ring buffer)
+    const mask = bufferSize - 1;
+    const ringBuffer = new Float32Array(bufferSize);
+    let writeIdx = 0;
+
+    // ~42ms vocal grain window (2048 samples @ 48kHz)
+    const grainSize = 2048;
+    let phase = 0.0;
+    let currentPitch = Math.max(0.25, Math.min(4.0, initialPitch || 1.0));
+    let targetPitch = currentPitch;
+
+    // 4-point Hermite fractional sample interpolation for clean high-frequency transients
+    const readInterpolated = (delaySamples: number): number => {
+      const readPos = writeIdx - delaySamples + bufferSize;
+      const idx0 = Math.floor(readPos);
+      const frac = readPos - idx0;
+
+      const ym1 = ringBuffer[(idx0 - 1) & mask];
+      const y0 = ringBuffer[idx0 & mask];
+      const y1 = ringBuffer[(idx0 + 1) & mask];
+      const y2 = ringBuffer[(idx0 + 2) & mask];
+
+      const c0 = y0;
+      const c1 = 0.5 * (y1 - ym1);
+      const c2 = ym1 - 2.5 * y0 + 2.0 * y1 - 0.5 * y2;
+      const c3 = 0.5 * (y2 - ym1) + 1.5 * (y0 - y1);
+      return ((c3 * frac + c2) * frac + c1) * frac + c0;
+    };
+
+    processor.onaudioprocess = (e: AudioProcessingEvent) => {
+      const input = e.inputBuffer.getChannelData(0);
+      const output = e.outputBuffer.getChannelData(0);
+      const len = input.length;
+
+      for (let i = 0; i < len; i++) {
+        const x = input[i];
+        ringBuffer[writeIdx] = x;
+
+        // Per-sample exponential smoothing of pitch ratio
+        currentPitch += (targetPitch - currentPitch) * 0.0025;
+
+        // Advance master grain phase
+        const phaseStep = (1.0 - currentPitch) / grainSize;
+        phase += phaseStep;
+        phase -= Math.floor(phase);
+
+        // 4 overlapping Hann-windowed grains spaced by 0.25 cycle (sum of weights === 1.0 everywhere)
+        let wet = 0.0;
+        for (let g = 0; g < 4; g++) {
+          const p = phase + g * 0.25;
+          const gp = p - Math.floor(p);
+          const delaySamples = gp * grainSize + 4;
+          const win = 0.5 * (1.0 - Math.cos(2.0 * Math.PI * gp));
+          wet += win * readInterpolated(delaySamples);
+        }
+        wet *= 0.5; // Normalize 4 overlapping Hann windows (sum of 4 Hann windows = 2.0)
+
+        // Smoothly crossfade to direct pass-through when pitch ratio is ~1.0x
+        const shiftDist = Math.min(1.0, Math.abs(currentPitch - 1.0) / 0.015);
+        output[i] = x * (1.0 - shiftDist) + wet * shiftDist;
+
+        writeIdx = (writeIdx + 1) & mask;
+      }
+    };
+
+    return {
+      processor,
+      setPitch: (newPitch: number) => {
+        targetPitch = Math.max(0.25, Math.min(4.0, newPitch));
+      }
+    };
   }
 
   public stop() {
     this.isRunning = false;
     this.stopModulationLoop();
+    this.cleanupActiveNodes();
+    if (this.sourceHub) {
+      try {
+        this.sourceHub.disconnect();
+      } catch (e) {}
+      this.sourceHub = null;
+    }
+    if (this.busSummer) {
+      try {
+        this.busSummer.disconnect();
+      } catch (e) {}
+      this.busSummer = null;
+    }
     if (this.sourceNode) {
       try {
         this.sourceNode.stop();
@@ -178,22 +331,24 @@ export class DspAudioEngine {
   }
 
   private rebuildChain() {
-    if (!this.ctx || !this.currentBuffer || !this.gainMaster) return;
+    if (!this.ctx || !this.currentBuffer || !this.gainMaster || !this.sourceHub) return;
 
-    if (this.sourceNode) {
+    this.cleanupActiveNodes();
+
+    try {
+      this.sourceHub.disconnect();
+    } catch (e) {}
+
+    if (this.busSummer) {
       try {
-        this.sourceNode.stop();
-        this.sourceNode.disconnect();
+        this.busSummer.disconnect();
       } catch (e) {}
-      this.sourceNode = null;
     }
 
-    this.activeNodes = [];
-
-    // Create source
-    this.sourceNode = this.ctx.createBufferSource();
-    this.sourceNode.buffer = this.currentBuffer;
-    this.sourceNode.loop = this.loopSource;
+    // Reset playbackRate to 1.0 unless SAMPLE.speed overrides it
+    if (this.sourceNode) {
+      this.sourceNode.playbackRate.value = 1.0;
+    }
 
     const bus1Effects: Array<{ fx: AnyEffect; idx: number }> = [];
     const bus2Effects: Array<{ fx: AnyEffect; idx: number }> = [];
@@ -211,9 +366,10 @@ export class DspAudioEngine {
     // Master summing node before master gain
     const busSummer = this.ctx.createGain();
     busSummer.gain.value = 1.0;
+    this.busSummer = busSummer;
 
     // 1. Process Bus 1 (Primary parallel branch)
-    let bus1Head: AudioNode = this.sourceNode;
+    let bus1Head: AudioNode = this.sourceHub;
     bus1Effects.forEach(({ fx, idx }) => {
       const built = this.buildEffectNodes(fx, idx);
       if (built) {
@@ -230,7 +386,7 @@ export class DspAudioEngine {
 
     // 2. Process Bus 2 (Secondary parallel branch)
     if (bus2Effects.length > 0) {
-      let bus2Head: AudioNode = this.sourceNode;
+      let bus2Head: AudioNode = this.sourceHub;
       bus2Effects.forEach(({ fx, idx }) => {
         const built = this.buildEffectNodes(fx, idx);
         if (built) {
@@ -248,7 +404,6 @@ export class DspAudioEngine {
 
     busSummer.connect(this.gainMaster);
     this.applyLiveModulation();
-    this.sourceNode.start(0);
   }
 
   private buildEffectNodes(
@@ -491,8 +646,8 @@ export class DspAudioEngine {
       }
 
       case 'HARMONY': {
-        // Vocal pitch shifter + dry-level vocal doubler
-        // Blends unshifted dry vocal (dry-level) with pitch-shifted wet vocal (pitch 0.5..2.0)
+        // Real-time vocal pitch shifter + dry-level vocal doubler
+        // Keeps playback speed strictly at 1.0x while shifting pitch (0.5x..2.0x)
         const input = ctx.createGain();
         const output = ctx.createGain();
 
@@ -503,57 +658,42 @@ export class DspAudioEngine {
         const wetGain = ctx.createGain();
         wetGain.gain.value = 1.0;
 
-        // Dual-grain delay line pitch shifter for real-time pitch shifting while preserving dry vocal path
-        const delayA = ctx.createDelay(0.2);
-        const delayB = ctx.createDelay(0.2);
-        const grainGainA = ctx.createGain();
-        const grainGainB = ctx.createGain();
-
-        delayA.delayTime.value = 0.03;
-        delayB.delayTime.value = 0.06;
-        grainGainA.gain.value = 0.5;
-        grainGainB.gain.value = 0.5;
+        const pitch = typeof fx.pitch === 'number' ? fx.pitch : 1.0;
+        const pitchShifter = this.createConstantSpeedPitchShifter(ctx, pitch);
 
         input.connect(dryGain);
         dryGain.connect(output);
 
-        input.connect(delayA);
-        input.connect(delayB);
-        delayA.connect(grainGainA);
-        delayB.connect(grainGainB);
-        grainGainA.connect(wetGain);
-        grainGainB.connect(wetGain);
+        input.connect(pitchShifter.processor);
+        pitchShifter.processor.connect(wetGain);
         wetGain.connect(output);
-
-        // If dry-level is 0 (pure pitch shift like MANUAL PITCHER or HYPER POP), also drive source playbackRate for crisp formant shift
-        const pitch = typeof fx.pitch === 'number' ? fx.pitch : 1.0;
-        if (this.sourceNode && dryLevel < 0.05) {
-          this.sourceNode.playbackRate.value = pitch;
-        }
 
         return {
           input,
           output,
-          nodeRefs: { dryGain, wetGain, delayA, delayB, grainGainA, grainGainB, rowIdx }
+          nodeRefs: { dryGain, wetGain, pitchShifter, rowIdx }
         };
       }
 
       case 'SAMPLE': {
-        const gain = ctx.createGain();
+        const input = ctx.createGain();
+        const output = ctx.createGain();
         const level = toRatio(fx.level, 1.0);
-        gain.gain.value = level;
+        output.gain.value = level;
 
-        // Only apply SAMPLE speed/pitch to sourceNode if no HARMONY block is managing pitch
-        const hasHarmony = this.preset?.list.some((item) => item.effect === 'HARMONY');
-        if (this.sourceNode && !hasHarmony) {
-          if (typeof fx.speed === 'number' && fx.speed > 0) {
-            this.sourceNode.playbackRate.value = fx.speed;
-          }
-          if (typeof fx.pitch === 'number' && fx.pitch !== 0) {
-            this.sourceNode.detune.value = fx.pitch * 100;
-          }
+        // Only SAMPLE.speed changes playback speed; SAMPLE.pitch shifts pitch at constant speed
+        if (this.sourceNode && typeof fx.speed === 'number' && fx.speed > 0) {
+          this.sourceNode.playbackRate.value = fx.speed;
         }
-        return { input: gain, output: gain, nodeRefs: { gain, rowIdx } };
+
+        const semitones = typeof fx.pitch === 'number' ? fx.pitch : 0;
+        const pitchRatio = Math.pow(2, semitones / 12);
+        const pitchShifter = this.createConstantSpeedPitchShifter(ctx, pitchRatio);
+
+        input.connect(pitchShifter.processor);
+        pitchShifter.processor.connect(output);
+
+        return { input, output, nodeRefs: { gain: output, pitchShifter, rowIdx } };
       }
 
       case 'SSB': {
@@ -675,6 +815,22 @@ export class DspAudioEngine {
         if (nodeRefs.filter) {
           nodeRefs.filter.frequency.setTargetAtTime(hz, ctx.currentTime, 0.015);
         }
+      } else if (effectType === 'EQUALISER') {
+        if (nodeRefs.eq) {
+          const baseCutoff = typeof params.CUTOFF === 'number' ? params.CUTOFF : 0.5;
+          let moddedCutoff = baseCutoff;
+          if (handle && handle.target !== 'lfo' && handle.row === rowIdx && handle.param === 'CUTOFF') moddedCutoff += handleDelta;
+          if (shake && shake.row === rowIdx && shake.param === 'CUTOFF') moddedCutoff += shakeDelta;
+          if (lfo && lfo.target !== 'lfo' && lfo.row === rowIdx && lfo.param === 'CUTOFF') moddedCutoff += lfoDelta;
+          moddedCutoff = Math.max(0.0, Math.min(1.0, moddedCutoff));
+          nodeRefs.eq.frequency.setTargetAtTime(20 * Math.pow(1000, moddedCutoff), ctx.currentTime, 0.015);
+
+          const q = typeof params.Q === 'number' ? params.Q : 0.7;
+          nodeRefs.eq.Q.setTargetAtTime(Math.max(0.1, q * 10), ctx.currentTime, 0.015);
+
+          const gain = typeof params.GAIN === 'number' ? params.GAIN : 0.0;
+          nodeRefs.eq.gain.setTargetAtTime(gain * 15, ctx.currentTime, 0.015);
+        }
       } else if (effectType === 'DIST') {
         if (nodeRefs.wetGain && nodeRefs.dryGain) {
           const baseMix = toRatio(params.mix, 0.5);
@@ -685,6 +841,14 @@ export class DspAudioEngine {
           const mix = Math.max(0.0, Math.min(1.0, baseMix + delta));
           nodeRefs.wetGain.gain.setTargetAtTime(mix, ctx.currentTime, 0.015);
           nodeRefs.dryGain.gain.setTargetAtTime(1.0 - mix, ctx.currentTime, 0.015);
+        }
+        if (nodeRefs.lpTone) {
+          const lp = toRatio(params['lowpass-cutoff'], 1.0);
+          nodeRefs.lpTone.frequency.setTargetAtTime(20 * Math.pow(1000, lp), ctx.currentTime, 0.015);
+        }
+        if (nodeRefs.hpTone) {
+          const hp = toRatio(params['highpass-cutoff'], 0.0);
+          nodeRefs.hpTone.frequency.setTargetAtTime(20 * Math.pow(1000, hp), ctx.currentTime, 0.015);
         }
       } else if (effectType === 'DELAY') {
         if (nodeRefs.feedbackGain) {
@@ -714,9 +878,20 @@ export class DspAudioEngine {
           if (lfo && lfo.target !== 'lfo' && lfo.row === rowIdx && lfo.param === 'wet-level') delta += lfoDelta;
           nodeRefs.wetGain.gain.setTargetAtTime(Math.max(0.0, Math.min(1.0, baseWet + delta)), ctx.currentTime, 0.02);
         }
+        if (nodeRefs.dryGain) {
+          const baseDry = toRatio(params['dry-level'], 1.0);
+          nodeRefs.dryGain.gain.setTargetAtTime(Math.max(0.0, Math.min(1.0, baseDry)), ctx.currentTime, 0.02);
+        }
+        if (nodeRefs.lpFilter) {
+          const lp = toRatio(params['lowpass-cutoff'], 1.0);
+          nodeRefs.lpFilter.frequency.setTargetAtTime(20 * Math.pow(1000, lp), ctx.currentTime, 0.02);
+        }
+        if (nodeRefs.hpFilter) {
+          const hp = toRatio(params['highpass-cutoff'], 0.0);
+          nodeRefs.hpFilter.frequency.setTargetAtTime(20 * Math.pow(1000, hp), ctx.currentTime, 0.02);
+        }
       } else if (effectType === 'HARMONY') {
         const basePitch = typeof params.pitch === 'number' ? params.pitch : 1.0;
-        const dryLevel = toRatio(params['dry-level'], 1.0);
         let moddedPitch = basePitch;
 
         if (handle && handle.target !== 'lfo' && handle.row === rowIdx && handle.param === 'pitch') {
@@ -730,32 +905,32 @@ export class DspAudioEngine {
         }
         moddedPitch = Math.max(0.5, Math.min(2.0, moddedPitch));
 
-        if (dryLevel < 0.05 && this.sourceNode) {
-          // Pure pitch shift (MANUAL PITCHER, HYPER POP)
-          this.sourceNode.playbackRate.setTargetAtTime(moddedPitch, ctx.currentTime, 0.015);
-          if (nodeRefs.wetGain) nodeRefs.wetGain.gain.setTargetAtTime(1.0, ctx.currentTime, 0.015);
-        } else if (nodeRefs.delayA && nodeRefs.delayB && nodeRefs.grainGainA && nodeRefs.grainGainB) {
-          // Dual-grain real-time pitch shift blended with unshifted dry vocal (DEEP TRAP, ALIEN TUNE, RIDDIM WARP)
-          if (this.sourceNode) {
-            this.sourceNode.playbackRate.setTargetAtTime(1.0, ctx.currentTime, 0.015);
-          }
-          const windowSec = 0.055;
-          const rate = (1.0 - moddedPitch) / windowSec;
-          const t = ctx.currentTime * Math.abs(rate || 0.5);
-          const phaseA = ((t % 1.0) + 1.0) % 1.0;
-          const phaseB = (phaseA + 0.5) % 1.0;
+        if (nodeRefs.pitchShifter) {
+          nodeRefs.pitchShifter.setPitch(moddedPitch);
+        }
 
-          const dA = rate >= 0 ? phaseA * windowSec : (1.0 - phaseA) * windowSec;
-          const dB = rate >= 0 ? phaseB * windowSec : (1.0 - phaseB) * windowSec;
-
-          // Hann window envelope per grain
-          const envA = 0.5 * (1 - Math.cos(2 * Math.PI * phaseA));
-          const envB = 0.5 * (1 - Math.cos(2 * Math.PI * phaseB));
-
-          nodeRefs.delayA.delayTime.setTargetAtTime(0.005 + dA, ctx.currentTime, 0.008);
-          nodeRefs.delayB.delayTime.setTargetAtTime(0.005 + dB, ctx.currentTime, 0.008);
-          nodeRefs.grainGainA.gain.setTargetAtTime(envA, ctx.currentTime, 0.008);
-          nodeRefs.grainGainB.gain.setTargetAtTime(envB, ctx.currentTime, 0.008);
+        if (nodeRefs.dryGain) {
+          const baseDry = toRatio(params['dry-level'], 1.0);
+          let delta = 0;
+          if (handle && handle.target !== 'lfo' && handle.row === rowIdx && handle.param === 'dry-level') delta += handleDelta;
+          if (shake && shake.row === rowIdx && shake.param === 'dry-level') delta += shakeDelta;
+          if (lfo && lfo.target !== 'lfo' && lfo.row === rowIdx && lfo.param === 'dry-level') delta += lfoDelta;
+          nodeRefs.dryGain.gain.setTargetAtTime(Math.max(0.0, Math.min(1.0, baseDry + delta)), ctx.currentTime, 0.015);
+        }
+      } else if (effectType === 'SAMPLE') {
+        const baseSemitones = typeof params.pitch === 'number' ? params.pitch : 0;
+        let moddedSemitones = baseSemitones;
+        if (handle && handle.target !== 'lfo' && handle.row === rowIdx && handle.param === 'pitch') {
+          moddedSemitones += this.modState.handlePos * (typeof handle.depth === 'number' ? handle.depth : 12);
+        }
+        if (shake && shake.row === rowIdx && shake.param === 'pitch') {
+          moddedSemitones += this.modState.shakeAmount * (typeof shake.depth === 'number' ? shake.depth : 12);
+        }
+        if (lfo && lfo.target !== 'lfo' && lfo.row === rowIdx && lfo.param === 'pitch') {
+          moddedSemitones += lfoWave * (typeof lfo.depth === 'number' ? lfo.depth : 6);
+        }
+        if (nodeRefs.pitchShifter) {
+          nodeRefs.pitchShifter.setPitch(Math.pow(2, moddedSemitones / 12));
         }
       } else if (effectType === 'RING' || effectType === 'SSB') {
         if (nodeRefs.osc) {
