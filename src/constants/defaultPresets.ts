@@ -1,4 +1,4 @@
-import { PackConfig } from '../types/config';
+import type { PackConfig } from '../types/config';
 import { parseConfigJson } from '../utils/parser';
 
 import brokenRadioRaw from '../../packs/ep-2350_preset_pack-broken_radio/config.json?raw';
