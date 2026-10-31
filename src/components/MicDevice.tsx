@@ -245,11 +245,6 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
               strokeMiterlimit="10"
               d="M338.805 240.78a3.466 3.466 0 0 1-3.465-3.465v-26.173a25.2 25.2 0 0 0-1.164-7.567L292.02 69.755c-1.212-3.85.572-8.034 4.219-9.761 22.007-10.42 46.614-16.249 72.582-16.249"
             />
-            {/* Grip detail lines */}
-            <line x1="305" y1="90" x2="318" y2="90" stroke={isTing ? '#003324' : '#ba3807'} strokeWidth="1.5" strokeLinecap="round" />
-            <line x1="311" y1="115" x2="324" y2="115" stroke={isTing ? '#003324' : '#ba3807'} strokeWidth="1.5" strokeLinecap="round" />
-            <line x1="318" y1="140" x2="330" y2="140" stroke={isTing ? '#003324' : '#ba3807'} strokeWidth="1.5" strokeLinecap="round" />
-            <line x1="324" y1="165" x2="334" y2="165" stroke={isTing ? '#003324' : '#ba3807'} strokeWidth="1.5" strokeLinecap="round" />
           </g>
 
           {/* Top circle detail */}
