@@ -50,13 +50,13 @@ html[data-theme='fx'] {
 }
 
 html[data-theme='ting'] {
-  /* Original EP-2350 Ting Palette from teenage.engineering/downloads/ep-2350/sound-packs */
+  /* Original EP-2350 Ting Palette with standard Teenage Engineering orange #f15a22 */
   --base-txt: #e8e9e4;
   --primary: #dbd0b9;
   --dark: #c9bea6;
-  --accent: #ff681d;
-  --accent-hover: #ff7c3b;
-  --accent-active: #d8510e;
+  --accent: #f15a22;
+  --accent-hover: #ff6d38;
+  --accent-active: #d14612;
   --field-blue: #00503a;
   --field-white: #f6f4ee;
   --field-black: #231f20;
@@ -92,6 +92,11 @@ html {
   background-attachment: fixed;
 }
 
+html[data-theme='ting'] {
+  background-color: #dbd0b9;
+  background-image: url('../assets/bg_ting.png');
+}
+
 body {
   background: transparent;
   color: var(--field-blue);
@@ -101,25 +106,18 @@ body {
 }
 
 @media (min-width: 700px) {
-  html:not([data-theme='ting']) {
+  html {
     background-image: url('../assets/bg_x2.png');
+  }
+  html[data-theme='ting'] {
+    background-image: url('../assets/bg_ting_x2.png');
   }
 }
 
 @media (min-width: 1400px) and (min-height: 1089px) {
-  html:not([data-theme='ting']) {
+  html {
     background-size: 1400px;
   }
-}
-
-html[data-theme='ting'] {
-  background-color: #dbd0b9;
-  background-image:
-    linear-gradient(to right, rgba(0, 80, 58, 0.11) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 80, 58, 0.11) 1px, transparent 1px);
-  background-size: 23.5px 23.5px;
-  background-position: center center;
-  background-attachment: fixed;
 }
 
 .font-te-bold {
@@ -222,7 +220,7 @@ html[data-theme='ting'] ::-webkit-scrollbar-thumb {
 }
 
 html[data-theme='ting'] ::-webkit-scrollbar-thumb:hover {
-  background: #ff681d;
+  background: #f15a22;
 }
 
 html[data-theme='ting'] .te-btn:not(.te-btn-orange):not(.te-btn-secondary) {

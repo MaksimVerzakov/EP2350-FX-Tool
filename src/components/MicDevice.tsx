@@ -245,11 +245,6 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
               strokeMiterlimit="10"
               d="M338.805 240.78a3.466 3.466 0 0 1-3.465-3.465v-26.173a25.2 25.2 0 0 0-1.164-7.567L292.02 69.755c-1.212-3.85.572-8.034 4.219-9.761 22.007-10.42 46.614-16.249 72.582-16.249"
             />
-            {/* Grip detail lines */}
-            <line x1="305" y1="90" x2="318" y2="90" stroke={isTing ? '#003324' : '#ba3807'} strokeWidth="1.5" strokeLinecap="round" />
-            <line x1="311" y1="115" x2="324" y2="115" stroke={isTing ? '#003324' : '#ba3807'} strokeWidth="1.5" strokeLinecap="round" />
-            <line x1="318" y1="140" x2="330" y2="140" stroke={isTing ? '#003324' : '#ba3807'} strokeWidth="1.5" strokeLinecap="round" />
-            <line x1="324" y1="165" x2="334" y2="165" stroke={isTing ? '#003324' : '#ba3807'} strokeWidth="1.5" strokeLinecap="round" />
           </g>
 
           {/* Top circle detail */}
@@ -274,13 +269,13 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
             {/* 45° Extruded Facets */}
             {!isButtonPressed && (
               <>
-                <polygon points="562.725 42.318 565.725 45.318 565.725 64.815 562.725 61.815" fill={isTing ? '#c8490b' : '#ba3807'} stroke="#000" strokeWidth="0.8" />
-                <polygon points="551.476 64.815 554.476 67.815 565.725 67.815 562.725 64.815" fill={isTing ? '#963506' : '#8c2603'} stroke="#000" strokeWidth="0.8" />
+                <polygon points="562.725 42.318 565.725 45.318 565.725 64.815 562.725 61.815" fill="#ba3807" stroke="#000" strokeWidth="0.8" />
+                <polygon points="551.476 64.815 554.476 67.815 565.725 67.815 562.725 64.815" fill="#8c2603" stroke="#000" strokeWidth="0.8" />
               </>
             )}
             {/* Front Keycap */}
             <path
-              fill={isTing ? '#FF681D' : '#F15A22'}
+              fill="#F15A22"
               stroke="#000"
               strokeWidth="1.2"
               strokeMiterlimit="10"
@@ -516,9 +511,9 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
 
             {isTing ? (
               <>
-                {/* Authentic 'TING' Typography (Orange #FF681D) */}
+                {/* Authentic 'TING' Typography (Orange #F15A22) */}
                 <path
-                  fill="#FF681D"
+                  fill="#F15A22"
                   d="M 368.929 214.165 v 11.399 c 0.000 0.519 0.420 0.939 0.939 0.939 h 3.744 c 0.519 0.000 0.939 0.422 0.939 0.939 l 0.012 22.432 c 0.000 0.519 0.422 0.939 0.939 0.939 h 1.879 a 0.939 0.939 0 0 0 0.939 -0.939 l -0.012 -22.430 c 0.000 -0.519 0.420 -0.941 0.939 -0.941 h 3.771 a 0.939 0.939 0 0 0 0.939 -0.939 v -11.399 a 0.939 0.939 0 0 0 -0.939 -0.939 h -13.148 a 0.939 0.939 0 0 0 -0.939 0.939 M 389.536 213.226 h -1.877 a 0.941 0.941 0 0 0 -0.941 0.939 v 35.685 c 0.000 0.519 0.422 0.939 0.941 0.939 h 1.877 a 0.939 0.939 0 0 0 0.939 -0.939 v -35.685 a 0.939 0.939 0 0 0 -0.939 -0.939 M 425.182 231.850 v 1.877 c 0.000 0.519 0.420 0.941 0.939 0.941 h 3.884 c 0.217 0.000 0.364 0.238 0.252 0.426 a 5.933 5.933 0 0 1 -5.050 2.876 c -3.165 0.012 -5.857 -2.584 -5.952 -5.747 a 5.929 5.929 0 0 1 10.227 -4.265 0.951 0.951 0 0 0 0.695 0.312 h 3.444 a 0.939 0.939 0 0 0 0.939 -0.939 v -4.804 c 0.000 -5.057 -3.886 -9.408 -8.937 -9.646 a 9.385 9.385 0 0 0 -9.844 9.379 v 19.267 c 0.000 5.057 3.886 9.408 8.937 9.646 a 9.392 9.392 0 0 0 9.844 -9.379 v -9.944 a 0.939 0.939 0 0 0 -0.939 -0.939 l -7.500 -0.002 a 0.941 0.941 0 0 0 -0.939 0.941 M 402.535 212.852 c -5.050 0.238 -8.935 4.587 -8.935 9.644 v 27.344 c 0.000 0.519 0.420 0.939 0.939 0.939 h 1.877 a 0.939 0.939 0 0 0 0.939 -0.939 v -18.124 a 5.635 5.635 0 0 1 11.269 0.000 v 18.124 c 0.000 0.519 0.422 0.939 0.941 0.939 h 1.877 a 0.939 0.939 0 0 0 0.939 -0.939 v -27.609 a 9.385 9.385 0 0 0 -9.844 -9.379"
                 />
                 {/* Authentic 'FX' Typography (Deep Green #00503A) */}
@@ -568,9 +563,9 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
           {/* 7. CORRUGATED STRAIN RELIEF & CONNECTOR (Accordion Bellows with Per-Rib 45° Extrusion) */}
           {(() => {
             const d = 3.2;
-            const sideBevelFill = isTing ? '#c8490b' : '#586166';
-            const bottomBevelFill = isTing ? '#963506' : '#464d52';
-            const neckBevelFill = isTing ? '#963506' : '#4a5257';
+            const sideBevelFill = isTing ? '#ba3807' : '#586166';
+            const bottomBevelFill = isTing ? '#8c2603' : '#464d52';
+            const neckBevelFill = isTing ? '#8c2603' : '#4a5257';
 
             const wideRibs = [
               { x1: 384.364, x2: 414.743, y1: 334.555, y2: 342.092, neckLeft: 393.844, neckRight: 405.237 },
@@ -635,14 +630,14 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
           })()}
 
           <path
-            fill={isTing ? '#FF681D' : '#818E95'}
+            fill={isTing ? '#F15A22' : '#818E95'}
             stroke="#000"
             strokeWidth="1.2"
             strokeMiterlimit="10"
             d="M414.743 380.066h-30.379v7.85h30.379zM414.743 364.866h-30.379v7.606h30.379zM414.743 334.555h-30.379v7.537h30.379zM414.743 349.686h-30.379v7.584h30.379z"
           />
           <path
-            fill={isTing ? '#FF681D' : '#818E95'}
+            fill={isTing ? '#F15A22' : '#818E95'}
             stroke="#000"
             strokeWidth="1.2"
             strokeMiterlimit="10"

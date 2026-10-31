@@ -18,6 +18,7 @@ dist-ssr
 .vscode/
 .idea/
 .worktrees/
+.bin/
 .tmp-test-build/
 playwright-report/
 test-results/

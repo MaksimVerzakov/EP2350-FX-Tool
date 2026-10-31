@@ -6,9 +6,10 @@ import { ThemeMode } from '../types/config';
 interface AudioPlayerCompactProps {
   onShakeTrigger?: () => void;
   theme?: ThemeMode;
+  className?: string;
 }
 
-export const AudioPlayerCompact: React.FC<AudioPlayerCompactProps> = ({ theme = 'fx' }) => {
+export const AudioPlayerCompact: React.FC<AudioPlayerCompactProps> = ({ theme = 'fx', className = '' }) => {
   const isTing = theme === 'ting';
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -30,9 +31,9 @@ export const AudioPlayerCompact: React.FC<AudioPlayerCompactProps> = ({ theme = 
 
   return (
     <div
-      className={`w-[275px] te-hardware-chassis ${
+      className={`w-[275px] h-[86px] te-hardware-chassis ${
         isTing ? 'bg-[#dbd0b9]' : 'bg-[#dbdddb]'
-      } p-2.5 flex flex-col gap-1.5 select-none relative`}
+      } p-2.5 flex flex-col justify-between select-none relative z-10 ${className}`}
     >
       {/* Top status & screw header */}
       <div className="flex items-center justify-between px-0.5">
@@ -78,9 +79,7 @@ export const AudioPlayerCompact: React.FC<AudioPlayerCompactProps> = ({ theme = 
             isTing ? 'border-[#00281c]' : 'border-[#000000]'
           } ${
             isPlaying
-              ? `${
-                  isTing ? 'bg-[#ff681d]' : 'bg-[#f15a22]'
-                } text-white translate-x-[2px] translate-y-[2px] shadow-none`
+              ? 'bg-[#f15a22] text-white translate-x-[2px] translate-y-[2px] shadow-none'
               : `${
                   isTing
                     ? 'bg-[#00503a] hover:bg-[#00664a] shadow-[2px_2px_0px_#00281c]'

@@ -20,10 +20,10 @@ describe('TopBanner Component', () => {
   it('renders brand identity, pack name input, and version string', () => {
     render(<TopBanner {...defaultProps} />);
 
-    expect(screen.getByText('FX TOOL')).toBeInTheDocument();
-    expect(screen.getByText('EP–2350 COMPANION')).toBeInTheDocument();
+    expect(screen.getByText('EP')).toBeInTheDocument();
+    expect(screen.getByText('TOOL')).toBeInTheDocument();
     expect(screen.getByDisplayValue('BROKEN RADIO PACK')).toBeInTheDocument();
-    expect(screen.getByText(/v 0\.0\.0-test/)).toBeInTheDocument();
+    expect(screen.getByText(/V 0\.0\.0-test/i)).toBeInTheDocument();
   });
 
   it('allows switching between FX and TING themes', async () => {

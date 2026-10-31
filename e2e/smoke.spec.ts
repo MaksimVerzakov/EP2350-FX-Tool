@@ -6,7 +6,8 @@ test.describe('EP-2350 FX Tool Smoke Tests', () => {
 
     // Check title and top banner branding
     await expect(page).toHaveTitle(/EP–2350 fx tool/i);
-    await expect(page.getByText('EP–2350 COMPANION')).toBeVisible();
+    await expect(page.getByText('EP', { exact: true })).toBeVisible();
+    await expect(page.getByText('TOOL', { exact: true })).toBeVisible();
 
     // Default pack name should be BROKEN RADIO PACK
     const packInput = page.getByPlaceholder('PACK NAME');
@@ -46,10 +47,10 @@ test.describe('EP-2350 FX Tool Smoke Tests', () => {
     const fxButton = page.getByRole('button', { name: 'FX', exact: true });
 
     await tingButton.click();
-    await expect(page.getByText('TING FX TOOL')).toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'ting');
 
     await fxButton.click();
-    await expect(page.getByText('FX TOOL')).toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'fx');
   });
 
   test('exports valid config.json that matches official structure', async ({ page }) => {
