@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { AnyEffect, EffectType, PresetConfig, LfoShape } from '../types/config';
-import { EFFECTS_REGISTRY } from '../constants/effectsRegistry';
+import { EFFECTS_REGISTRY, getModDepthConfig } from '../constants/effectsRegistry';
 import { Knob } from './Knob';
 import {
   Plus,
@@ -468,12 +468,13 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
       const fx = preset.list[rowIdx];
       const m = fx ? EFFECTS_REGISTRY[fx.effect] : null;
       const defaultParam = m?.params[0]?.name || 'cutoff';
+      const depthCfg = getModDepthConfig(fx?.effect, defaultParam);
       onUpdatePreset({
         ...preset,
         handle: {
           row: rowIdx,
           param: defaultParam,
-          depth: typeof preset.handle?.depth === 'number' && preset.handle.target !== 'lfo' ? preset.handle.depth : 80
+          depth: depthCfg.defaultVal
         }
       });
     }
@@ -481,9 +482,11 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
 
   const handleSetHandleParam = (paramName: string) => {
     if (preset.handle && preset.handle.target !== 'lfo') {
+      const fx = typeof preset.handle.row === 'number' ? preset.list[preset.handle.row] : undefined;
+      const depthCfg = getModDepthConfig(fx?.effect, paramName);
       onUpdatePreset({
         ...preset,
-        handle: { ...preset.handle, param: paramName }
+        handle: { ...preset.handle, param: paramName, depth: depthCfg.defaultVal }
       });
     }
   };
@@ -494,21 +497,24 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
     const fx = preset.list[rowIdx];
     const m = fx ? EFFECTS_REGISTRY[fx.effect] : null;
     const defaultParam = m?.params[0]?.name || 'mix';
+    const depthCfg = getModDepthConfig(fx?.effect, defaultParam);
     onUpdatePreset({
       ...preset,
       shake: {
         row: rowIdx,
         param: defaultParam,
-        depth: typeof preset.shake?.depth === 'number' ? preset.shake.depth : 50
+        depth: depthCfg.defaultVal
       }
     });
   };
 
   const handleSetShakeParam = (paramName: string) => {
     if (preset.shake) {
+      const fx = typeof preset.shake.row === 'number' ? preset.list[preset.shake.row] : undefined;
+      const depthCfg = getModDepthConfig(fx?.effect, paramName);
       onUpdatePreset({
         ...preset,
-        shake: { ...preset.shake, param: paramName }
+        shake: { ...preset.shake, param: paramName, depth: depthCfg.defaultVal }
       });
     }
   };
@@ -519,12 +525,13 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
     const fx = preset.list[rowIdx];
     const m = fx ? EFFECTS_REGISTRY[fx.effect] : null;
     const defaultParam = m?.params[0]?.name || 'cutoff';
+    const depthCfg = getModDepthConfig(fx?.effect, defaultParam);
     onUpdatePreset({
       ...preset,
       lfo: {
         row: rowIdx,
         param: defaultParam,
-        depth: typeof preset.lfo?.depth === 'number' ? preset.lfo.depth : 20,
+        depth: depthCfg.defaultVal,
         shape: preset.lfo?.shape ?? 'sine',
         speed: preset.lfo?.speed ?? 2.0,
         phase: preset.lfo?.phase ?? 0
@@ -534,9 +541,11 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
 
   const handleSetLfoParam = (paramName: string) => {
     if (preset.lfo) {
+      const fx = typeof preset.lfo.row === 'number' ? preset.list[preset.lfo.row] : undefined;
+      const depthCfg = getModDepthConfig(fx?.effect, paramName);
       onUpdatePreset({
         ...preset,
-        lfo: { ...preset.lfo, param: paramName }
+        lfo: { ...preset.lfo, param: paramName, depth: depthCfg.defaultVal }
       });
     }
   };
@@ -1070,6 +1079,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
         const handleEffect = typeof effectiveHandleRow === 'number' ? preset.list[effectiveHandleRow] : undefined;
         const handleEffectMeta = handleEffect ? EFFECTS_REGISTRY[handleEffect.effect] : undefined;
         const handleParamVal = preset.handle?.target === 'lfo' || handleTargetVal === 'lfo' ? 'speed' : (preset.handle?.param || handleEffectMeta?.params[0]?.name || '');
+        const handleDepthCfg = getModDepthConfig(handleEffect?.effect, handleParamVal);
 
         const shakeTargetVal = preset.shake
           ? String(preset.shake.row ?? 0)
@@ -1078,6 +1088,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
         const shakeEffect = typeof effectiveShakeRow === 'number' ? preset.list[effectiveShakeRow] : undefined;
         const shakeEffectMeta = shakeEffect ? EFFECTS_REGISTRY[shakeEffect.effect] : undefined;
         const shakeParamVal = preset.shake?.param || shakeEffectMeta?.params[0]?.name || '';
+        const shakeDepthCfg = getModDepthConfig(shakeEffect?.effect, shakeParamVal);
 
         const lfoTargetVal = preset.lfo
           ? String(preset.lfo.row ?? 0)
@@ -1086,6 +1097,7 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
         const lfoEffect = typeof effectiveLfoRow === 'number' ? preset.list[effectiveLfoRow] : undefined;
         const lfoEffectMeta = lfoEffect ? EFFECTS_REGISTRY[lfoEffect.effect] : undefined;
         const lfoParamVal = preset.lfo?.param || lfoEffectMeta?.params[0]?.name || '';
+        const lfoDepthCfg = getModDepthConfig(lfoEffect?.effect, lfoParamVal);
 
         const lfoShapeIdx = LFO_SHAPES.indexOf(preset.lfo?.shape ?? 'sine');
         const safeLfoShapeIdx = lfoShapeIdx !== -1 ? lfoShapeIdx : 0;
@@ -1203,16 +1215,18 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                         label="DEPTH"
                         value={
                           typeof preset.handle?.depth === 'number'
-                            ? (Math.abs(preset.handle.depth) <= 1.0 ? Math.round(preset.handle.depth * 100) : Math.round(preset.handle.depth))
-                            : 80
+                            ? (handleDepthCfg.isNormalizedPercent && Math.abs(preset.handle.depth) <= 1.0
+                                ? Math.round(preset.handle.depth * 100)
+                                : preset.handle.depth)
+                            : handleDepthCfg.defaultVal
                         }
-                        min={-100}
-                        max={100}
-                        step={1}
-                        unit="%"
-                        displayScale={(v) => `${Math.round(v) > 0 ? '+' : ''}${Math.round(v)}%`}
+                        min={handleDepthCfg.min}
+                        max={handleDepthCfg.max}
+                        step={handleDepthCfg.step}
+                        unit={handleDepthCfg.unit}
+                        displayScale={handleDepthCfg.displayScale}
                         onChange={(v) => onUpdatePreset({ ...preset, handle: { ...preset.handle!, depth: v } })}
-                        onReset={() => onUpdatePreset({ ...preset, handle: { ...preset.handle!, depth: 80 } })}
+                        onReset={() => onUpdatePreset({ ...preset, handle: { ...preset.handle!, depth: handleDepthCfg.defaultVal } })}
                         accentColor="#f15a22"
                         size={34}
                       />
@@ -1317,16 +1331,18 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                       label="DEPTH"
                       value={
                         typeof preset.shake?.depth === 'number'
-                          ? (Math.abs(preset.shake.depth) <= 1.0 ? Math.round(preset.shake.depth * 100) : Math.round(preset.shake.depth))
-                          : 50
+                          ? (shakeDepthCfg.isNormalizedPercent && Math.abs(preset.shake.depth) <= 1.0
+                              ? Math.round(preset.shake.depth * 100)
+                              : preset.shake.depth)
+                          : shakeDepthCfg.defaultVal
                       }
-                      min={-100}
-                      max={100}
-                      step={1}
-                      unit="%"
-                      displayScale={(v) => `${Math.round(v) > 0 ? '+' : ''}${Math.round(v)}%`}
+                      min={shakeDepthCfg.min}
+                      max={shakeDepthCfg.max}
+                      step={shakeDepthCfg.step}
+                      unit={shakeDepthCfg.unit}
+                      displayScale={shakeDepthCfg.displayScale}
                       onChange={(v) => onUpdatePreset({ ...preset, shake: { ...preset.shake!, depth: v } })}
-                      onReset={() => onUpdatePreset({ ...preset, shake: { ...preset.shake!, depth: 50 } })}
+                      onReset={() => onUpdatePreset({ ...preset, shake: { ...preset.shake!, depth: shakeDepthCfg.defaultVal } })}
                       accentColor="#f15a22"
                       size={34}
                     />
@@ -1430,16 +1446,18 @@ export const PresetLedger: React.FC<PresetLedgerProps> = ({
                       label="DEPTH"
                       value={
                         typeof preset.lfo?.depth === 'number'
-                          ? (Math.abs(preset.lfo.depth) <= 1.0 ? Math.round(preset.lfo.depth * 100) : Math.round(preset.lfo.depth))
-                          : 20
+                          ? (lfoDepthCfg.isNormalizedPercent && Math.abs(preset.lfo.depth) <= 1.0
+                              ? Math.round(preset.lfo.depth * 100)
+                              : preset.lfo.depth)
+                          : lfoDepthCfg.defaultVal
                       }
-                      min={-100}
-                      max={100}
-                      step={1}
-                      unit="%"
-                      displayScale={(v) => `${Math.round(v) > 0 ? '+' : ''}${Math.round(v)}%`}
+                      min={lfoDepthCfg.min}
+                      max={lfoDepthCfg.max}
+                      step={lfoDepthCfg.step}
+                      unit={lfoDepthCfg.unit}
+                      displayScale={lfoDepthCfg.displayScale}
                       onChange={(v) => onUpdatePreset({ ...preset, lfo: { ...preset.lfo!, depth: v } })}
-                      onReset={() => onUpdatePreset({ ...preset, lfo: { ...preset.lfo!, depth: 20 } })}
+                      onReset={() => onUpdatePreset({ ...preset, lfo: { ...preset.lfo!, depth: lfoDepthCfg.defaultVal } })}
                       accentColor="#f15a22"
                       size={30}
                     />

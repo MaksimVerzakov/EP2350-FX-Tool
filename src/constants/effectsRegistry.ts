@@ -435,3 +435,94 @@ export const isPercentParam = (effectType: string, paramName: string): boolean =
   const param = meta.params.find((p) => p.name === paramName);
   return param?.unit === '%';
 };
+
+export interface ModDepthConfig {
+  min: number;
+  max: number;
+  step: number;
+  unit: string;
+  defaultVal: number;
+  /** True when JSON stores -1.0..1.0 and UI displays -100%..100% */
+  isNormalizedPercent: boolean;
+  displayScale: (val: number) => string;
+}
+
+/**
+ * Returns the appropriate modulation depth range, unit, and scaling rule
+ * for a given effect parameter according to EP-2350 hardware firmware rules.
+ */
+export const getModDepthConfig = (effectType?: string, paramName?: string): ModDepthConfig => {
+  if (effectType === 'RING' || effectType === 'SSB') {
+    if (paramName === 'frequency') {
+      return {
+        min: -5000,
+        max: 5000,
+        step: 10,
+        unit: 'Hz',
+        defaultVal: 500,
+        isNormalizedPercent: false,
+        displayScale: (v) => `${Math.round(v) > 0 ? '+' : ''}${Math.round(v)}Hz`
+      };
+    }
+  }
+
+  if (effectType === 'DIST' && paramName === 'amount') {
+    return {
+      min: -40,
+      max: 40,
+      step: 0.5,
+      unit: 'x',
+      defaultVal: 10,
+      isNormalizedPercent: false,
+      displayScale: (v) => `${v > 0 ? '+' : ''}${v.toFixed(1)}x`
+    };
+  }
+
+  if (effectType === 'SAMPLE') {
+    if (paramName === 'pitch') {
+      return {
+        min: -24,
+        max: 24,
+        step: 1,
+        unit: 'st',
+        defaultVal: 12,
+        isNormalizedPercent: false,
+        displayScale: (v) => `${Math.round(v) > 0 ? '+' : ''}${Math.round(v)}st`
+      };
+    }
+    if (paramName === 'speed') {
+      return {
+        min: -4,
+        max: 4,
+        step: 0.1,
+        unit: 'x',
+        defaultVal: 1.0,
+        isNormalizedPercent: false,
+        displayScale: (v) => `${v > 0 ? '+' : ''}${v.toFixed(1)}x`
+      };
+    }
+  }
+
+  if (effectType === 'HARMONY' && paramName === 'pitch') {
+    return {
+      min: -1.5,
+      max: 1.5,
+      step: 0.05,
+      unit: 'x',
+      defaultVal: 0.5,
+      isNormalizedPercent: false,
+      displayScale: (v) => `${v > 0 ? '+' : ''}${v.toFixed(2)}x`
+    };
+  }
+
+  // Default: normalized [0.0, 1.0] parameter where depth is [-1.0, 1.0] in JSON and [-100%, +100%] in UI
+  return {
+    min: -100,
+    max: 100,
+    step: 1,
+    unit: '%',
+    defaultVal: 50,
+    isNormalizedPercent: true,
+    displayScale: (v) => `${Math.round(v) > 0 ? '+' : ''}${Math.round(v)}%`
+  };
+};

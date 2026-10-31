@@ -1,5 +1,5 @@
 import { AnyEffect, EffectType, PackConfig, PresetConfig, SampleSlotConfig } from '../types/config';
-import { isPercentParam } from '../constants/effectsRegistry';
+import { isPercentParam, getModDepthConfig } from '../constants/effectsRegistry';
 
 export function parseConfigJson(rawJson: string): { pack?: PackConfig; error?: string } {
   try {
@@ -71,40 +71,52 @@ export function parseConfigJson(rawJson: string): { pack?: PackConfig; error?: s
 
         if (p.handle && typeof p.handle === 'object') {
           const isLfo = p.handle.target === 'lfo';
-          let depth = typeof p.handle.depth === 'number' ? p.handle.depth : (isLfo ? 10.0 : 80);
-          if (!isLfo && Math.abs(depth) <= 1.0) {
+          const row = typeof p.handle.row === 'number' ? p.handle.row : undefined;
+          const param = typeof p.handle.param === 'string' ? p.handle.param : 'cutoff';
+          const targetFx = typeof row === 'number' ? list[row] : undefined;
+          const depthCfg = getModDepthConfig(targetFx?.effect, param);
+          let depth = typeof p.handle.depth === 'number' ? p.handle.depth : (isLfo ? 10.0 : depthCfg.defaultVal);
+          if (!isLfo && depthCfg.isNormalizedPercent && Math.abs(depth) <= 1.0) {
             depth = Math.round(depth * 100);
           }
           preset.handle = {
             target: p.handle.target,
-            row: typeof p.handle.row === 'number' ? p.handle.row : undefined,
-            param: typeof p.handle.param === 'string' ? p.handle.param : 'cutoff',
+            row,
+            param,
             depth
           };
         }
 
         if (p.shake && typeof p.shake === 'object') {
-          let depth = typeof p.shake.depth === 'number' ? p.shake.depth : 50;
-          if (Math.abs(depth) <= 1.0) {
+          const row = typeof p.shake.row === 'number' ? p.shake.row : 0;
+          const param = typeof p.shake.param === 'string' ? p.shake.param : 'mix';
+          const targetFx = list[row];
+          const depthCfg = getModDepthConfig(targetFx?.effect, param);
+          let depth = typeof p.shake.depth === 'number' ? p.shake.depth : depthCfg.defaultVal;
+          if (depthCfg.isNormalizedPercent && Math.abs(depth) <= 1.0) {
             depth = Math.round(depth * 100);
           }
           preset.shake = {
-            row: typeof p.shake.row === 'number' ? p.shake.row : 0,
-            param: typeof p.shake.param === 'string' ? p.shake.param : 'mix',
+            row,
+            param,
             depth
           };
         }
 
         if (p.lfo && typeof p.lfo === 'object') {
           const isLfo = p.lfo.target === 'lfo';
-          let depth = typeof p.lfo.depth === 'number' ? p.lfo.depth : (isLfo ? 1.0 : 20);
-          if (!isLfo && Math.abs(depth) <= 1.0) {
+          const row = typeof p.lfo.row === 'number' ? p.lfo.row : 0;
+          const param = typeof p.lfo.param === 'string' ? p.lfo.param : 'cutoff';
+          const targetFx = list[row];
+          const depthCfg = getModDepthConfig(targetFx?.effect, param);
+          let depth = typeof p.lfo.depth === 'number' ? p.lfo.depth : (isLfo ? 1.0 : depthCfg.defaultVal);
+          if (!isLfo && depthCfg.isNormalizedPercent && Math.abs(depth) <= 1.0) {
             depth = Math.round(depth * 100);
           }
           preset.lfo = {
             target: p.lfo.target,
-            row: typeof p.lfo.row === 'number' ? p.lfo.row : 0,
-            param: typeof p.lfo.param === 'string' ? p.lfo.param : 'cutoff',
+            row,
+            param,
             depth,
             shape: ['sine', 'square', 'sawtooth', 'random'].includes(p.lfo.shape) ? p.lfo.shape : 'sine',
             speed: typeof p.lfo.speed === 'number' ? p.lfo.speed : 2.0,

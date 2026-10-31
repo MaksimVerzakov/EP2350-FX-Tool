@@ -476,9 +476,34 @@ export class DspAudioEngine {
       }
 
       case 'SSB': {
-        // Single Sideband frequency shift approximation via high-frequency ring mod
-        const gain = ctx.createGain();
-        return { input: gain, output: gain, nodeRefs: { gain, rowIdx } };
+        // Single Sideband frequency shift approximation via frequency-offset modulator + filter
+        const input = ctx.createGain();
+        const output = ctx.createGain();
+
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        const freq = typeof fx.frequency === 'number' ? fx.frequency : 0.0;
+        osc.frequency.value = Math.max(1, Math.abs(freq));
+
+        const modGain = ctx.createGain();
+        modGain.gain.value = 0;
+        osc.connect(modGain.gain);
+        osc.start();
+
+        const dryGain = ctx.createGain();
+        const wetGain = ctx.createGain();
+        const isShifted = Math.abs(freq) > 1;
+        dryGain.gain.value = isShifted ? 0.25 : 1.0;
+        wetGain.gain.value = isShifted ? 0.75 : 0.0;
+
+        input.connect(dryGain);
+        dryGain.connect(output);
+
+        input.connect(modGain);
+        modGain.connect(wetGain);
+        wetGain.connect(output);
+
+        return { input, output, nodeRefs: { osc, dryGain, wetGain, rowIdx } };
       }
 
       case 'BALANCE': {
@@ -582,17 +607,58 @@ export class DspAudioEngine {
           const echo = Math.max(0.0, Math.min(0.95, baseEcho + delta));
           nodeRefs.feedbackGain.gain.setTargetAtTime(echo, ctx.currentTime, 0.02);
         }
-      } else if (effectType === 'RING') {
+      } else if (effectType === 'RING' || effectType === 'SSB') {
         if (nodeRefs.osc) {
-          const baseFreq = typeof params.frequency === 'number' ? params.frequency : 440.0;
+          const baseFreq = typeof params.frequency === 'number' ? params.frequency : (effectType === 'RING' ? 440.0 : 0.0);
           let moddedFreq = baseFreq;
+          if (handle && handle.target !== 'lfo' && handle.row === rowIdx && handle.param === 'frequency') {
+            moddedFreq += this.modState.handlePos * (typeof handle.depth === 'number' ? handle.depth : 500.0);
+          }
+          if (shake && shake.row === rowIdx && shake.param === 'frequency') {
+            moddedFreq += this.modState.shakeAmount * (typeof shake.depth === 'number' ? shake.depth : 200.0);
+          }
           if (lfo && lfo.target !== 'lfo' && lfo.row === rowIdx && lfo.param === 'frequency') {
             const rawDepth = typeof lfo.depth === 'number' ? lfo.depth : 50.0;
             const phase = (ctx.currentTime * effectiveLfoSpeed) % 1.0;
-            const lfoWave = Math.sin(phase * 2 * Math.PI);
-            moddedFreq = Math.max(1, baseFreq + lfoWave * rawDepth);
+            let lfoWave = Math.sin(phase * 2 * Math.PI);
+            if (lfo.shape === 'square') lfoWave = phase < 0.5 ? 1 : -1;
+            else if (lfo.shape === 'sawtooth') lfoWave = 2 * (phase - Math.floor(phase + 0.5));
+            else if (lfo.shape === 'random') lfoWave = Math.sin(Math.floor(ctx.currentTime * effectiveLfoSpeed) * 999) % 1;
+            moddedFreq += lfoWave * rawDepth;
           }
-          nodeRefs.osc.frequency.setTargetAtTime(moddedFreq, ctx.currentTime, 0.02);
+          nodeRefs.osc.frequency.setTargetAtTime(Math.max(1, Math.abs(moddedFreq)), ctx.currentTime, 0.02);
+          if (effectType === 'SSB' && nodeRefs.dryGain && nodeRefs.wetGain) {
+            const active = Math.abs(moddedFreq) > 2;
+            nodeRefs.dryGain.gain.setTargetAtTime(active ? 0.25 : 1.0, ctx.currentTime, 0.02);
+            nodeRefs.wetGain.gain.setTargetAtTime(active ? 0.75 : 0.0, ctx.currentTime, 0.02);
+          }
+        }
+      } else if (effectType === 'REVERB') {
+        if (nodeRefs.wetGain) {
+          const baseWet = toRatio(params['wet-level'], 0.5);
+          let delta = 0;
+          if (handle && handle.target !== 'lfo' && handle.row === rowIdx && handle.param === 'wet-level') delta += handleDelta;
+          if (shake && shake.row === rowIdx && shake.param === 'wet-level') delta += shakeDelta;
+          if (lfo && lfo.target !== 'lfo' && lfo.row === rowIdx && lfo.param === 'wet-level') delta += lfoDelta;
+          nodeRefs.wetGain.gain.setTargetAtTime(Math.max(0.0, Math.min(1.0, baseWet + delta)), ctx.currentTime, 0.02);
+        }
+        if (nodeRefs.dryGain) {
+          const baseDry = toRatio(params['dry-level'], 1.0);
+          let delta = 0;
+          if (handle && handle.target !== 'lfo' && handle.row === rowIdx && handle.param === 'dry-level') delta += handleDelta;
+          if (shake && shake.row === rowIdx && shake.param === 'dry-level') delta += shakeDelta;
+          if (lfo && lfo.target !== 'lfo' && lfo.row === rowIdx && lfo.param === 'dry-level') delta += lfoDelta;
+          nodeRefs.dryGain.gain.setTargetAtTime(Math.max(0.0, Math.min(1.0, baseDry + delta)), ctx.currentTime, 0.02);
+        }
+      } else if (effectType === 'BALANCE') {
+        if (nodeRefs.panner && 'pan' in nodeRefs.panner) {
+          const baseBal = typeof params.balance === 'number' ? params.balance : 0.5;
+          let delta = 0;
+          if (handle && handle.target !== 'lfo' && handle.row === rowIdx && handle.param === 'balance') delta += handleDelta;
+          if (shake && shake.row === rowIdx && shake.param === 'balance') delta += shakeDelta;
+          if (lfo && lfo.target !== 'lfo' && lfo.row === rowIdx && lfo.param === 'balance') delta += lfoDelta;
+          const bal = Math.max(0.0, Math.min(1.0, baseBal + delta));
+          nodeRefs.panner.pan.setTargetAtTime((bal - 0.5) * 2, ctx.currentTime, 0.02);
         }
       }
     });

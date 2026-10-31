@@ -1,5 +1,5 @@
 import { PackConfig } from '../types/config';
-import { isPercentParam } from '../constants/effectsRegistry';
+import { isPercentParam, getModDepthConfig } from '../constants/effectsRegistry';
 
 export interface ValidationIssue {
   type: 'error' | 'warning';
@@ -157,8 +157,10 @@ export function serializeToConfigJson(pack: PackConfig): string {
           depth: Math.round(p.handle.depth * 1000) / 1000
         };
       } else if (typeof p.handle.row === 'number') {
+        const targetFx = p.list[p.handle.row];
+        const depthCfg = getModDepthConfig(targetFx?.effect, p.handle.param);
         const rawDepth = p.handle.depth;
-        const depth = Math.abs(rawDepth) > 1 ? rawDepth / 100 : rawDepth;
+        const depth = depthCfg.isNormalizedPercent && Math.abs(rawDepth) > 1 ? rawDepth / 100 : rawDepth;
         presetObj.handle = {
           row: p.handle.row,
           param: p.handle.param,
@@ -168,8 +170,10 @@ export function serializeToConfigJson(pack: PackConfig): string {
     }
 
     if (p.shake && typeof p.shake.row === 'number') {
+      const targetFx = p.list[p.shake.row];
+      const depthCfg = getModDepthConfig(targetFx?.effect, p.shake.param);
       const rawDepth = p.shake.depth;
-      const depth = Math.abs(rawDepth) > 1 ? rawDepth / 100 : rawDepth;
+      const depth = depthCfg.isNormalizedPercent && Math.abs(rawDepth) > 1 ? rawDepth / 100 : rawDepth;
       presetObj.shake = {
         row: p.shake.row,
         param: p.shake.param,
@@ -178,8 +182,13 @@ export function serializeToConfigJson(pack: PackConfig): string {
     }
 
     if (p.lfo) {
+      const targetFx = typeof p.lfo.row === 'number' ? p.list[p.lfo.row] : undefined;
+      const depthCfg = getModDepthConfig(targetFx?.effect, p.lfo.param);
       const rawDepth = p.lfo.depth;
-      const depth = (p.lfo.target !== 'lfo' && Math.abs(rawDepth) > 1) ? rawDepth / 100 : rawDepth;
+      const depth =
+        p.lfo.target !== 'lfo' && depthCfg.isNormalizedPercent && Math.abs(rawDepth) > 1
+          ? rawDepth / 100
+          : rawDepth;
       const lfoEntry: any = {
         param: p.lfo.param,
         shape: p.lfo.shape,
