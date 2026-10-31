@@ -23,12 +23,15 @@
   font-style: normal;
 }
 
-:root {
-  /* Teenage Engineering Authentic Palette from EP Sample Tool */
+:root,
+html[data-theme='fx'] {
+  /* Teenage Engineering Authentic Palette from EP Sample Tool (FX Theme) */
   --base-txt: #e5e6e6;
   --primary: #abb5ba;
   --dark: #d2d3d4;
   --accent: #f15a22;
+  --accent-hover: #ff6d38;
+  --accent-active: #d14612;
   --field-blue: #192a3c;
   --field-white: #f5f5f5;
   --field-black: #231f20;
@@ -37,6 +40,37 @@
   --ep-chassis-dark: #41464a;
   --ep-led-red: #e52817;
   --ep-led-off: #202222;
+  --ink: #141617;
+  --ink-shadow: #000000;
+  --surface-card: #ffffff;
+  --surface-sub: #eceeed;
+  --surface-muted: #f8f9f8;
+  --text-muted: #73787a;
+  --unit: 23.52px;
+}
+
+html[data-theme='ting'] {
+  /* Original EP-2350 Ting Palette from teenage.engineering/downloads/ep-2350/sound-packs */
+  --base-txt: #e8e9e4;
+  --primary: #dbd0b9;
+  --dark: #c9bea6;
+  --accent: #ff681d;
+  --accent-hover: #ff7c3b;
+  --accent-active: #d8510e;
+  --field-blue: #00503a;
+  --field-white: #f6f4ee;
+  --field-black: #231f20;
+  --ep-display-teal: #00503a;
+  --ep-faceplate: #dbd0b9;
+  --ep-chassis-dark: #003828;
+  --ep-led-red: #ff3b30;
+  --ep-led-off: #202222;
+  --ink: #00503a;
+  --ink-shadow: #003324;
+  --surface-card: #f7f5ef;
+  --surface-sub: #e4dac5;
+  --surface-muted: #efeadd;
+  --text-muted: #4b6b5d;
   --unit: 23.52px;
 }
 
@@ -67,15 +101,25 @@ body {
 }
 
 @media (min-width: 700px) {
-  html {
+  html:not([data-theme='ting']) {
     background-image: url('../assets/bg_x2.png');
   }
 }
 
 @media (min-width: 1400px) and (min-height: 1089px) {
-  html {
+  html:not([data-theme='ting']) {
     background-size: 1400px;
   }
+}
+
+html[data-theme='ting'] {
+  background-color: #dbd0b9;
+  background-image:
+    linear-gradient(to right, rgba(0, 80, 58, 0.11) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 80, 58, 0.11) 1px, transparent 1px);
+  background-size: 23.5px 23.5px;
+  background-position: center center;
+  background-attachment: fixed;
 }
 
 .font-te-bold {
@@ -143,18 +187,18 @@ body {
 .te-btn-orange {
   background-color: var(--accent);
   color: #ffffff;
-  border: 1px solid #000000;
-  box-shadow: 2px 2px 0px #000000;
+  border: 1px solid var(--ink-shadow);
+  box-shadow: 2px 2px 0px var(--ink-shadow);
 }
 
 .te-btn-orange:hover {
-  background-color: #ff6d38;
+  background-color: var(--accent-hover);
 }
 
 .te-btn-orange:active {
   transform: translate(2px, 2px);
-  background-color: #d14612;
-  box-shadow: 0px 0px 0px #000000;
+  background-color: var(--accent-active);
+  box-shadow: 0px 0px 0px var(--ink-shadow);
 }
 
 .te-btn-secondary {
@@ -171,6 +215,36 @@ body {
 .te-btn-secondary:active {
   transform: translate(2px, 2px);
   box-shadow: 0px 0px 0px #000000;
+}
+
+html[data-theme='ting'] ::-webkit-scrollbar-thumb {
+  background: #b2aca1;
+}
+
+html[data-theme='ting'] ::-webkit-scrollbar-thumb:hover {
+  background: #ff681d;
+}
+
+html[data-theme='ting'] .te-btn:not(.te-btn-orange):not(.te-btn-secondary) {
+  background-color: #00503a;
+  color: #ffffff;
+  border: 1px solid #003324;
+  box-shadow: 2px 2px 0px #003324;
+}
+
+html[data-theme='ting'] .te-btn:not(.te-btn-orange):not(.te-btn-secondary):hover {
+  background-color: #00664a;
+}
+
+html[data-theme='ting'] .te-btn-secondary {
+  background-color: #e8e9e4;
+  color: #00503a;
+  border: 1px solid #00503a;
+  box-shadow: 2px 2px 0px #003828;
+}
+
+html[data-theme='ting'] .te-btn-secondary:hover {
+  background-color: #f4f5f1;
 }
 
 /* Authentic Paper Notebook Stack / Ledger Sheet (Right Column)
@@ -199,6 +273,25 @@ body {
     12px 12px 0px 0px #141617;
 }
 
+html[data-theme='ting'] .te-notebook-card,
+html[data-theme='ting'] .te-ledger-card {
+  background-color: #f7f5ef;
+  border: 1px solid #00503a;
+  box-shadow:
+    1px 1px 0px 0px #00503a,
+    2px 2px 0px 0px #e8e9e4,
+    3px 3px 0px 0px #00503a,
+    4px 4px 0px 0px #dbd0b9,
+    5px 5px 0px 0px #00503a,
+    6px 6px 0px 0px #dbd0b9,
+    7px 7px 0px 0px #00503a,
+    8px 8px 0px 0px #b2aca1,
+    9px 9px 0px 0px #00503a,
+    10px 10px 0px 0px #b2aca1,
+    11px 11px 0px 0px #003828,
+    12px 12px 0px 0px #003828;
+}
+
 /* Teenage Engineering Hardware Modular Chassis (45° Axonometric Depth) */
 .te-hardware-chassis {
   border: 1px solid #141617;
@@ -211,6 +304,18 @@ body {
     4px 4px 0px 0px #424143,
     5px 5px 0px 0px #141617,
     6px 6px 0px 0px #141617;
+}
+
+html[data-theme='ting'] .te-hardware-chassis {
+  border: 1px solid #00503a;
+  background-color: #e8e9e4;
+  box-shadow:
+    1px 1px 0px 0px #00503a,
+    2px 2px 0px 0px #dbd0b9,
+    3px 3px 0px 0px #00503a,
+    4px 4px 0px 0px #003828,
+    5px 5px 0px 0px #00291d,
+    6px 6px 0px 0px #00291d;
 }
 
 /* Mechanical Keycap Socket & Extruded 45° Tactile Button */

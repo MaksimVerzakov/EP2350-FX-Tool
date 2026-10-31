@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { INITIAL_PACK, OfficialPackPreset } from './constants/defaultPresets';
-import { PackConfig, PresetConfig } from './types/config';
+import { PackConfig, PresetConfig, ThemeMode } from './types/config';
 import { audioEngine } from './dsp/AudioEngine';
 import { serializeToConfigJson } from './utils/serializer';
 import { parseConfigJson } from './utils/parser';
@@ -21,11 +21,22 @@ export const App: React.FC = () => {
     return INITIAL_PACK;
   });
 
+  const [theme, setTheme] = useState<ThemeMode>(() => {
+    const savedTheme = localStorage.getItem('ep2350_theme');
+    return savedTheme === 'ting' ? 'ting' : 'fx';
+  });
+
   const [activeSlot, setActiveSlot] = useState<number>(0);
   const [handlePos, setHandlePos] = useState<number>(0.0);
   const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
 
   const activePreset = pack.presets.find((p) => p.pos === activeSlot) || pack.presets[0];
+
+  // Sync theme to document root & localStorage
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('ep2350_theme', theme);
+  }, [theme]);
 
   // Save to localStorage
   useEffect(() => {
@@ -113,6 +124,8 @@ export const App: React.FC = () => {
           onSelectDefaultPack={handleSelectDefaultPack}
           onImportJson={handleImportJson}
           onExportJson={handleExportJson}
+          theme={theme}
+          onChangeTheme={setTheme}
         />
 
         {/* 2. MAIN TWO-COLUMN WORKBENCH DESK */}
@@ -127,17 +140,22 @@ export const App: React.FC = () => {
                 handlePos={handlePos}
                 onHandleChange={handleHandleChange}
                 onShakeTrigger={handleShakeTrigger}
+                theme={theme}
               />
 
-              <AudioPlayerCompact />
+              <AudioPlayerCompact theme={theme} />
             </div>
 
             {/* Minimalist [ HELP ] button (matching ep-sample-tool bottom button) */}
             <button
               onClick={() => setShowHelpModal(true)}
-              className="mt-3 bg-[#ffffff] border border-[#141617] text-[10px] font-mono font-bold px-4 py-1 hover:bg-[#f5f5f5] shadow-[2px_2px_0px_#141617] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none flex items-center gap-1.5 transition-all cursor-pointer rounded-[0px]"
+              className={`mt-3 ${
+                theme === 'ting'
+                  ? 'bg-[#f7f5ef] border-[#00503a] text-[#00503a] hover:bg-[#e8e9e4] shadow-[2px_2px_0px_#003828]'
+                  : 'bg-[#ffffff] border-[#141617] text-[#141617] hover:bg-[#f5f5f5] shadow-[2px_2px_0px_#141617]'
+              } border text-[10px] font-mono font-bold px-4 py-1 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none flex items-center gap-1.5 transition-all cursor-pointer rounded-[0px]`}
             >
-              <HelpCircle className="w-3 h-3 text-[#73787a]" /> HELP
+              <HelpCircle className={`w-3 h-3 ${theme === 'ting' ? 'text-[#00503a]/70' : 'text-[#73787a]'}`} /> HELP
             </button>
           </div>
 
@@ -148,6 +166,7 @@ export const App: React.FC = () => {
               totalPresets={pack.presets.length}
               onUpdatePreset={handleUpdateActivePreset}
               onSelectPreset={setActiveSlot}
+              theme={theme}
             />
           </div>
         </div>
@@ -156,14 +175,30 @@ export const App: React.FC = () => {
       {/* HELP & HARDWARE INSTRUCTIONS MODAL */}
       {showHelpModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-2xs flex items-center justify-center p-4 z-50">
-          <div className="te-ledger-card max-w-lg w-full bg-[#ffffff] p-6 flex flex-col gap-3 shadow-xl">
-            <div className="flex items-center justify-between border-b border-[#e2e4e2] pb-2.5">
-              <span className="font-bold text-xs uppercase tracking-wider text-[#f15a22]">
+          <div
+            className={`te-ledger-card max-w-lg w-full ${
+              theme === 'ting' ? 'bg-[#f7f5ef]' : 'bg-[#ffffff]'
+            } p-6 flex flex-col gap-3 shadow-xl`}
+          >
+            <div
+              className={`flex items-center justify-between border-b ${
+                theme === 'ting' ? 'border-[#d8ceba]' : 'border-[#e2e4e2]'
+              } pb-2.5`}
+            >
+              <span
+                className={`font-bold text-xs uppercase tracking-wider ${
+                  theme === 'ting' ? 'text-[#ff681d]' : 'text-[#f15a22]'
+                }`}
+              >
                 EP–2350 HARDWARE SETUP & GUIDE
               </span>
               <button
                 onClick={() => setShowHelpModal(false)}
-                className="p-1 text-[#141617] hover:text-[#f15a22]"
+                className={`p-1 ${
+                  theme === 'ting'
+                    ? 'text-[#00503a] hover:text-[#ff681d]'
+                    : 'text-[#141617] hover:text-[#f15a22]'
+                }`}
               >
                 <X className="w-4 h-4" />
               </button>

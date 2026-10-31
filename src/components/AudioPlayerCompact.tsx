@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { audioEngine } from '../dsp/AudioEngine';
 import { Play, Square } from 'lucide-react';
+import { ThemeMode } from '../types/config';
 
 interface AudioPlayerCompactProps {
   onShakeTrigger?: () => void;
+  theme?: ThemeMode;
 }
 
-export const AudioPlayerCompact: React.FC<AudioPlayerCompactProps> = () => {
+export const AudioPlayerCompact: React.FC<AudioPlayerCompactProps> = ({ theme = 'fx' }) => {
+  const isTing = theme === 'ting';
   const [isPlaying, setIsPlaying] = useState(false);
 
   // Sync state if audio stopped externally
@@ -26,35 +29,63 @@ export const AudioPlayerCompact: React.FC<AudioPlayerCompactProps> = () => {
   };
 
   return (
-    <div className="w-[275px] te-hardware-chassis bg-[#dbdddb] p-2.5 flex flex-col gap-1.5 select-none relative">
+    <div
+      className={`w-[275px] te-hardware-chassis ${
+        isTing ? 'bg-[#dbd0b9]' : 'bg-[#dbdddb]'
+      } p-2.5 flex flex-col gap-1.5 select-none relative`}
+    >
       {/* Top status & screw header */}
       <div className="flex items-center justify-between px-0.5">
         <div className="flex items-center gap-1.5">
           {/* LED indicator */}
           <div
-            className={`w-2 h-2 rounded-full border border-black ${
+            className={`w-2 h-2 rounded-full border ${
+              isTing ? 'border-[#00503a]' : 'border-black'
+            } ${
               isPlaying
                 ? 'bg-[#ff3b30] shadow-[0_0_5px_#ff3b30]'
+                : isTing
+                ? 'bg-[#003828]'
                 : 'bg-[#2b3034]'
             }`}
           />
-          <span className="font-mono text-[9px] font-bold text-[#141617] tracking-wider uppercase">
+          <span
+            className={`font-mono text-[9px] font-bold ${
+              isTing ? 'text-[#00503a]' : 'text-[#141617]'
+            } tracking-wider uppercase`}
+          >
             AUDITION MODULE
           </span>
         </div>
-        <span className="font-mono text-[8px] text-[#73787a] tracking-tight">
+        <span
+          className={`font-mono text-[8px] ${
+            isTing ? 'text-[#5b695e]' : 'text-[#73787a]'
+          } tracking-tight`}
+        >
           FREE SPEECH SAMPLE
         </span>
       </div>
 
       {/* Recessed Mechanical Socket Cavity */}
-      <div className="bg-[#141617] p-1 border border-[#000000] shadow-[inset_0_1px_3px_rgba(0,0,0,0.8)]">
+      <div
+        className={`${
+          isTing ? 'bg-[#003828] border-[#00503a]' : 'bg-[#141617] border-[#000000]'
+        } p-1 border shadow-[inset_0_1px_3px_rgba(0,0,0,0.8)]`}
+      >
         <button
           onClick={togglePlayback}
-          className={`w-full h-9 text-[10.5px] font-mono font-bold tracking-wider transition-all duration-75 cursor-pointer flex items-center justify-center gap-2 border border-[#000000] ${
+          className={`w-full h-9 text-[10.5px] font-mono font-bold tracking-wider transition-all duration-75 cursor-pointer flex items-center justify-center gap-2 border ${
+            isTing ? 'border-[#00281c]' : 'border-[#000000]'
+          } ${
             isPlaying
-              ? 'bg-[#f15a22] text-white translate-x-[2px] translate-y-[2px] shadow-none'
-              : 'bg-[#232424] text-white hover:bg-[#353839] shadow-[2px_2px_0px_#000000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none'
+              ? `${
+                  isTing ? 'bg-[#ff681d]' : 'bg-[#f15a22]'
+                } text-white translate-x-[2px] translate-y-[2px] shadow-none`
+              : `${
+                  isTing
+                    ? 'bg-[#00503a] hover:bg-[#00664a] shadow-[2px_2px_0px_#00281c]'
+                    : 'bg-[#232424] hover:bg-[#353839] shadow-[2px_2px_0px_#000000]'
+                } text-white active:translate-x-[2px] active:translate-y-[2px] active:shadow-none`
           }`}
           title={isPlaying ? 'Stop speech playback' : 'Audition preset with speech sample'}
         >

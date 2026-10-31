@@ -178,7 +178,9 @@ export const Knob: React.FC<KnobProps> = ({
     accentColor === '#231f20' ||
     accentColor === '#000000' ||
     accentColor === '#141617' ||
-    accentColor === '#181a1b';
+    accentColor === '#181a1b' ||
+    accentColor === '#00503a' ||
+    accentColor === '#00503A';
 
   return (
     <div

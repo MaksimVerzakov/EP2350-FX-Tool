@@ -1,3 +1,5 @@
+export type ThemeMode = 'fx' | 'ting';
+
 export type EffectType =
   | 'DELAY'
   | 'DIST'
