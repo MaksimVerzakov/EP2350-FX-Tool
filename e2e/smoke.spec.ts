@@ -42,8 +42,8 @@ test.describe('EP-2350 FX Tool Smoke Tests', () => {
   test('can switch between FX and TING themes', async ({ page }) => {
     await page.goto('/');
 
-    const tingButton = page.getByRole('button', { name: /TING/i });
-    const fxButton = page.getByRole('button', { name: /FX/i });
+    const tingButton = page.getByRole('button', { name: 'TING', exact: true });
+    const fxButton = page.getByRole('button', { name: 'FX', exact: true });
 
     await tingButton.click();
     await expect(page.getByText('TING FX TOOL')).toBeVisible();
