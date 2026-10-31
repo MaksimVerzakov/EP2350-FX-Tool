@@ -221,6 +221,8 @@ export class DspAudioEngine {
     let phase = 0.0;
     let currentPitch = Math.max(0.25, Math.min(4.0, initialPitch || 1.0));
     let targetPitch = currentPitch;
+    let delayA = 8;
+    let delayB = grainSize * 0.5 + 8;
 
     // 4-point Hermite fractional sample interpolation for clean high-frequency transients
     const readInterpolated = (delaySamples: number): number => {
@@ -240,6 +242,30 @@ export class DspAudioEngine {
       return ((c3 * frac + c2) * frac + c1) * frac + c0;
     };
 
+    // Phase-lock incoming grain to active grain at grain wrap (when incoming Hann window is 0)
+    const findPhaseAlignedDelay = (baseDelay: number, activeRefDelay: number): number => {
+      const ref0 = readInterpolated(activeRefDelay);
+      const ref1 = readInterpolated(activeRefDelay + 4);
+      const ref2 = readInterpolated(activeRefDelay + 8);
+      let bestDelay = baseDelay;
+      let bestErr = Infinity;
+      for (let offset = 0; offset < 480; offset += 2) {
+        const cand = baseDelay + offset;
+        const c0 = ringBuffer[(writeIdx - Math.floor(cand) + bufferSize) & mask];
+        const c1 = ringBuffer[(writeIdx - Math.floor(cand + 4) + bufferSize) & mask];
+        const c2 = ringBuffer[(writeIdx - Math.floor(cand + 8) + bufferSize) & mask];
+        const d0 = c0 - ref0;
+        const d1 = c1 - ref1;
+        const d2 = c2 - ref2;
+        const err = d0 * d0 + d1 * d1 + d2 * d2;
+        if (err < bestErr) {
+          bestErr = err;
+          bestDelay = cand;
+        }
+      }
+      return bestDelay;
+    };
+
     processor.onaudioprocess = (e: AudioProcessingEvent) => {
       const input = e.inputBuffer.getChannelData(0);
       const output = e.outputBuffer.getChannelData(0);
@@ -252,21 +278,27 @@ export class DspAudioEngine {
         // Per-sample exponential smoothing of pitch ratio
         currentPitch += (targetPitch - currentPitch) * 0.0025;
 
-        // Advance master grain phase
-        const phaseStep = (1.0 - currentPitch) / grainSize;
-        phase += phaseStep;
-        phase -= Math.floor(phase);
-
-        // 4 overlapping Hann-windowed grains spaced by 0.25 cycle (sum of weights === 1.0 everywhere)
-        let wet = 0.0;
-        for (let g = 0; g < 4; g++) {
-          const p = phase + g * 0.25;
-          const gp = p - Math.floor(p);
-          const delaySamples = gp * grainSize + 4;
-          const win = 0.5 * (1.0 - Math.cos(2.0 * Math.PI * gp));
-          wet += win * readInterpolated(delaySamples);
+        const prevPhase = phase;
+        phase += 1.0 / grainSize;
+        if (phase >= 1.0) {
+          phase -= 1.0;
+          const baseStart = currentPitch > 1.0 ? grainSize + 8 : 8;
+          delayA = findPhaseAlignedDelay(baseStart, delayB);
         }
-        wet *= 0.5; // Normalize 4 overlapping Hann windows (sum of 4 Hann windows = 2.0)
+        if (prevPhase < 0.5 && phase >= 0.5) {
+          const baseStart = currentPitch > 1.0 ? grainSize + 8 : 8;
+          delayB = findPhaseAlignedDelay(baseStart, delayA);
+        }
+
+        const delayDelta = 1.0 - currentPitch;
+        delayA = Math.max(4, delayA + delayDelta);
+        delayB = Math.max(4, delayB + delayDelta);
+
+        const pA = phase;
+        const pB = phase + 0.5 - Math.floor(phase + 0.5);
+        const winA = 0.5 * (1.0 - Math.cos(2.0 * Math.PI * pA));
+        const winB = 0.5 * (1.0 - Math.cos(2.0 * Math.PI * pB));
+        const wet = winA * readInterpolated(delayA) + winB * readInterpolated(delayB);
 
         // Smoothly crossfade to direct pass-through when pitch ratio is ~1.0x
         const shiftDist = Math.min(1.0, Math.abs(currentPitch - 1.0) / 0.015);

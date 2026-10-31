@@ -1,4 +1,4 @@
-import { PackConfig } from '../types/config';
+import type { PackConfig } from '../types/config';
 import { isPercentParam, getModDepthConfig } from '../constants/effectsRegistry';
 
 export interface ValidationIssue {
