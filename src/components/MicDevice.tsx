@@ -35,28 +35,31 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
 }) => {
   const isTing = theme === 'ting';
   const [isSqueezing, setIsSqueezing] = useState(false);
-  const [isShakingFlash, setIsShakingFlash] = useState(false);
-  const [isButtonPressed, setIsButtonPressed] = useState(false);
+  const [isCartoonShaking, setIsCartoonShaking] = useState(false);
   const dragStartY = useRef(0);
+  const dragStartX = useRef(0);
   const dragStartVal = useRef(handlePos);
+  const hasDragged = useRef(false);
 
-  const cyclePreset = () => {
-    setIsButtonPressed(true);
+  const cyclePreset = (e: React.MouseEvent) => {
+    e.stopPropagation();
     onSelectSlot((activeSlot + 1) % 4);
-    setTimeout(() => setIsButtonPressed(false), 150);
   };
 
-  const triggerShakeWithFlash = () => {
-    setIsShakingFlash(true);
+  const triggerCartoonShake = () => {
+    setIsCartoonShaking(true);
     onShakeTrigger();
-    setTimeout(() => setIsShakingFlash(false), 300);
+    setTimeout(() => setIsCartoonShaking(false), 420);
   };
 
-  // Handle Drag: Mouse or touch drag to squeeze the lever
+  // Handle Drag: Mouse or touch drag to squeeze/release the lever
   const handleHandleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsSqueezing(true);
+    hasDragged.current = false;
     dragStartY.current = e.clientY;
+    dragStartX.current = e.clientX;
     dragStartVal.current = handlePos;
   };
 
@@ -64,8 +67,14 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
     (e: MouseEvent) => {
       if (!isSqueezing) return;
       const dy = e.clientY - dragStartY.current;
-      const sensitivity = 90;
-      const delta = dy / sensitivity;
+      const dx = e.clientX - dragStartX.current;
+      if (Math.abs(dy) > 3 || Math.abs(dx) > 3) {
+        hasDragged.current = true;
+      }
+      // Dragging inward (down/right): increases towards 1.0 (pressed)
+      // Dragging outward (up/left): decreases towards 0.0 (released)
+      const sensitivity = 85;
+      const delta = (dy + dx * 0.8) / sensitivity;
       const newVal = Math.max(0.0, Math.min(1.0, dragStartVal.current + delta));
       onHandleChange(Math.round(newVal * 100) / 100);
     },
@@ -75,19 +84,12 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
   const handleMouseUp = useCallback(() => {
     if (!isSqueezing) return;
     setIsSqueezing(false);
-    // Smooth spring-return to 0.0
-    let current = handlePos;
-    const startT = performance.now();
-    const anim = () => {
-      const elapsed = (performance.now() - startT) / 120;
-      if (elapsed < 1.0) {
-        onHandleChange(current * (1.0 - elapsed));
-        requestAnimationFrame(anim);
-      } else {
-        onHandleChange(0.0);
-      }
-    };
-    requestAnimationFrame(anim);
+    if (!hasDragged.current) {
+      // Click without drag: toggle between fully pressed (1.0) and released (0.0)
+      const nextVal = handlePos >= 0.5 ? 0.0 : 1.0;
+      onHandleChange(nextVal);
+    }
+    // If dragged: stays at the set position so the user can listen to the decreased effect!
   }, [isSqueezing, handlePos, onHandleChange]);
 
   useEffect(() => {
@@ -102,21 +104,22 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
   }, [isSqueezing, handleMouseMove, handleMouseUp]);
 
   // Lever squeeze angle: hinges at (338.805, 240.78), rotates inward by up to 7.5 degrees
+  // When handlePos is 1.0 (pressed by default), lever is rotated inward (7.5deg) and effect is enabled.
+  // Releasing the handle (handlePos -> 0.0) rotates outward (0deg) and decreases the effect.
   const leverAngle = handlePos * 7.5;
 
   return (
     <div className="flex flex-col items-center select-none relative">
       {/* Container matching Teenage Engineering EP-2350 silhouette */}
       <div 
-        className={`relative transition-transform duration-100 ${
-          isShakingFlash ? 'scale-[1.02] -rotate-1' : ''
-        }`}
+        className="relative"
         style={{ width: 275, height: 545 }}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="275 0 305 590"
-          className="w-full h-full"
+          className="w-full h-full overflow-visible"
+          style={{ overflow: 'visible' }}
           fill="none"
         >
           <defs>
@@ -135,10 +138,71 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
             </radialGradient>
           </defs>
 
-          {/* ========================================================= */}
-          {/* TE AXONOMETRIC 3D CHASSIS: HARD SHADOW, BOTTOM PLATE & BEVELS */}
-          {/* Replicates exact 45° vector extrusion from EP Sample Tool  */}
-          {/* ========================================================= */}
+          {/* CARTOON SHAKE MOVEMENT (SEMI-TRANSPARENT GHOST COPIES & ORANGE MOTION ARCS) */}
+          {/* Main mic stays 100% stationary; afterimages & cartoon arrows depict physical movement */}
+          {isCartoonShaking && (
+            <g className="pointer-events-none select-none" style={{ overflow: 'visible' }}>
+              {/* Outer Ghost Copy (rotated further, lighter opacity) */}
+              <g
+                style={{
+                  transformOrigin: '445px 420px',
+                  animation: 'cartoonShakeGhost2 420ms cubic-bezier(0.2, 0.9, 0.4, 1.1) forwards'
+                }}
+              >
+                <use href="#micGraphic" />
+              </g>
+
+              {/* Inner Ghost Copy (rotated medium, higher opacity) */}
+              <g
+                style={{
+                  transformOrigin: '445px 420px',
+                  animation: 'cartoonShakeGhost1 420ms cubic-bezier(0.2, 0.9, 0.4, 1.1) forwards'
+                }}
+              >
+                <use href="#micGraphic" />
+              </g>
+
+              {/* Cartoon Orange Motion Curve Arrows (Exact match to uploaded design) */}
+              <g
+                style={{
+                  animation: 'cartoonArrowPulse 420ms ease-out forwards'
+                }}
+              >
+                {/* Top-Right Curved Motion Arrow */}
+                <path
+                  d="M 570 145 C 572 108, 552 75, 526 71"
+                  stroke="#F15A22"
+                  strokeWidth="6"
+                  strokeLinecap="round"
+                  fill="none"
+                />
+                <polygon
+                  points="528 62, 511 73, 530 83"
+                  fill="#F15A22"
+                />
+
+                {/* Bottom-Left Curved Motion Arrow */}
+                <path
+                  d="M 312 405 C 310 430, 307 452, 305 468"
+                  stroke="#F15A22"
+                  strokeWidth="6"
+                  strokeLinecap="round"
+                  fill="none"
+                />
+                <polygon
+                  points="297 462, 305 480, 314 462"
+                  fill="#F15A22"
+                />
+              </g>
+            </g>
+          )}
+
+          {/* MAIN STATIONARY FOREGROUND MIC */}
+          <g id="micGraphic">
+            {/* ========================================================= */}
+            {/* TE AXONOMETRIC 3D CHASSIS: HARD SHADOW, BOTTOM PLATE & BEVELS */}
+            {/* Replicates exact 45° vector extrusion from EP Sample Tool  */}
+            {/* ========================================================= */}
 
           {/* A. HARD BLACK DROP SHADOW FACET (dx = +11, dy = +11) */}
           <polygon
@@ -219,15 +283,18 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
           })}
 
           {/* 1. SQUEEZE HANDLE LEVER (Hinged at 338.805, 240.78) */}
+          {/* Fully pressed by default (leverAngle = 7.5deg, handlePos = 1.0) enables effect */}
+          {/* Click to toggle; drag outward (left/up) to release handle and decrease effect */}
           <g
             onMouseDown={handleHandleMouseDown}
-            className="cursor-ns-resize"
+            className={isSqueezing ? 'cursor-grabbing' : 'cursor-pointer'}
             style={{
               transformOrigin: '338.805px 240.78px',
               transform: `rotate(${leverAngle}deg)`,
-              transition: isSqueezing ? 'none' : 'transform 0.12s cubic-bezier(0.18, 0.89, 0.32, 1.28)'
+              transition: isSqueezing ? 'none' : 'transform 0.16s cubic-bezier(0.18, 0.89, 0.32, 1.28)'
             }}
           >
+            <title>Squeeze lever: Fully pressed enables effect (Click to toggle, drag to decrease/increase)</title>
             {/* Lever drop shadow facet */}
             <path
               fill="#141617"
@@ -259,20 +326,12 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
           <rect x="550" y="36.5" width="18" height="34" rx="2" fill="#141617" stroke="#000000" strokeWidth="0.8" />
           <g
             onClick={cyclePreset}
-            className="cursor-pointer group"
-            style={{
-              transform: isButtonPressed ? 'translate(2px, 2px)' : 'none',
-              transition: 'transform 0.06s ease'
-            }}
+            className="cursor-pointer group active:translate-x-[1px] active:translate-y-[1px] transition-transform"
           >
             <title>Preset Selector Button</title>
             {/* 45° Extruded Facets */}
-            {!isButtonPressed && (
-              <>
-                <polygon points="562.725 42.318 565.725 45.318 565.725 64.815 562.725 61.815" fill="#ba3807" stroke="#000" strokeWidth="0.8" />
-                <polygon points="551.476 64.815 554.476 67.815 565.725 67.815 562.725 64.815" fill="#8c2603" stroke="#000" strokeWidth="0.8" />
-              </>
-            )}
+            <polygon points="562.725 42.318 565.725 45.318 565.725 64.815 562.725 61.815" fill="#ba3807" stroke="#000" strokeWidth="0.8" />
+            <polygon points="551.476 64.815 554.476 67.815 565.725 67.815 562.725 64.815" fill="#8c2603" stroke="#000" strokeWidth="0.8" />
             {/* Front Keycap */}
             <path
               fill="#F15A22"
@@ -280,14 +339,14 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
               strokeWidth="1.2"
               strokeMiterlimit="10"
               d="M551.476 38.645h11.249a3.675 3.675 0 0 1 3.673 3.673v22.497a3.675 3.675 0 0 1-3.673 3.674h-11.249z"
-              className="group-hover:brightness-110"
+              className="group-hover:brightness-110 group-active:brightness-95"
             />
           </g>
 
           {/* BUTTON 2: WHITE BUTTON (FX) / GREEN BUTTON (TING) */}
           {/* Recessed Socket */}
           <rect x="550" y="112.5" width="18" height="34" rx="2" fill="#141617" stroke="#000000" strokeWidth="0.8" />
-          <g>
+          <g onClick={(e) => e.stopPropagation()}>
             {/* 45° Extruded Facets */}
             <polygon points="562.725 118.191 565.725 121.191 565.725 140.688 562.725 137.688" fill={isTing ? '#003d2c' : '#bcbeb9'} stroke="#000" strokeWidth="0.8" />
             <polygon points="551.476 140.688 554.476 143.688 565.725 143.688 562.725 140.688" fill={isTing ? '#00291d' : '#949692'} stroke="#000" strokeWidth="0.8" />
@@ -304,7 +363,7 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
           {/* BUTTON 3: GREY BUTTON (FX) / OFF-WHITE BUTTON (TING) */}
           {/* Recessed Socket */}
           <rect x="550" y="241.5" width="18" height="36" rx="2" fill="#141617" stroke="#000000" strokeWidth="0.8" />
-          <g>
+          <g onClick={(e) => e.stopPropagation()}>
             {/* 45° Extruded Facets */}
             <polygon points="562.725 247.401 565.725 250.401 565.725 273.573 562.725 270.573" fill={isTing ? '#c5c7c0' : '#a8aaac'} stroke="#000" strokeWidth="0.8" />
             <polygon points="551.476 273.573 554.476 276.573 565.725 276.573 562.725 273.573" fill={isTing ? '#9e9f99' : '#7a7d80'} stroke="#000" strokeWidth="0.8" />
@@ -462,23 +521,13 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
           })}
 
           {/* 5. LOWER CHASSIS FACEPLATE (Off-white / Light Grey Plate) */}
-          <g onClick={triggerShakeWithFlash} className="cursor-pointer group">
-            <title>Click to trigger SHAKE SENSOR</title>
+          <g onClick={(e) => e.stopPropagation()}>
             <path
-              fill={
-                isTing
-                  ? isShakingFlash
-                    ? '#dbd0b9'
-                    : '#E8E9E4'
-                  : isShakingFlash
-                  ? '#d8ded8'
-                  : '#E4E3DF'
-              }
+              fill={isTing ? '#E8E9E4' : '#E4E3DF'}
               stroke="#000"
               strokeWidth="1.2"
               strokeMiterlimit="10"
               d="M338.805 182.804h212.67v147.938a3.814 3.814 0 0 1-3.812 3.813H342.617a3.814 3.814 0 0 1-3.812-3.813z"
-              className="transition-colors duration-150"
             />
 
             {/* 4 Precision Corner Screws with 45° angled slot */}
@@ -539,124 +588,136 @@ export const MicDevice: React.FC<MicDeviceProps> = ({
             )}
           </g>
 
-          {/* 6. REINFORCED RUBBER CABLE SEGMENT (Hanging Down, Tucked Inside Strain Relief) */}
-          {/* Cable 45° Drop Shadow Facet */}
-          <path
-            stroke="#141617"
-            strokeWidth="3.5"
-            strokeLinecap="round"
-            opacity="0.35"
-            transform="translate(4, 4)"
-            d="M420.295 510.223c5.516-.966 5.987-8.759.601-10.406-9.892-2.092-27.87-3.097-33.629-3.374-.836-.04-1.316-.944-.898-1.671 12.004-20.912 17.838-45.201 18.244-69.249-.006-.243.144-22.135.148-22.382h-10.874l.075 21.819v-.332c.304 17.825-3.899 36.651-10.996 52.973-2.72 7.395-8.888 14.338-9.232 22.35v.185c0 6.587 9.616 6.389 19.533 7.291 9.918.901 18.568 1.658 27.548 2.601"
-          />
-          <path
-            fill={isTing ? '#1d4d3c' : '#D1D3D4'}
-            d="M420.295 510.223c5.516-.966 5.987-8.759.601-10.406-9.892-2.092-27.87-3.097-33.629-3.374-.836-.04-1.316-.944-.898-1.671 12.004-20.912 17.838-45.201 18.244-69.249-.006-.243.144-22.135.148-22.382h-10.874l.075 21.819v-.332c.304 17.825-3.899 36.651-10.996 52.973-2.72 7.395-8.888 14.338-9.232 22.35v.185c0 6.587 9.616 6.389 19.533 7.291 9.918.901 18.568 1.658 27.548 2.601"
-          />
-          <path
-            stroke="#000"
-            strokeWidth="1.2"
-            strokeMiterlimit="10"
-            d="M420.295 510.223c5.516-.966 5.987-8.759.601-10.406-9.892-2.092-27.87-3.097-33.629-3.374-.836-.04-1.316-.944-.898-1.671 12.004-20.912 17.838-45.201 18.244-69.249-.006-.243.144-22.135.148-22.382h-10.874l.075 21.819v-.332c.304 17.825-3.899 36.651-10.996 52.973-2.72 7.395-8.888 14.338-9.232 22.35v.185c0 6.587 9.616 6.389 19.533 7.291 9.918.901 18.568 1.658 27.548 2.601"
-          />
+          {/* 6. REINFORCED RUBBER CABLE SEGMENT & CORRUGATED STRAIN RELIEF */}
+          {/* Bottom section of the mic triggers the cartoon shake effect when clicked */}
+          <g
+            onClick={triggerCartoonShake}
+            className="cursor-pointer group"
+            aria-label="Click bottom of mic to SHAKE"
+          >
+            <title>Click bottom of mic to SHAKE</title>
+            {/* Transparent hit area covering bottom of mic */}
+            <rect x="330" y="295" width="230" height="295" fill="transparent" />
 
-          {/* 7. CORRUGATED STRAIN RELIEF & CONNECTOR (Accordion Bellows with Per-Rib 45° Extrusion) */}
-          {(() => {
-            const d = 3.2;
-            const sideBevelFill = isTing ? '#ba3807' : '#586166';
-            const bottomBevelFill = isTing ? '#8c2603' : '#464d52';
-            const neckBevelFill = isTing ? '#8c2603' : '#4a5257';
-
-            const wideRibs = [
-              { x1: 384.364, x2: 414.743, y1: 334.555, y2: 342.092, neckLeft: 393.844, neckRight: 405.237 },
-              { x1: 384.364, x2: 414.743, y1: 349.686, y2: 357.270, neckLeft: 393.844, neckRight: 405.237 },
-              { x1: 384.364, x2: 414.743, y1: 364.866, y2: 372.472, neckLeft: 393.844, neckRight: 405.237 },
-              { x1: 384.364, x2: 414.743, y1: 380.066, y2: 387.916, neckLeft: 393.844, neckRight: 405.237 },
-              { x1: 384.024, x2: 414.403, y1: 395.521, y2: 403.372, neckLeft: 393.816, neckRight: 404.690 }
-            ];
-
-            const narrowNecks = [
-              { x1: 393.844, x2: 405.237, y1: 342.093, y2: 349.688 },
-              { x1: 393.844, x2: 405.237, y1: 357.271, y2: 364.866 },
-              { x1: 393.844, x2: 405.237, y1: 372.466, y2: 380.060 },
-              { x1: 393.844, x2: 405.237, y1: 387.920, y2: 395.514 }
-            ];
-
-            return (
-              <g>
-                {/* Recessed Neck Right 45° Bevels */}
-                {narrowNecks.map((neck, i) => (
-                  <polygon
-                    key={`neck-bevel-${i}`}
-                    points={`${neck.x2} ${neck.y1} ${neck.x2 + d} ${neck.y1 + d} ${neck.x2 + d} ${neck.y2} ${neck.x2} ${neck.y2}`}
-                    fill={neckBevelFill}
-                    stroke="#000"
-                    strokeWidth="0.9"
-                    strokeLinejoin="round"
-                  />
-                ))}
-
-                {/* Per-Rib 45° Right & Bottom Overhang Bevels */}
-                {wideRibs.map((rib, i) => (
-                  <g key={`rib-bevels-${i}`}>
-                    {/* Left overhang bottom bevel */}
-                    <polygon
-                      points={`${rib.x1} ${rib.y2} ${rib.neckLeft} ${rib.y2} ${rib.neckLeft} ${rib.y2 + d} ${rib.x1 + d} ${rib.y2 + d}`}
-                      fill={bottomBevelFill}
-                      stroke="#000"
-                      strokeWidth="0.9"
-                      strokeLinejoin="round"
-                    />
-                    {/* Right overhang bottom bevel */}
-                    <polygon
-                      points={`${rib.neckRight} ${rib.y2} ${rib.x2} ${rib.y2} ${rib.x2 + d} ${rib.y2 + d} ${rib.neckRight + d} ${rib.y2 + d}`}
-                      fill={bottomBevelFill}
-                      stroke="#000"
-                      strokeWidth="0.9"
-                      strokeLinejoin="round"
-                    />
-                    {/* Rib right side bevel */}
-                    <polygon
-                      points={`${rib.x2} ${rib.y1} ${rib.x2 + d} ${rib.y1 + d} ${rib.x2 + d} ${rib.y2 + d} ${rib.x2} ${rib.y2}`}
-                      fill={sideBevelFill}
-                      stroke="#000"
-                      strokeWidth="0.9"
-                      strokeLinejoin="round"
-                    />
-                  </g>
-                ))}
-              </g>
-            );
-          })()}
-
-          <path
-            fill={isTing ? '#F15A22' : '#818E95'}
-            stroke="#000"
-            strokeWidth="1.2"
-            strokeMiterlimit="10"
-            d="M414.743 380.066h-30.379v7.85h30.379zM414.743 364.866h-30.379v7.606h30.379zM414.743 334.555h-30.379v7.537h30.379zM414.743 349.686h-30.379v7.584h30.379z"
-          />
-          <path
-            fill={isTing ? '#F15A22' : '#818E95'}
-            stroke="#000"
-            strokeWidth="1.2"
-            strokeMiterlimit="10"
-            d="M405.237 342.093h-11.393v7.595h11.393zM405.237 357.271h-11.393v7.595h11.393zM405.237 372.466h-11.393v7.594h11.393zM414.403 395.521h-30.379v7.851h30.379zM405.237 387.92h-11.393v7.594h11.393z"
-          />
-
-          {/* Flexible Corrugated Bellows */}
-          {[520.391, 530.805, 541.217, 551.674, 562.254, 572.666, 583.124].map((yVal, i) => (
+            {/* Cable 45° Drop Shadow Facet */}
             <path
-              key={i}
-              fill={isTing ? '#00503A' : '#D1D3D4'}
+              stroke="#141617"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              opacity="0.35"
+              transform="translate(4, 4)"
+              d="M420.295 510.223c5.516-.966 5.987-8.759.601-10.406-9.892-2.092-27.87-3.097-33.629-3.374-.836-.04-1.316-.944-.898-1.671 12.004-20.912 17.838-45.201 18.244-69.249-.006-.243.144-22.135.148-22.382h-10.874l.075 21.819v-.332c.304 17.825-3.899 36.651-10.996 52.973-2.72 7.395-8.888 14.338-9.232 22.35v.185c0 6.587 9.616 6.389 19.533 7.291 9.918.901 18.568 1.658 27.548 2.601"
+            />
+            <path
+              fill={isTing ? '#1d4d3c' : '#D1D3D4'}
+              d="M420.295 510.223c5.516-.966 5.987-8.759.601-10.406-9.892-2.092-27.87-3.097-33.629-3.374-.836-.04-1.316-.944-.898-1.671 12.004-20.912 17.838-45.201 18.244-69.249-.006-.243.144-22.135.148-22.382h-10.874l.075 21.819v-.332c.304 17.825-3.899 36.651-10.996 52.973-2.72 7.395-8.888 14.338-9.232 22.35v.185c0 6.587 9.616 6.389 19.533 7.291 9.918.901 18.568 1.658 27.548 2.601"
+            />
+            <path
               stroke="#000"
               strokeWidth="1.2"
               strokeMiterlimit="10"
-              d={`M418.334 ${yVal}c2.18.43 4.533-.372 5.644-2.296 1.606-2.781.325-6.601-3.742-7.781-13.586-2.743-26.006-2.124-39.785-4.675-3.86-.715-7.413 2.827-6.225 6.569.49 1.543 1.658 2.887 3.53 3.457 13.279 3.12 27.142 2.071 40.576 4.726z`}
+              d="M420.295 510.223c5.516-.966 5.987-8.759.601-10.406-9.892-2.092-27.87-3.097-33.629-3.374-.836-.04-1.316-.944-.898-1.671 12.004-20.912 17.838-45.201 18.244-69.249-.006-.243.144-22.135.148-22.382h-10.874l.075 21.819v-.332c.304 17.825-3.899 36.651-10.996 52.973-2.72 7.395-8.888 14.338-9.232 22.35v.185c0 6.587 9.616 6.389 19.533 7.291 9.918.901 18.568 1.658 27.548 2.601"
             />
-          ))}
-        </svg>
-      </div>
+
+            {/* 7. CORRUGATED STRAIN RELIEF & CONNECTOR (Accordion Bellows with Per-Rib 45° Extrusion) */}
+            {(() => {
+              const d = 3.2;
+              const sideBevelFill = isTing ? '#ba3807' : '#586166';
+              const bottomBevelFill = isTing ? '#8c2603' : '#464d52';
+              const neckBevelFill = isTing ? '#8c2603' : '#4a5257';
+
+              const wideRibs = [
+                { x1: 384.364, x2: 414.743, y1: 334.555, y2: 342.092, neckLeft: 393.844, neckRight: 405.237 },
+                { x1: 384.364, x2: 414.743, y1: 349.686, y2: 357.270, neckLeft: 393.844, neckRight: 405.237 },
+                { x1: 384.364, x2: 414.743, y1: 364.866, y2: 372.472, neckLeft: 393.844, neckRight: 405.237 },
+                { x1: 384.364, x2: 414.743, y1: 380.066, y2: 387.916, neckLeft: 393.844, neckRight: 405.237 },
+                { x1: 384.024, x2: 414.403, y1: 395.521, y2: 403.372, neckLeft: 393.816, neckRight: 404.690 }
+              ];
+
+              const narrowNecks = [
+                { x1: 393.844, x2: 405.237, y1: 342.093, y2: 349.688 },
+                { x1: 393.844, x2: 405.237, y1: 357.271, y2: 364.866 },
+                { x1: 393.844, x2: 405.237, y1: 372.466, y2: 380.060 },
+                { x1: 393.844, x2: 405.237, y1: 387.920, y2: 395.514 }
+              ];
+
+              return (
+                <g>
+                  {/* Recessed Neck Right 45° Bevels */}
+                  {narrowNecks.map((neck, i) => (
+                    <polygon
+                      key={`neck-bevel-${i}`}
+                      points={`${neck.x2} ${neck.y1} ${neck.x2 + d} ${neck.y1 + d} ${neck.x2 + d} ${neck.y2} ${neck.x2} ${neck.y2}`}
+                      fill={neckBevelFill}
+                      stroke="#000"
+                      strokeWidth="0.9"
+                      strokeLinejoin="round"
+                    />
+                  ))}
+
+                  {/* Per-Rib 45° Right & Bottom Overhang Bevels */}
+                  {wideRibs.map((rib, i) => (
+                    <g key={`rib-bevels-${i}`}>
+                      {/* Left overhang bottom bevel */}
+                      <polygon
+                        points={`${rib.x1} ${rib.y2} ${rib.neckLeft} ${rib.y2} ${rib.neckLeft} ${rib.y2 + d} ${rib.x1 + d} ${rib.y2 + d}`}
+                        fill={bottomBevelFill}
+                        stroke="#000"
+                        strokeWidth="0.9"
+                        strokeLinejoin="round"
+                      />
+                      {/* Right overhang bottom bevel */}
+                      <polygon
+                        points={`${rib.neckRight} ${rib.y2} ${rib.x2} ${rib.y2} ${rib.x2 + d} ${rib.y2 + d} ${rib.neckRight + d} ${rib.y2 + d}`}
+                        fill={bottomBevelFill}
+                        stroke="#000"
+                        strokeWidth="0.9"
+                        strokeLinejoin="round"
+                      />
+                      {/* Rib right side bevel */}
+                      <polygon
+                        points={`${rib.x2} ${rib.y1} ${rib.x2 + d} ${rib.y1 + d} ${rib.x2 + d} ${rib.y2 + d} ${rib.x2} ${rib.y2}`}
+                        fill={sideBevelFill}
+                        stroke="#000"
+                        strokeWidth="0.9"
+                        strokeLinejoin="round"
+                      />
+                    </g>
+                  ))}
+                </g>
+              );
+            })()}
+
+            <path
+              fill={isTing ? '#F15A22' : '#818E95'}
+              stroke="#000"
+              strokeWidth="1.2"
+              strokeMiterlimit="10"
+              d="M414.743 380.066h-30.379v7.85h30.379zM414.743 364.866h-30.379v7.606h30.379zM414.743 334.555h-30.379v7.537h30.379zM414.743 349.686h-30.379v7.584h30.379z"
+            />
+            <path
+              fill={isTing ? '#F15A22' : '#818E95'}
+              stroke="#000"
+              strokeWidth="1.2"
+              strokeMiterlimit="10"
+              d="M405.237 342.093h-11.393v7.595h11.393zM405.237 357.271h-11.393v7.595h11.393zM405.237 372.466h-11.393v7.594h11.393zM414.403 395.521h-30.379v7.851h30.379zM405.237 387.92h-11.393v7.594h11.393z"
+            />
+
+            {/* Flexible Corrugated Bellows */}
+            {[520.391, 530.805, 541.217, 551.674, 562.254, 572.666, 583.124].map((yVal, i) => (
+              <path
+                key={i}
+                fill={isTing ? '#00503A' : '#D1D3D4'}
+                stroke="#000"
+                strokeWidth="1.2"
+                strokeMiterlimit="10"
+                d={`M418.334 ${yVal}c2.18.43 4.533-.372 5.644-2.296 1.606-2.781.325-6.601-3.742-7.781-13.586-2.743-26.006-2.124-39.785-4.675-3.86-.715-7.413 2.827-6.225 6.569.49 1.543 1.658 2.887 3.53 3.457 13.279 3.12 27.142 2.071 40.576 4.726z`}
+              />
+            ))}
+          </g>
+        </g>
+      </svg>
     </div>
-  );
+  </div>
+);
 };

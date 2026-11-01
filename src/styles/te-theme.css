@@ -74,6 +74,84 @@ html[data-theme='ting'] {
   --unit: 23.52px;
 }
 
+/* Cartoon depiction of shake movement (multi-image ghost afterimages & orange motion arcs) */
+@keyframes cartoonShakeGhost1 {
+  0% {
+    transform: rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    transform: rotate(-8deg);
+    opacity: 0.38;
+  }
+  40% {
+    transform: rotate(5deg);
+    opacity: 0.32;
+  }
+  65% {
+    transform: rotate(-4deg);
+    opacity: 0.22;
+  }
+  85% {
+    transform: rotate(2deg);
+    opacity: 0.12;
+  }
+  100% {
+    transform: rotate(0deg);
+    opacity: 0;
+  }
+}
+
+@keyframes cartoonShakeGhost2 {
+  0% {
+    transform: rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    transform: rotate(-15deg);
+    opacity: 0.22;
+  }
+  40% {
+    transform: rotate(9deg);
+    opacity: 0.18;
+  }
+  65% {
+    transform: rotate(-7deg);
+    opacity: 0.12;
+  }
+  85% {
+    transform: rotate(3deg);
+    opacity: 0.06;
+  }
+  100% {
+    transform: rotate(0deg);
+    opacity: 0;
+  }
+}
+
+@keyframes cartoonArrowPulse {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  20% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+  55% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  80% {
+    opacity: 0.5;
+    transform: scale(0.98);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+
 * {
   box-sizing: border-box;
   margin: 0;

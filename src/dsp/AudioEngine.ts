@@ -31,7 +31,7 @@ export class DspAudioEngine {
   // Active preset & modulation
   private preset: PresetConfig | null = null;
   private modState: ModulationState = {
-    handlePos: 0.0,
+    handlePos: 1.0,
     shakeAmount: 0.0,
     lfoPhase: 0.0
   };
