@@ -26,7 +26,7 @@ export const App: React.FC = () => {
   });
 
   const [activeSlot, setActiveSlot] = useState<number>(0);
-  const [handlePos, setHandlePos] = useState<number>(0.0);
+  const [handlePos, setHandlePos] = useState<number>(1.0);
 
   const activePreset = pack.presets.find((p) => p.pos === activeSlot) || pack.presets[0];
 

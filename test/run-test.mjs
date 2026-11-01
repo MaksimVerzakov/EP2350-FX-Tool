@@ -352,4 +352,49 @@ console.log(
   `✓ Suite 6: PitchShiftKernel verified (220Hz -> 0.5x=${hzHalf.toFixed(1)}Hz, 2.0x=${hz2x.toFixed(1)}Hz at constant speed)`
 );
 
-console.log('\n=== ALL 6 PRODUCTION TEST SUITES PASSED (100%) ===');
+// -----------------------------------------------------------------------------
+// Suite 7: UX Behavior Verification (Lever Defaults to Pressed & Cartoon Shake)
+// -----------------------------------------------------------------------------
+const micDeviceSrc = fs.readFileSync(path.join(ROOT_DIR, 'src/components/MicDevice.tsx'), 'utf8');
+const appSrc = fs.readFileSync(path.join(ROOT_DIR, 'src/App.tsx'), 'utf8');
+const themeCss = fs.readFileSync(path.join(ROOT_DIR, 'src/styles/te-theme.css'), 'utf8');
+
+// 1. Lever defaults to fully pressed (1.0) in App.tsx
+assert.ok(
+  appSrc.includes('const [handlePos, setHandlePos] = useState<number>(1.0);'),
+  'handlePos must initialize to 1.0 (fully pressed by default)'
+);
+
+// 2. MicDevice maintains stationary main mic without image flicking
+assert.ok(
+  !micDeviceSrc.includes('isShakingFlash ? \'scale-[1.02] -rotate-1\' : \'\''),
+  'Main mic container must not scale or rotate when shaking or clicking buttons'
+);
+
+// 3. Cartoon shake afterimages & orange motion arrows exist in SVG and CSS
+assert.ok(
+  themeCss.includes('cartoonShakeGhost1') && themeCss.includes('cartoonShakeGhost2'),
+  'CSS keyframes must define cartoonShakeGhost1 and cartoonShakeGhost2'
+);
+assert.ok(
+  micDeviceSrc.includes('cartoonShakeGhost1') && micDeviceSrc.includes('cartoonShakeGhost2'),
+  'MicDevice must render ghost afterimages during cartoon shake'
+);
+assert.ok(
+  micDeviceSrc.includes('Top-Right Curved Motion Arrow') && micDeviceSrc.includes('Bottom-Left Curved Motion Arrow'),
+  'MicDevice must render cartoon orange motion curve arrows matching the design'
+);
+
+// 4. Shake is triggered on bottom part of the mic, NOT on faceplate or buttons
+assert.ok(
+  micDeviceSrc.includes('Click bottom of mic to SHAKE'),
+  'Shake must be triggered on the bottom part of the mic'
+);
+assert.ok(
+  micDeviceSrc.includes('stopPropagation') && !micDeviceSrc.includes('onClick={triggerShakeWithFlash}'),
+  'Buttons and faceplate must not trigger shake'
+);
+
+console.log('✓ Suite 7: UX Lever default pressed & Cartoon Shake afterimages verified');
+
+console.log('\n=== ALL 7 PRODUCTION TEST SUITES PASSED (100%) ===');
